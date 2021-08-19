@@ -1,5 +1,9 @@
-# AltManager
-A fork of the AltManager Addon for World of Warcraft, updated to Patch 9.1 for personal use.
+# MyAltManager
+A fork of the AltManager Addon for World of Warcraft, renamed and updated to Patch 9.1 for personal use.
+
+**Addon Credits**
+* Qooning - Tarren Mill, 2017-2020 (Method Alt Manager)
+* Kabootzey - Tarren Mill, 2018 (Battle for Azeroth, AltManager)
 
 ---
 
