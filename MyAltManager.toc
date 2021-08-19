@@ -1,0 +1,9 @@
+## Interface: 90100
+## Title: My Alt Manager
+## Author: Qoning, Updated by Faith
+## Version: v2.6.3
+## Notes: An overview of your alts and relevant information.
+## SavedVariables: MyAltManagerDB
+
+embeds.xml
+MyAltManager.lua
