@@ -629,6 +629,8 @@ function AltManager:CollectData()
 	char_table.shapingFate = shapingFate;
 	char_table.shapingFateText = shapingFateText;
 	char_table.tormentorsOfTorghast = tormentorsOfTorghast;
+	char_table.replenishTheReservoir = replenishTheReservoir;
+	char_table.returnLostSouls = returnLostSouls;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
 	char_table.dataObtained = time();
@@ -712,13 +714,17 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 
 	local level = 0;
 	local info = C_MythicPlus.GetRunHistory(false,true);
+	local keys = {};
 
 	for l = 1, #info do
 		level = info[l].level;
+		tinsert(keys, level)
 	end
+	table.sort(keys, function(a,b) return b<a end)
+	level = keys[1];
 	if level == 0 then
 		return " ";
-	else
+	elseif level and level > 0 then
         local color
         if level >= 20 then
 			color = "|cFFFF8000";
@@ -732,6 +738,8 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 			color = "|cFFFFFFFF";
         end
 		return color .. "Mythic+" .. level .. "|r";
+	else
+		return " ";
 	end
 end
 
