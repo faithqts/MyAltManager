@@ -15,7 +15,7 @@ local sizey = 610;
 local xoffset = 0;
 local yoffset = 40;
 local alpha = 1;
-local addon = "AltManager";
+local addon = "MyAltManager";
 local numel = table.getn;
 
 local per_alt_x = 150;
