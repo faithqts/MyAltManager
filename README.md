@@ -24,6 +24,3 @@ This addon remembers essential information about your alts - open it by typing /
 * Shadowlands World Bosses
   * Patch 9.0
   * Patch 9.1
-* Shadowlands Weekly Raid Progress
-  * Castle Nathria
-  * Sanctum of Domination
