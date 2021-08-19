@@ -5,8 +5,6 @@ A fork of the AltManager Addon for World of Warcraft, updated to Patch 9.1 for p
 
 This addon remembers essential information about your alts - open it by typing /alts in chat.
 
-#Currently Tracking:
-
 * Highest M+ Completed
 * Current Keystone
 * Renown level
