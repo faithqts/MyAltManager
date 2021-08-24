@@ -277,9 +277,11 @@ function AltManager:ValidateReset()
 			char_table.shadowlandsBaseWorldBoss = false;
 			char_table.chainsOfDominationWorldBoss = false;
 			char_table.shapingFate = false;
+			char_table.shapingFateText = "|cFFFF0000Not Started|r";
 			char_table.replenishTheReservoir = false;
 			char_table.returnLostSouls = false;
 			char_table.tormentorsOfTorghast = false;
+			char_table.covenantAssault = false;
 		end
 	end
 end
