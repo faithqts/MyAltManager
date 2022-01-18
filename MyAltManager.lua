@@ -6,12 +6,12 @@ _G["AltManager"] = AltManager;
 -- Previously Method Alt Manager
 -- updates for Bfa by: Kabootzey - Tarren Mill <Ended Careers>, 2018
 -- Last edit: 14/10/2020
--- updates for Shadowlands by: Faithqts - Frostmourne, 2021
--- Last edit: 19/08/2021
+-- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
+-- Last edit: 18/01/2022
 
 local Dialog = LibStub("LibDialog-1.0")
 
-local sizey = 610;
+local sizey = 490;
 local xoffset = 0;
 local yoffset = 40;
 local alpha = 1;
@@ -37,12 +37,10 @@ constants['labels'].CHAINS_OF_DOMINATION_WORLD_BOSS = "";
 constants['labels'].COVENANT_ASSAULT = "Covenant Assault";
 constants['labels'].CONQUEST = "Conquest";
 constants['labels'].RENOWN = "Renown";
-constants['labels'].CONDUIT_CHARGES = "Conduit Charges";
 constants['labels'].STYGIA = "Sygia";
 constants['labels'].SOUL_ASH = "Soul Ash";
 constants['labels'].SOUL_CINDERS = "Soul Cinders";
 constants['labels'].STYGIAN_EMBER = "Stygian Ember";
-constants['labels'].GRATEFUL_OFFERING = "Grateful Offering";
 constants['labels'].STORED_ANIMA = "Stored Anima";
 constants['labels'].TOWER_KNOWLEDGE = "Tower Knowledge";
 constants['labels'].KORTHIAN_RESEARCH = "Korthian Research";
@@ -50,12 +48,9 @@ constants['labels'].VALOR = "Valor";
 constants['labels'].WORLD_BOSSES = "World Bosses";
 constants['labels'].WEEKLY_QUESTS = "Weekly Quests";
 constants['labels'].RESOURCES = "Resources";
-constants['labels'].SEASONAL = "Season 2";
 constants['labels'].TORGHAST = "Torghast";
 constants['labels'].SHAPING_FATE = "Shaping Fate";
 constants['labels'].REPLENISH_THE_RESERVOIR = "Anima Reservoir";
-constants['labels'].RETURN_LOST_SOULS = "Lost Souls";
-constants['labels'].TORMENTORS_OF_TORGHAST = "Tormentors of Torghast";
 
 constants.DUNGEONS = {
 	[375] = "Mists",
@@ -68,7 +63,7 @@ constants.DUNGEONS = {
 	[382] = "Theatre",
  };
 
-constants.VERSION = "2.6.3";
+constants.VERSION = "9.1.5.0";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -138,7 +133,7 @@ do
 	main_frame:RegisterEvent("CHAT_MSG_CURRENCY");
 	main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
 	main_frame:RegisterEvent("PLAYER_LEAVING_WORLD");
-	
+	main_frame:RegisterEvent("COVENANT_SANCTUM_RENOWN_LEVEL_CHANGED");
 
 	main_frame:SetScript("OnEvent", function(self, ...)
 		local event, loaded = ...;
@@ -151,6 +146,10 @@ do
         	AltManager:OnLogin();
 		end
 		if event == "PLAYER_LEAVING_WORLD" then
+			local data = AltManager:CollectData(false);
+			AltManager:StoreData(data);
+		end
+		if event == "COVENANT_SANCTUM_RENOWN_LEVEL_CHANGED" then
 			local data = AltManager:CollectData(false);
 			AltManager:StoreData(data);
 		end
@@ -277,11 +276,7 @@ function AltManager:ValidateReset()
 			char_table.shadowlandsBaseWorldBoss = false;
 			char_table.chainsOfDominationWorldBoss = false;
 			char_table.shapingFate = false;
-			char_table.shapingFateText = "|cFFFF0000Not Started|r";
 			char_table.replenishTheReservoir = false;
-			char_table.returnLostSouls = false;
-			char_table.tormentorsOfTorghast = false;
-			char_table.covenantAssault = false;
 		end
 	end
 end
@@ -501,34 +496,9 @@ function AltManager:CollectData()
 		[61983] = "Necro",
 	}
 	local replenishTheReservoir = false
-	for k,v in pairs(replenishTheReservoirs)do
+	for k,v in pairs(replenishTheReservoirs) do
 		if C_QuestLog.IsQuestFlaggedCompleted(k) then
 			replenishTheReservoir = v
-		end
-	end
-
-	local returnLostSoulsQuests = {
-		[61331] = "Fae",
-		[62858] = "Fae",
-		[62859] = "Fae",
-		[62860] = "Fae",
-		[61332] = "Kyrian",
-		[62861] = "Kyrian",
-		[62862] = "Kyrian",
-		[62863] = "Kyrian",
-		[61333] = "Necro",
-		[62864] = "Necro",
-		[62865] = "Necro",
-		[62866] = "Necro",
-		[61334] = "Venthyr",
-		[62867] = "Venthyr",
-		[62868] = "Venthyr",
-		[62869] = "Venthyr",
-	}
-	local returnLostSouls = false
-	for k,v in pairs(returnLostSoulsQuests)do
-		if C_QuestLog.IsQuestFlaggedCompleted(k) then
-			returnLostSouls = v
 		end
 	end
 
@@ -543,11 +513,6 @@ function AltManager:CollectData()
 	else
 		shapingFateText = "|cFFFF0000Not Started|r";
 	end
-
-	local tormentorsOfTorghast = false
-	if C_QuestLog.IsQuestFlaggedCompleted(63854) then
-		tormentorsOfTorghast = true
-	end
 	
 	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
 	local maxProgress = currencyInfo.maxQuantity;
@@ -556,8 +521,8 @@ function AltManager:CollectData()
 	local conquest_max = ((C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID).maxQuantity)-conquest_earned)+conquest_total;
 
 	local conquestPoints = "";
-	if valor_max == 0 then
-		conquestPoints = string.format("%d / %d", conquest_total);
+	if conquest_max == 0 or conquest_total == conquest_max then
+		conquestPoints = string.format("%d", conquest_total);
 	else 
 		conquestPoints = string.format("%d / %d", conquest_total, conquest_max);
 	end	
@@ -569,7 +534,7 @@ function AltManager:CollectData()
 	local valor_max = ((C_CurrencyInfo.GetCurrencyInfo(1191).maxQuantity)-valor_earned)+valor_total;
 
 	local valorPoints = "";
-	if valor_max == 0 then
+	if valor_max == 0 or valor_total == valor_max then
 		valorPoints = string.format("%d", valor_total);
 	else 
 		valorPoints = string.format("%d / %d", valor_total, valor_max);
@@ -582,7 +547,7 @@ function AltManager:CollectData()
 	local tower_knowledge_max = ((C_CurrencyInfo.GetCurrencyInfo(1904).maxQuantity)-tower_knowledge_earned)+tower_knowledge_total;
 
 	local towerKnowledge = "";
-	if valor_max == 0 then
+	if tower_knowledge_max == 0 then
 		towerKnowledge = string.format("%d / %d", tower_knowledge_total);
 	else 
 		towerKnowledge = string.format("%d / %d", tower_knowledge_total, tower_knowledge_max);
@@ -590,14 +555,10 @@ function AltManager:CollectData()
 	
 	local _, ilevel = GetAverageItemLevel();
 
-	local conduitCharges = C_Soulbinds.GetConduitCharges();
-	local maxConduitCharges = C_Soulbinds.GetConduitChargesCapacity();
-
 	local stygia = GetCurrencyAmount(1767);
 	local soulAsh = GetCurrencyAmount(1828);
 	local soulCinders = GetCurrencyAmount(1906);
 	local storedAnima = GetCurrencyAmount(1813);
-	local gratefulOffering = GetCurrencyAmount(1885);
 	local catalogedResearch = GetCurrencyAmount(1931);
 	local stygianEmber = GetCurrencyAmount(1977);
 	local renown = C_CovenantSanctumUI.GetRenownLevel();
@@ -619,8 +580,6 @@ function AltManager:CollectData()
 	char_table.valorPoints = valorPoints;
 	char_table.conquestPoints = conquestPoints;
 	char_table.towerKnowledge = towerKnowledge;
-	char_table.conduitCharges = conduitCharges;
-	char_table.maxConduitCharges = maxConduitCharges;
 	char_table.stygia = stygia;
 	char_table.soulAsh = soulAsh;
 	char_table.soulCinders = soulCinders;
@@ -630,9 +589,7 @@ function AltManager:CollectData()
 	char_table.stygianEmber = stygianEmber;
 	char_table.shapingFate = shapingFate;
 	char_table.shapingFateText = shapingFateText;
-	char_table.tormentorsOfTorghast = tormentorsOfTorghast;
 	char_table.replenishTheReservoir = replenishTheReservoir;
-	char_table.returnLostSouls = returnLostSouls;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
 	char_table.dataObtained = time();
@@ -642,7 +599,7 @@ function AltManager:CollectData()
 end
 
 function AltManager:UpdateStrings()
-	local font_height = 18;
+	local font_height = 16;
 	local db = MyAltManagerDB;
 	
 	local keyset = {}
@@ -689,8 +646,8 @@ function AltManager:UpdateStrings()
 						self.main_frame.remove_buttons[alt_data.guid] = extra
 					end
 					extra:SetParent(current_row)
-					extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -18, 2 );
-					extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size+6);
+					extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -16, 2 );
+					extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -16, -remove_button_size+6);
 					extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
 					extra:Show();
 				end
@@ -700,16 +657,6 @@ function AltManager:UpdateStrings()
 		
 	end
 	
-end
-
-function AltManager:ConduitChargesRegenerated(alt_data)
-	local last_check = alt_data.dataObtained;
-	local next_tick = alt_data.timeUntilReset;
-	local now = time();
-	local elapsed = now - last_check;
-	local first = elapsed - next_tick;
-	if first < 0 then return 0 end
-	return 1 + (first % (24 * 3600))
 end
 
 function AltManager:GetHighestCompletedWeeklyKeystone()
@@ -767,8 +714,6 @@ function AltManager:CreateContent()
 		ilevel = {
 			order = 1.2,
 			data = function(alt_data) return string.format("%.2f", alt_data.ilevel or 0) end,
-			justify = "TOP",
-			font = "Fonts\\FRIZQT__.TTF",
 			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end
 		},
 		renown = {
@@ -780,12 +725,6 @@ function AltManager:CreateContent()
 		spacer_2 = {
 			order = 2.0,
 			label = "",
-			data = function(alt_data) return " " end,
-		},
-		season2 = {
-			order = 2.1,
-			label = constants['labels'].SEASONAL,
-			title = true,
 			data = function(alt_data) return " " end,
 		},
 		mythic_plus = {
@@ -845,20 +784,10 @@ function AltManager:CreateContent()
 			label = constants['labels'].REPLENISH_THE_RESERVOIR,
 			data = function(alt_data) return alt_data.replenishTheReservoir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,	
 		},
-		lost_souls = {
-			order = 4.3,
-			label = constants['labels'].RETURN_LOST_SOULS,
-			data = function(alt_data) return alt_data.returnLostSouls and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,	
-		},
 		shaping_fate = {
 			order = 4.5,
 			label = constants['labels'].SHAPING_FATE,
 			data = function(alt_data) return tostring(alt_data.shapingFateText or "|cFFFF00000%|r") end,	
-		},
-		tormentors_of_torghast = {
-			order = 4.6,
-			label = constants['labels'].TORMENTORS_OF_TORGHAST,
-			data = function(alt_data) return alt_data.tormentorsOfTorghast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,	
 		},
 		covenant_assault = {
 			order = 4.7,
@@ -907,11 +836,6 @@ function AltManager:CreateContent()
 			label = constants['labels'].STORED_ANIMA,
 			data = function(alt_data) return tostring(alt_data.storedAnima or "0") end,
 		},
-		grateful_offering = {
-			order = 6.3,
-			label = constants['labels'].GRATEFUL_OFFERING,
-			data = function(alt_data) return tostring(alt_data.gratefulOffering or "0") end,
-		},
 		stygia = {
 			order = 6.4,
 			label = constants['labels'].STYGIA,
@@ -931,7 +855,7 @@ function AltManager:CreateContent()
 
 	self.columns_table = column_table;
 
-	local font_height = 18;
+	local font_height = 16;
 	local label_column = self.main_frame.label_column or CreateFrame("Button", nil, self.main_frame);
 	if not self.main_frame.label_column then self.main_frame.label_column = label_column; end
 	label_column:SetSize(per_alt_x, sizey);
