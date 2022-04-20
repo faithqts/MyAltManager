@@ -11,7 +11,7 @@ _G["AltManager"] = AltManager;
 
 local Dialog = LibStub("LibDialog-1.0")
 
-local sizey = 455;
+local sizey = 470;
 local xoffset = 0;
 local yoffset = 50;
 local alpha = 1;
@@ -47,6 +47,7 @@ constants['labels'].REPLENISH_THE_RESERVOIR = "Anima Reservoir";
 constants['labels'].CURRENT_SEASON = "Season 3";
 constants['labels'].KEYSTONE = "Mythic+";
 constants['labels'].MYTHIC_RATING = "Overall Rating";
+constants['labels'].WEEKLY_REWARDS = "Weekly Vault"
 
 constants.DUNGEONS = {
 	[375] = "Mists",
@@ -61,13 +62,44 @@ constants.DUNGEONS = {
 	[392] = "Gambit",
  };
 
- constants.COVENANTS = {
+constants.DUNGEONS_SHORT = {
+	[375] = "MISTS",
+	[376] = "NW",
+	[377] = "DOS",
+	[378] = "HOA",
+	[379] = "PF",
+	[380] = "SD",
+	[381] = "SOA",
+	[382] = "TOP",
+	[391] = "STRT",
+	[392] = "GMBT",
+};
+
+constants.COVENANTS = {
 	[0] = "|T3752121:16:16:0:0:64:64:4:60:4:60|t";
 	[1] = "|T3257748:16:16:0:0:64:64:4:60:4:60|t";
 	[2] = "|T3257751:16:16:0:0:64:64:4:60:4:60|t";
 	[3] = "|T3257750:16:16:0:0:64:64:4:60:4:60|t";
 	[4] = "|T3257749:16:16:0:0:64:64:4:60:4:60|t";
- };
+};
+
+constants.VAULT_ILVL = {
+	233,
+	235,
+	239,
+	242,
+	246,
+	249,
+	252,
+	256,
+	259,
+	262,
+	265,
+	268,
+	272,
+	275,
+	278
+};
 
 constants.VERSION = "9.2.0.1";
 
@@ -309,7 +341,7 @@ function AltManager:RemoveCharactersByName(name)
 
 end
 
-function AltManager:RemoveCharacterByGuid(index, skip_confirmation)
+function AltManager:RemoveCharacterByGuid(index)
 	local db = MyAltManagerDB;
 
 	if db.data[index] == nil then return end
@@ -335,28 +367,7 @@ function AltManager:RemoveCharacterByGuid(index, skip_confirmation)
 		self:UpdateStrings()
 	end
 
-	if skip_confirmation == nil then
-		local name = db.data[index].name
-		Dialog:Register("AltManagerRemoveCharacterDialog", {
-			text = "Are you sure you want to remove " .. name .. " from the list?",
-			width = 500,
-			on_show = function(self, data) 
-			end,
-			buttons = {
-				{ text = "Delete", 
-				on_click = delete},
-				{ text = "Cancel", }
-			},
-			show_while_dead = true,
-			hide_on_escape = true,
-		})
-		if Dialog:ActiveDialog("AltManagerRemoveCharacterDialog") then
-			Dialog:Dismiss("AltManagerRemoveCharacterDialog")
-		end
-		Dialog:Spawn("AltManagerRemoveCharacterDialog", {string = string})
-	else
-		delete();
-	end
+	delete();
 
 end
 
@@ -445,7 +456,7 @@ function AltManager:CollectData()
 		local slots = GetContainerNumSlots(container)
 		for slot=1, slots do
 			local _, _, _, _, _, _, slotLink, _, _, slotItemID = GetContainerItemInfo(container, slot)
-			if slotItemID == 180653 then
+			if slotItemID == 180653 or slotItemID == 151086 then
 				local itemString = slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
 				local info = { strsplit(":", itemString) }
 				dungeon = tonumber(info[2])
@@ -538,6 +549,7 @@ function AltManager:CollectData()
 	char_table.level = level;
 	char_table.runHistory = runHistory;
 	char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone();
+	char_table.completedWeeklyKeystoneRewards = self:GetWeeklyKeystoneVaultRewards();
 	char_table.overallDungeonScore = self:GetOverallDungeonScore();
 	char_table.valorPoints = valorPoints;
 	char_table.conquestPoints = self:CommaValues(conquestPoints);
@@ -668,6 +680,43 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 
 end
 
+function AltManager:GetWeeklyKeystoneVaultRewards()
+
+	local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
+	local keystoneTotal = #keystoneHistory;
+	local keystoneRewardSlotOne = 0;
+	local keystoneRewardSlotTwo = 0;
+	local keystoneRewardSlotThree = 0;
+	local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r";
+	local keystoneTotalKeyLevels = 0;
+
+	for keystoneIndex=1, keystoneTotal do
+		local keystoneCurrentRun = keystoneHistory[keystoneIndex];
+		keystoneTotalKeyLevels = keystoneTotalKeyLevels + keystoneCurrentRun.level;
+	end
+
+	if keystoneTotal >= 8 then
+
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 4), 15)] .. "|r";
+		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 8), 15)] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
+
+	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
+
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 4), 15)] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
+
+	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
+	end
+
+	return keystoneRewards;
+
+end
+
 function AltManager:GetActiveCovenant()
 
 	local currentCovenantId = C_Covenants.GetActiveCovenantID();
@@ -729,7 +778,12 @@ function AltManager:CreateContent()
 		weekly_highest = {
 			order = 2.4,
 			label = constants['labels'].WEEKLY_HIGHEST,
-			data = function(alt_data) return alt_data.highestCompletedWeeklyKeystone end,
+			data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or tostring("NA") end,
+		},
+		weekly_key_rewards = {
+			order = 2.5,
+			label = constants['labels'].WEEKLY_REWARDS,
+			data = function(alt_data) return tostring(alt_data.completedWeeklyKeystoneRewards) or tostring("|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r") end,
 		},
 		spacer_3 = {
 			order = 3.0,

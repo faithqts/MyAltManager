@@ -1,7 +1,7 @@
 ## Interface: 90200
 ## Title: My Alt Manager
 ## Author: Qoning, Updated by Faith
-## Version: v9.2.0.1
+## Version: v9.2.0.2
 ## Notes: An overview of your alts and relevant information.
 ## SavedVariables: MyAltManagerDB
 
