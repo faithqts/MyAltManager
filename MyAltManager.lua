@@ -634,10 +634,12 @@ end
 function AltManager:GetOverallDungeonScore()
 	local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore();
 	local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore);
-	local r = math.floor(color.r * 100);
-	local g = math.floor(color.g * 100);
-	local b = math.floor(color.b * 100);
-	return "|cFF" .. r .. g .. b .. overallDungeonScore .. "|r";
+	local colorString = "|cff";
+	local r = color.r * 255;
+	local g = color.g * 255;
+	local b = color.b * 255;
+	colorString = colorString..string.format("%2x%2x%2x", r, g, b);
+	return colorString .. overallDungeonScore .. "|r";
 end
 
 function AltManager:GetHighestCompletedWeeklyKeystone()
