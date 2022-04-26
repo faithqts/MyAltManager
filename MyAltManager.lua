@@ -43,6 +43,7 @@ constants['labels'].VALOR = "Valor";
 constants['labels'].WEEKLY_QUESTS = "Weekly Quests";
 constants['labels'].RESOURCES = "Resources";
 constants['labels'].PATTERNS_WITHIN_PATTERNS = "Patterns Within Patterns";
+constants['labels'].A_NEW_DEAL = "A New Deal (PVP)";
 constants['labels'].REPLENISH_THE_RESERVOIR = "Anima Reservoir";
 constants['labels'].CURRENT_SEASON = "Season 3";
 constants['labels'].KEYSTONE = "Mythic+";
@@ -310,6 +311,8 @@ function AltManager:ValidateReset()
 			char_table.dungeon = " ";
 			char_table.level = " ";
 			char_table.runHistory = nil;
+			char_table.highestCompletedWeeklyKeystone = nil;
+			char_table.completedWeeklyKeystoneRewards = nil;
 			char_table.expires = self:GetNextWeeklyResetTime();
 			char_table.patterns = false;
 			char_table.replenishTheReservoir = false;
@@ -499,6 +502,19 @@ function AltManager:CollectData()
 		patternsText = "|cFFFF0000Not Started|r";
 	end
 
+	local aNewDeal = false
+	local aNewDealText = false
+	if C_QuestLog.IsOnQuest(65649) then
+		local questInfo = C_QuestLog.GetQuestObjectives(65649);
+		local progress = questInfo[1].numFulfilled;
+		aNewDealText = "|cFFFBD910" .. progress .. "/150|r";
+	elseif C_QuestLog.IsQuestFlaggedCompleted(65649) then
+		aNewDealText = "|cFF00CF20Complete|r"
+		aNewDeal = true
+	else
+		aNewDealText = "|cFFFF0000Not Started|r";
+	end
+
 	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
 	local maxProgress = currencyInfo.maxQuantity;
 	local conquest_earned = math.min(currencyInfo.totalEarned, maxProgress);
@@ -561,6 +577,8 @@ function AltManager:CollectData()
 	char_table.renown = renown;
 	char_table.patterns = patterns;
 	char_table.patternsText = patternsText;
+	char_table.aNewDeal = aNewDeal;
+	char_table.aNewDealText = aNewDealText;
 	char_table.replenishTheReservoir = replenishTheReservoir;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
@@ -682,6 +700,25 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 
 end
 
+function AltManager:GetLowestLevelInTopRuns(numRuns)
+	local runHistory = C_MythicPlus.GetRunHistory();
+	table.sort(runHistory, function(left, right) return left.level > right.level; end);
+	local lowestLevel;
+	local lowestCount = 0;
+	for i = math.min(numRuns, #runHistory), 1, -1 do
+		local run = runHistory[i];
+		if not lowestLevel then
+			lowestLevel = run.level;
+		end
+		if lowestLevel == run.level then
+			lowestCount = lowestCount + 1;
+		else
+			break;
+		end
+	end
+	return lowestLevel;
+end
+
 function AltManager:GetWeeklyKeystoneVaultRewards()
 
 	local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
@@ -690,28 +727,22 @@ function AltManager:GetWeeklyKeystoneVaultRewards()
 	local keystoneRewardSlotTwo = 0;
 	local keystoneRewardSlotThree = 0;
 	local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r";
-	local keystoneTotalKeyLevels = 0;
-
-	for keystoneIndex=1, keystoneTotal do
-		local keystoneCurrentRun = keystoneHistory[keystoneIndex];
-		keystoneTotalKeyLevels = keystoneTotalKeyLevels + keystoneCurrentRun.level;
-	end
 
 	if keystoneTotal >= 8 then
 
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 4), 15)] .. "|r";
-		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 8), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 15)] .. "|r";
+		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 15)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
 
 	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
 
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 4), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 15)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
 
 	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(keystoneTotalKeyLevels / 1), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
 	end
 
@@ -780,7 +811,7 @@ function AltManager:CreateContent()
 		weekly_highest = {
 			order = 2.4,
 			label = constants['labels'].WEEKLY_HIGHEST,
-			data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or tostring("NA") end,
+			data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or "" end,
 		},
 		weekly_key_rewards = {
 			order = 2.5,
@@ -819,15 +850,15 @@ function AltManager:CreateContent()
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		replenish_the_reservoir = {
-			order = 4.2,
-			label = constants['labels'].REPLENISH_THE_RESERVOIR,
-			data = function(alt_data) return alt_data.replenishTheReservoir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
 		patterns = {
-			order = 4.3,
+			order = 4.2,
 			label = constants['labels'].PATTERNS_WITHIN_PATTERNS,
 			data = function(alt_data) return tostring(alt_data.patternsText) or "|cFFFF00000%|r" end,
+		},
+		a_new_deal = {
+			order = 4.3,
+			label = constants['labels'].A_NEW_DEAL,
+			data = function(alt_data) return tostring(alt_data.aNewDealText) or "|cFFFF00000/150|r" end,
 		},
 		spacer_5 = {
 			order = 5.0,
