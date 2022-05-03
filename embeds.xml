@@ -2,6 +2,5 @@
 ..\FrameXML\UI.xsd">
 	<!--@no-lib-strip@-->
 	<Script file="Libs\LibStub\LibStub.lua"/>
-	<Include file="Libs\LibDialog-1.0\lib.xml"/>
 	<!--@end-no-lib-strip@-->
 </Ui>

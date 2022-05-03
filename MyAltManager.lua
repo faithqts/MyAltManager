@@ -9,12 +9,9 @@ _G["AltManager"] = AltManager;
 -- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
 -- Last edit: 28/03/2022
 
-local Dialog = LibStub("LibDialog-1.0")
-
-local sizey = 470;
+local sizey = 485;
 local xoffset = 0;
 local yoffset = 50;
-local alpha = 1;
 local addon = "MyAltManager";
 local numel = table.getn;
 
@@ -49,6 +46,7 @@ constants['labels'].CURRENT_SEASON = "Season 3";
 constants['labels'].KEYSTONE = "Mythic+";
 constants['labels'].MYTHIC_RATING = "Overall Rating";
 constants['labels'].WEEKLY_REWARDS = "Weekly Vault"
+constants['labels'].CYPHER_ANALYSIS_TOOL = "Increased Cyphers (+50%)"
 
 constants.DUNGEONS = {
 	[375] = "Mists",
@@ -84,6 +82,14 @@ constants.COVENANTS = {
 	[4] = "|T3257749:16:16:0:0:64:64:4:60:4:60|t";
 };
 
+constants.COVENANTS_NAME = {
+	[0] = "None";
+	[1] = "Kyrian";
+	[2] = "Venthyr";
+	[3] = "Night Fae";
+	[4] = "Necro";
+};
+
 constants.VAULT_ILVL = {
 	233,
 	235,
@@ -102,7 +108,105 @@ constants.VAULT_ILVL = {
 	278
 };
 
-constants.VERSION = "9.2.0.1";
+constants.TIER_SETS = {
+
+	-- Rogue
+	[188901] = true,
+	[188902] = true,
+	[188903] = true,
+	[188905] = true,
+	[188907] = true,
+
+	-- Hunter
+	[188861] = true,
+	[188860] = true,
+	[188859] = true,
+	[188858] = true,
+	[188856] = true,
+
+	-- Paladin
+	[188933] = true,
+	[188932] = true,
+	[188931] = true,
+	[188929] = true,
+	[188928] = true,
+
+	-- Shaman
+	[188925] = true,
+	[188924] = true,
+	[188923] = true,
+	[188922] = true,
+	[188920] = true,
+
+	-- Death Knight
+	[188868] = true,
+	[188867] = true,
+	[188866] = true,
+	[188864] = true,
+	[188863] = true,
+
+	-- Demon Hunter
+	[188898] = true,
+	[188896] = true,
+	[188894] = true,
+	[188893] = true,
+	[188892] = true,
+
+	-- Druid
+	[188853] = true,
+	[188851] = true,
+	[188849] = true,
+	[188848] = true,
+	[188847] = true,
+
+	-- Mage
+	[188845] = true,
+	[188844] = true,
+	[188843] = true,
+	[188842] = true,
+	[188839] = true,
+
+	-- Monk
+	[188916] = true,
+	[188914] = true,
+	[188912] = true,
+	[188911] = true,
+	[188910] = true,
+
+	-- Priest
+	[188881] = true,
+	[188880] = true,
+	[188879] = true,
+	[188878] = true,
+	[188875] = true,
+
+	-- Warrior
+	[188942] = true,
+	[188941] = true,
+	[188940] = true,
+	[188938] = true,
+	[188937] = true,
+
+	-- Warlock
+	[188890] = true,
+	[188889] = true,
+	[188888] = true,
+	[188887] = true,
+	[188884] = true
+
+};
+
+constants.TIER_SLOTS = {
+
+	[1] = "Helm",
+	[3] = "Shoulders",
+	[5] = "Chest",
+	[7] = "Pants",
+	[10] = "Gloves"
+
+};
+
+constants.VERSION = "9.2.0.5";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -397,9 +501,6 @@ function AltManager:StoreData(data)
 
 	if UnitLevel('player') < constants.config.MIN_LEVEL then return end;
 
-	local realmName = GetRealmName();
-
-	
 	local db = MyAltManagerDB;
 	local guid = data.guid;
 	
@@ -552,6 +653,11 @@ function AltManager:CollectData()
 	local storedAnima = GetCurrencyAmount(1813);
 	local renown = C_CovenantSanctumUI.GetRenownLevel();
 
+	local cypherAnalysisTool = "|cFFFF0000Not Unlocked|r";
+	if C_QuestLog.IsQuestFlaggedCompleted(65282) then
+		cypherAnalysisTool = "|cFF00CF20Unlocked|r"
+	end
+
 	local char_table = {}
 
 	char_table.guid = UnitGUID('player');
@@ -566,6 +672,7 @@ function AltManager:CollectData()
 	char_table.runHistory = runHistory;
 	char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone();
 	char_table.completedWeeklyKeystoneRewards = self:GetWeeklyKeystoneVaultRewards();
+	char_table.tierBonuses = self:GetTierBonuses();
 	char_table.overallDungeonScore = self:GetOverallDungeonScore();
 	char_table.valorPoints = valorPoints;
 	char_table.conquestPoints = self:CommaValues(conquestPoints);
@@ -580,12 +687,50 @@ function AltManager:CollectData()
 	char_table.aNewDeal = aNewDeal;
 	char_table.aNewDealText = aNewDealText;
 	char_table.replenishTheReservoir = replenishTheReservoir;
+	char_table.cypherAnalysisTool = cypherAnalysisTool;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
 	char_table.dataObtained = time();
 	char_table.timeUntilReset = C_DateAndTime.GetSecondsUntilDailyReset();
 
 	return char_table;
+end
+
+function AltManager:GetTierBonuses()
+	local tierText = "";
+	local tierCount = 0;
+	local tierItems = {};
+
+	for k,v in pairs(constants.TIER_SLOTS) do
+		if constants.TIER_SETS[GetInventoryItemID("player", k)] == true then
+			tierItems[GetInventoryItemID("player", k)] = 1;
+		end
+	end
+
+	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+		local slots = GetContainerNumSlots(container)
+		for slot=1, slots do
+			local _, _, _, _, _, _, _, _, _, slotItemID = GetContainerItemInfo(container, slot)
+			if constants.TIER_SETS[slotItemID] == true then
+				tierItems[slotItemID] = 1;
+			end
+		end
+	end
+
+	for i,v in pairs(tierItems) do
+		tierCount = tierCount + 1;
+	end
+
+	if tierCount > 0 then
+		if tierCount >= 4 then
+			tierCount = 4;
+		end
+		tierText = "Tier (" .. tierCount .. "/4)"
+	else
+		tierText = "Tier (0/4)"
+	end
+	
+	return tierText;
 end
 
 function AltManager:UpdateStrings()
@@ -701,7 +846,7 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 end
 
 function AltManager:GetLowestLevelInTopRuns(numRuns)
-	local runHistory = C_MythicPlus.GetRunHistory();
+	local runHistory = C_MythicPlus.GetRunHistory(false, true)
 	table.sort(runHistory, function(left, right) return left.level > right.level; end);
 	local lowestLevel;
 	local lowestCount = 0;
@@ -753,7 +898,7 @@ end
 function AltManager:GetActiveCovenant()
 
 	local currentCovenantId = C_Covenants.GetActiveCovenantID();
-	return constants.COVENANTS[currentCovenantId];
+	return constants.COVENANTS_NAME[currentCovenantId];
 
 end
 
@@ -773,19 +918,19 @@ function AltManager:CreateContent()
 		name = {
 			order = 1.1,
 			label = constants['labels'].NAME,
-			data = function(alt_data) return alt_data.name end,
+			data = function(alt_data) return alt_data.name .. " (" .. (alt_data.ilevel or 0) .. ")" end,
 			color = function(alt_data) return RAID_CLASS_COLORS[alt_data.class] end,
 		},
-		ilevel = {
+		realm = {
 			order = 1.2,
 			data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
 			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end
 		},
-		renown = {
+		renown_tier = {
 			order = 1.3,
 			label = " ",
 			title = true,
-			data = function(alt_data) return "iLvl: " .. (alt_data.ilevel or 0) .. " " .. (tostring(alt_data.covenant .. " R" .. alt_data.renown) or "") end,
+			data = function(alt_data) return (tostring(alt_data.covenant .. " (" .. alt_data.renown) .. ")" or "") .. ", " .. (tostring(alt_data.tierBonuses) or "Tier (0/4)") end,
 		},
 		spacer_2 = {
 			order = 2.0,
@@ -859,6 +1004,11 @@ function AltManager:CreateContent()
 			order = 4.3,
 			label = constants['labels'].A_NEW_DEAL,
 			data = function(alt_data) return tostring(alt_data.aNewDealText) or "|cFFFF00000/150|r" end,
+		},
+		increased_cyphers = {
+			order = 4.4,
+			label = constants['labels'].CYPHER_ANALYSIS_TOOL,
+			data = function(alt_data) return tostring(alt_data.cypherAnalysisTool) or "|cFFFF0000Not Unlocked|r" end,
 		},
 		spacer_5 = {
 			order = 5.0,
