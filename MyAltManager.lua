@@ -225,7 +225,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "9.2.7.1";
+constants.VERSION = "9.2.5.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
