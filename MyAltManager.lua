@@ -42,13 +42,26 @@ constants['labels'].RESOURCES = "Resources";
 constants['labels'].PATTERNS_WITHIN_PATTERNS = "Patterns Within Patterns";
 constants['labels'].A_NEW_DEAL = "A New Deal (PVP)";
 constants['labels'].REPLENISH_THE_RESERVOIR = "Anima Reservoir";
-constants['labels'].CURRENT_SEASON = "Season 3";
+constants['labels'].CURRENT_SEASON = "Season 4";
 constants['labels'].KEYSTONE = "Mythic+";
 constants['labels'].MYTHIC_RATING = "Overall Rating";
 constants['labels'].WEEKLY_REWARDS = "Weekly Vault"
 constants['labels'].CYPHER_ANALYSIS_TOOL = "Increased Cyphers (+50%)"
 
+constants.REPLENISH_THE_RESERVOIR_QUESTS = {
+	[1] = 61982,
+	[2] = 61981,
+	[3] = 61984,
+	[4] = 61983
+}
+
 constants.DUNGEONS = {
+	[166] = "Grimrail",
+	[169] = "Iron Docks",
+	[227] = "Kara: Lower",
+	[234] = "Kara: Upper",
+	[369] = "Junkyard",
+	[370] = "Workshop",
 	[375] = "Mists",
 	[376] = "Necrotic",
 	[377] = "DoS",
@@ -62,6 +75,12 @@ constants.DUNGEONS = {
  };
 
 constants.DUNGEONS_SHORT = {
+	[166] = "DEPOT",
+	[169] = "DOCKS",
+	[227] = "LOWER",
+	[234] = "UPPER",
+	[369] = "JUNK",
+	[370] = "WORK",
 	[375] = "MISTS",
 	[376] = "NW",
 	[377] = "DOS",
@@ -91,21 +110,21 @@ constants.COVENANTS_NAME = {
 };
 
 constants.VAULT_ILVL = {
-	233,
-	235,
-	239,
-	242,
-	246,
-	249,
-	252,
-	256,
-	259,
 	262,
-	265,
-	268,
-	272,
-	275,
-	278
+	278,
+	278,
+	278,
+	281,
+	281,
+	285,
+	288,
+	288,
+	291,
+	294,
+	298,
+	298,
+	301,
+	304
 };
 
 constants.TIER_SETS = {
@@ -206,7 +225,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "9.2.0.5";
+constants.VERSION = "9.2.7.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -578,17 +597,17 @@ function AltManager:CollectData()
 		level = ""
 	end
 
-	local replenishTheReservoirs = {
-		[61984] = "Fae",
-		[61981] = "Venthyr",
-		[61982] = "Kyrian",
-		[61983] = "Necro",
-	}
 	local replenishTheReservoir = false
-	for k,v in pairs(replenishTheReservoirs) do
-		if C_QuestLog.IsQuestFlaggedCompleted(k) then
-			replenishTheReservoir = v
-		end
+	local replenishTheReservoirText = false
+	if C_QuestLog.IsOnQuest(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]) then
+		local questInfo = C_QuestLog.GetQuestObjectives(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]);
+		local progress = questInfo[1].numFulfilled;
+		replenishTheReservoirText = "|cFFFBD910" .. progress .. "/1000|r";
+	elseif C_QuestLog.IsQuestFlaggedCompleted(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]) then
+		replenishTheReservoirText = "|cFF00CF20Complete|r"
+		replenishTheReservoir = true
+	else
+		replenishTheReservoirText = "|cFFFF0000Not Started|r";
 	end
 
 	local patterns = false
@@ -687,6 +706,7 @@ function AltManager:CollectData()
 	char_table.aNewDeal = aNewDeal;
 	char_table.aNewDealText = aNewDealText;
 	char_table.replenishTheReservoir = replenishTheReservoir;
+	char_table.replenishTheReservoirText = replenishTheReservoirText;
 	char_table.cypherAnalysisTool = cypherAnalysisTool;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
@@ -1005,10 +1025,10 @@ function AltManager:CreateContent()
 			label = constants['labels'].A_NEW_DEAL,
 			data = function(alt_data) return tostring(alt_data.aNewDealText) or "|cFFFF00000/150|r" end,
 		},
-		increased_cyphers = {
+		replenish_the_reservoir = {
 			order = 4.4,
-			label = constants['labels'].CYPHER_ANALYSIS_TOOL,
-			data = function(alt_data) return tostring(alt_data.cypherAnalysisTool) or "|cFFFF0000Not Unlocked|r" end,
+			label = constants['labels'].REPLENISH_THE_RESERVOIR,
+			data = function(alt_data) return tostring(alt_data.replenishTheReservoirText) or "|cFFFF00000/1000|r" end,
 		},
 		spacer_5 = {
 			order = 5.0,
@@ -1118,7 +1138,7 @@ function AltManager:MakeTopBottomTextures(frame)
 		frame.topPanelString:SetJustifyV("CENTER")
 		frame.topPanelString:SetWidth(260)
 		frame.topPanelString:SetHeight(20)
-		frame.topPanelString:SetText("My Alt Manager");
+		frame.topPanelString:SetText("My Alt Manager (" .. constants.VERSION .. ")");
 		frame.topPanelString:ClearAllPoints();
 		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
 		frame.topPanelString:Show();
