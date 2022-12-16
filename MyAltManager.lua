@@ -9,7 +9,7 @@ _G["AltManager"] = AltManager;
 -- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
 -- Last edit: 28/03/2022
 
-local sizey = 485;
+local sizey = 500;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
@@ -23,7 +23,7 @@ local min_x_size = 300;
 local constants = {};
 
 constants.config = {};
-constants['config'].MIN_LEVEL = 60;
+constants['config'].MIN_LEVEL = 70;
 
 constants.labels = {};
 constants['labels'].NAME = "";
@@ -31,33 +31,31 @@ constants['labels'].WEEKLY_HIGHEST = "Weekly Highest";
 constants['labels'].CURRENT_KEYSTONE = "Current Keystone";
 constants['labels'].CONQUEST = "Conquest";
 constants['labels'].RENOWN = "Renown";
-constants['labels'].SOUL_ASH = "Soul Ash";
-constants['labels'].SOUL_CINDERS = "Soul Cinders";
-constants['labels'].COSMIC_FLUX = "Cosmic Flux";
-constants['labels'].CYPHERS = "Cyphers";
-constants['labels'].STORED_ANIMA = "Stored Anima";
+constants['labels'].DRAGON_ISLE_SUPPLIES = "Dragon Isle Supplies";
+constants['labels'].ELEMENTAL_OVERFLOW = "Elemental Overflow";
+constants['labels'].STORM_SIGIL = "Storm Sigil";
 constants['labels'].VALOR = "Valor";
 constants['labels'].WEEKLY_QUESTS = "Weekly Quests";
 constants['labels'].RESOURCES = "Resources";
-constants['labels'].PATTERNS_WITHIN_PATTERNS = "Patterns Within Patterns";
-constants['labels'].A_NEW_DEAL = "A New Deal (PVP)";
-constants['labels'].REPLENISH_THE_RESERVOIR = "Anima Reservoir";
-constants['labels'].CURRENT_SEASON = "Season 4";
+constants['labels'].AIDING_THE_ACCORD = "Aiding The Accord";
+constants['labels'].CURRENT_SEASON = "Season 1";
 constants['labels'].KEYSTONE = "Mythic+";
 constants['labels'].MYTHIC_RATING = "Overall Rating";
-constants['labels'].WEEKLY_REWARDS = "Weekly Vault"
-constants['labels'].CYPHER_ANALYSIS_TOOL = "Increased Cyphers (+50%)"
-
-constants.REPLENISH_THE_RESERVOIR_QUESTS = {
-	[1] = 61982,
-	[2] = 61981,
-	[3] = 61984,
-	[4] = 61983
-}
+constants['labels'].WEEKLY_REWARDS = "Weekly Vault";
+constants['labels'].COMMUNITY_FEAST = "Community Feast";
+constants['labels'].DRAGONSCALE_KEEP = "Dragonscale Keep";
+constants['labels'].TRIAL_OF_FLOOD = "Trial of Flood";
+constants['labels'].TRIAL_OF_ELEMENTS = "Trial of Elements";
+constants['labels'].GRAND_HUNT = "The Grand Hunt";
+constants['labels'].WORLD_BOSS = "World Boss";
 
 constants.DUNGEONS = {
+	[2] = "Temple",
+	[165] = "Shadowmoon",
 	[166] = "Grimrail",
 	[169] = "Iron Docks",
+	[200] = "Valor",
+	[210] = "Court",
 	[227] = "Kara: Lower",
 	[234] = "Kara: Upper",
 	[369] = "Junkyard",
@@ -72,11 +70,23 @@ constants.DUNGEONS = {
 	[382] = "Theatre",
 	[391] = "Streets",
 	[392] = "Gambit",
+	[399] = "Ruby",
+	[400] = "Nokhud",
+	[401] = "Azure",
+	[402] = "Academy",
+	[403] = "Uldaman",
+	[404] = "Neltharus",
+	[405] = "Brackenhide",
+	[406] = "Infusion",
  };
 
 constants.DUNGEONS_SHORT = {
+	[2] = "TEMPLE",
+	[165] = "SMV",
 	[166] = "DEPOT",
 	[169] = "DOCKS",
+	[200] = "HOV",
+	[210] = "COS",
 	[227] = "LOWER",
 	[234] = "UPPER",
 	[369] = "JUNK",
@@ -91,127 +101,130 @@ constants.DUNGEONS_SHORT = {
 	[382] = "TOP",
 	[391] = "STRT",
 	[392] = "GMBT",
-};
-
-constants.COVENANTS = {
-	[0] = "|T3752121:16:16:0:0:64:64:4:60:4:60|t";
-	[1] = "|T3257748:16:16:0:0:64:64:4:60:4:60|t";
-	[2] = "|T3257751:16:16:0:0:64:64:4:60:4:60|t";
-	[3] = "|T3257750:16:16:0:0:64:64:4:60:4:60|t";
-	[4] = "|T3257749:16:16:0:0:64:64:4:60:4:60|t";
-};
-
-constants.COVENANTS_NAME = {
-	[0] = "None";
-	[1] = "Kyrian";
-	[2] = "Venthyr";
-	[3] = "Night Fae";
-	[4] = "Necro";
+	[399] = "RUBY",
+	[400] = "NOKHUD",
+	[401] = "AZURE",
+	[402] = "ACADEMY",
+	[403] = "ULDAMAN",
+	[404] = "NELTHARUS",
+	[405] = "BRACKEN",
+	[406] = "HOI",
 };
 
 constants.VAULT_ILVL = {
-	262,
-	278,
-	278,
-	278,
-	281,
-	281,
-	285,
-	288,
-	288,
-	291,
-	294,
-	298,
-	298,
-	301,
-	304
+	382,
+	385,
+	385,
+	389,
+	389,
+	392,
+	395,
+	395,
+	398,
+	402,
+	405,
+	408,
+	408,
+	411,
+	415,
+	415,
+	418,
+	418,
+	421
 };
 
 constants.TIER_SETS = {
 
 	-- Rogue
-	[188901] = true,
-	[188902] = true,
-	[188903] = true,
-	[188905] = true,
-	[188907] = true,
+	[200374] = true,
+	[200369] = true,
+	[200371] = true,
+	[200372] = true,
+	[200373] = true,
 
 	-- Hunter
-	[188861] = true,
-	[188860] = true,
-	[188859] = true,
-	[188858] = true,
-	[188856] = true,
+	[200392] = true,
+	[200387] = true,
+	[200389] = true,
+	[200390] = true,
+	[200391] = true,
+
+	-- Evoker
+	[200383] = true,
+	[200378] = true,
+	[200380] = true,
+	[200381] = true,
+	[200382] = true,
 
 	-- Paladin
-	[188933] = true,
-	[188932] = true,
-	[188931] = true,
-	[188929] = true,
-	[188928] = true,
+	[200419] = true,
+	[200414] = true,
+	[200416] = true,
+	[200417] = true,
+	[200418] = true,
 
 	-- Shaman
-	[188925] = true,
-	[188924] = true,
-	[188923] = true,
-	[188922] = true,
-	[188920] = true,
+	[200401] = true,
+	[200396] = true,
+	[200398] = true,
+	[200399] = true,
+	[200400] = true,
 
 	-- Death Knight
-	[188868] = true,
-	[188867] = true,
-	[188866] = true,
-	[188864] = true,
-	[188863] = true,
+	[200410] = true,
+	[200405] = true,
+	[200407] = true,
+	[200408] = true,
+	[200409] = true,
 
 	-- Demon Hunter
-	[188898] = true,
-	[188896] = true,
-	[188894] = true,
-	[188893] = true,
-	[188892] = true,
+	[200342] = true,
+	[200347] = true,
+	[200346] = true,
+	[200345] = true,
+	[200344] = true,
 
 	-- Druid
-	[188853] = true,
-	[188851] = true,
-	[188849] = true,
-	[188848] = true,
-	[188847] = true,
+	[200351] = true,
+	[200353] = true,
+	[200354] = true,
+	[200355] = true,
+	[200356] = true,
 
 	-- Mage
-	[188845] = true,
-	[188844] = true,
-	[188843] = true,
-	[188842] = true,
-	[188839] = true,
+	[200315] = true,
+	[200317] = true,
+	[200318] = true,
+	[200319] = true,
+	[200320] = true,
 
 	-- Monk
-	[188916] = true,
-	[188914] = true,
-	[188912] = true,
-	[188911] = true,
-	[188910] = true,
+	[200365] = true,
+	[200360] = true,
+	[200362] = true,
+	[200363] = true,
+	[200364] = true,
 
 	-- Priest
-	[188881] = true,
-	[188880] = true,
-	[188879] = true,
-	[188878] = true,
-	[188875] = true,
+	[200329] = true,
+	[200326] = true,
+	[200327] = true,
+	[200328] = true,
+	[200324] = true,
 
 	-- Warrior
-	[188942] = true,
-	[188941] = true,
-	[188940] = true,
-	[188938] = true,
-	[188937] = true,
+	[200423] = true,
+	[200425] = true,
+	[200426] = true,
+	[200427] = true,
+	[200428] = true,
 
 	-- Warlock
-	[188890] = true,
-	[188889] = true,
-	[188888] = true,
-	[188887] = true,
-	[188884] = true
+	[200338] = true,
+	[200335] = true,
+	[200336] = true,
+	[200337] = true,
+	[200333] = true
 
 };
 
@@ -225,7 +238,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "9.2.5.1";
+constants.VERSION = "10.0.2.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -437,8 +450,12 @@ function AltManager:ValidateReset()
 			char_table.highestCompletedWeeklyKeystone = nil;
 			char_table.completedWeeklyKeystoneRewards = nil;
 			char_table.expires = self:GetNextWeeklyResetTime();
-			char_table.patterns = false;
-			char_table.replenishTheReservoir = false;
+			char_table.accordWeekly = false;
+			char_table.communityFeast = false;
+			char_table.dragonscaleKeep = false;
+			char_table.grandHunt = false;
+			char_table.trialOfFlood = false;
+			char_table.trialOfElements = false;
 		end
 	end
 end
@@ -576,9 +593,9 @@ function AltManager:CollectData()
 	
 	local keystone_found = false;
 	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-		local slots = GetContainerNumSlots(container)
+		local slots = C_Container.GetContainerNumSlots(container)
 		for slot=1, slots do
-			local _, _, _, _, _, _, slotLink, _, _, slotItemID = GetContainerItemInfo(container, slot)
+			local _, _, _, _, _, _, slotLink, _, _, slotItemID = C_Container.GetContainerItemInfo(container, slot)
 			if slotItemID == 180653 or slotItemID == 151086 then
 				local itemString = slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
 				local info = { strsplit(":", itemString) }
@@ -597,42 +614,61 @@ function AltManager:CollectData()
 		level = ""
 	end
 
-	local replenishTheReservoir = false
-	local replenishTheReservoirText = false
-	if C_QuestLog.IsOnQuest(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]) then
-		local questInfo = C_QuestLog.GetQuestObjectives(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]);
-		local progress = questInfo[1].numFulfilled;
-		replenishTheReservoirText = "|cFFFBD910" .. progress .. "/1000|r";
-	elseif C_QuestLog.IsQuestFlaggedCompleted(constants.REPLENISH_THE_RESERVOIR_QUESTS[C_Covenants.GetActiveCovenantID()]) then
-		replenishTheReservoirText = "|cFF00CF20Complete|r"
-		replenishTheReservoir = true
-	else
-		replenishTheReservoirText = "|cFFFF0000Not Started|r";
+	local worldBosses = {
+		[69930] = "Basrikron",
+		[699301] = "Bazual",
+		[699302] = "Liskanoth",
+		[699303] = "Strunraan",
+	}
+	local worldBoss = false
+	for k,v in pairs(worldBosses)do
+		if C_TaskQuest.IsActive(k) then
+			--constants['labels'].WORLD_BOSS = v
+		end
+		if C_QuestLog.IsQuestFlaggedCompleted(k) then
+			worldBoss = true
+			--constants['labels'].WORLD_BOSS = v
+		end
 	end
 
-	local patterns = false
-	local patternsText = false
-	if C_QuestLog.IsOnQuest(66042) then
-		local percent = GetQuestProgressBarPercent(66042);
-		patternsText = "|cFFFBD910" .. percent .. "%|r";
-	elseif C_QuestLog.IsQuestFlaggedCompleted(66042) then
-		patternsText = "|cFF00CF20Complete|r"
-		patterns = true
-	else
-		patternsText = "|cFFFF0000Not Started|r";
+	local accordWeeklyQuests = {
+		[70750] = "Aiding the Accord",
+		[72068] = "Aiding the Accord: A Feast For All",
+		[72373] = "Aiding the Accord: The Hunt is On",
+		[72374] = "Aiding the Accord: Dragonbane Keep",
+		[72375] = "Aiding the Accord: The Isles Call",
+	}
+
+	local accordWeekly = false
+	for k,v in pairs(accordWeeklyQuests)do
+		if C_QuestLog.IsComplete(k) then
+			accordWeekly = true
+		end
 	end
 
-	local aNewDeal = false
-	local aNewDealText = false
-	if C_QuestLog.IsOnQuest(65649) then
-		local questInfo = C_QuestLog.GetQuestObjectives(65649);
-		local progress = questInfo[1].numFulfilled;
-		aNewDealText = "|cFFFBD910" .. progress .. "/150|r";
-	elseif C_QuestLog.IsQuestFlaggedCompleted(65649) then
-		aNewDealText = "|cFF00CF20Complete|r"
-		aNewDeal = true
-	else
-		aNewDealText = "|cFFFF0000Not Started|r";
+	local communityFeast = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70893) then
+		communityFeast = true
+	end
+
+	local dragonscaleKeep = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70866) then
+		dragonscaleKeep = true
+	end
+
+	local grandHunt = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70906) then
+		grandHunt = true
+	end
+
+	local trialOfFlood = false
+	if C_QuestLog.IsQuestFlaggedCompleted(71033) then
+		trialOfFlood = true
+	end
+
+	local trialOfElements = false
+	if C_QuestLog.IsQuestFlaggedCompleted(71995) then
+		trialOfElements = true
 	end
 
 	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
@@ -665,12 +701,9 @@ function AltManager:CollectData()
 
 	local _, ilevel = GetAverageItemLevel();
 
-	local soulAsh = GetCurrencyAmount(1828);
-	local soulCinders = GetCurrencyAmount(1906);
-	local cosmicFlux = GetCurrencyAmount(2009);
-	local cyphers = GetCurrencyAmount(1979);
-	local storedAnima = GetCurrencyAmount(1813);
-	local renown = C_CovenantSanctumUI.GetRenownLevel();
+	local dragonIsleSupplies = GetCurrencyAmount(2003);
+	local elementalOverflow = GetCurrencyAmount(2118);
+	local stormSigil = GetCurrencyAmount(2122);
 
 	local cypherAnalysisTool = "|cFFFF0000Not Unlocked|r";
 	if C_QuestLog.IsQuestFlaggedCompleted(65282) then
@@ -683,7 +716,6 @@ function AltManager:CollectData()
 	char_table.name = name;
 	char_table.class = class;
 	char_table.ilevel = math.floor(ilevel);
-	char_table.covenant = self:GetActiveCovenant();
 	char_table.charLevel = UnitLevel('player')
 	char_table.realmName = GetRealmName();
 	char_table.dungeon = dungeon;
@@ -695,19 +727,17 @@ function AltManager:CollectData()
 	char_table.overallDungeonScore = self:GetOverallDungeonScore();
 	char_table.valorPoints = valorPoints;
 	char_table.conquestPoints = self:CommaValues(conquestPoints);
-	char_table.soulAsh = self:CommaValues(soulAsh);
-	char_table.soulCinders = self:CommaValues(soulCinders);
-	char_table.cosmicFlux = self:CommaValues(cosmicFlux);
-	char_table.cyphers = self:CommaValues(cyphers);
-	char_table.storedAnima = self:CommaValues(storedAnima);
+	char_table.dragonIsleSupplies = self:CommaValues(dragonIsleSupplies);
+	char_table.elementalOverflow = self:CommaValues(elementalOverflow);
+	char_table.stormSigil = self:CommaValues(stormSigil);
 	char_table.renown = renown;
-	char_table.patterns = patterns;
-	char_table.patternsText = patternsText;
-	char_table.aNewDeal = aNewDeal;
-	char_table.aNewDealText = aNewDealText;
-	char_table.replenishTheReservoir = replenishTheReservoir;
-	char_table.replenishTheReservoirText = replenishTheReservoirText;
-	char_table.cypherAnalysisTool = cypherAnalysisTool;
+	char_table.accord = accordWeekly;
+	char_table.communityFeast = communityFeast;
+	char_table.dragonscaleKeep = dragonscaleKeep;
+	char_table.grandHunt = grandHunt;
+	char_table.trialOfFlood = trialOfFlood;
+	char_table.trialOfElements = trialOfElements;
+	char_table.worldBoss = worldBoss;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
 	char_table.dataObtained = time();
@@ -728,9 +758,9 @@ function AltManager:GetTierBonuses()
 	end
 
 	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-		local slots = GetContainerNumSlots(container)
+		local slots = C_Container.GetContainerNumSlots(container)
 		for slot=1, slots do
-			local _, _, _, _, _, _, _, _, _, slotItemID = GetContainerItemInfo(container, slot)
+			local _, _, _, _, _, _, _, _, _, slotItemID = C_Container.GetContainerItemInfo(container, slot)
 			if constants.TIER_SETS[slotItemID] == true then
 				tierItems[slotItemID] = 1;
 			end
@@ -915,13 +945,6 @@ function AltManager:GetWeeklyKeystoneVaultRewards()
 
 end
 
-function AltManager:GetActiveCovenant()
-
-	local currentCovenantId = C_Covenants.GetActiveCovenantID();
-	return constants.COVENANTS_NAME[currentCovenantId];
-
-end
-
 function AltManager:CreateContent()
 
 	self.main_frame.closeButton = CreateFrame("Button", "CloseButton", self.main_frame, "UIPanelCloseButton");
@@ -945,12 +968,6 @@ function AltManager:CreateContent()
 			order = 1.2,
 			data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
 			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end
-		},
-		renown_tier = {
-			order = 1.3,
-			label = " ",
-			title = true,
-			data = function(alt_data) return (tostring(alt_data.covenant .. " (" .. alt_data.renown) .. ")" or "") .. ", " .. (tostring(alt_data.tierBonuses) or "Tier (0/4)") end,
 		},
 		spacer_2 = {
 			order = 2.0,
@@ -1015,20 +1032,40 @@ function AltManager:CreateContent()
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		patterns = {
+		aiding_the_accord = {
 			order = 4.2,
-			label = constants['labels'].PATTERNS_WITHIN_PATTERNS,
-			data = function(alt_data) return tostring(alt_data.patternsText) or "|cFFFF00000%|r" end,
+			label = constants['labels'].AIDING_THE_ACCORD,
+			data = function(alt_data) return alt_data.accordWeekly and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		a_new_deal = {
+		community_feast = {
 			order = 4.3,
-			label = constants['labels'].A_NEW_DEAL,
-			data = function(alt_data) return tostring(alt_data.aNewDealText) or "|cFFFF00000/150|r" end,
+			label = constants['labels'].COMMUNITY_FEAST,
+			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		replenish_the_reservoir = {
+		dragonscale_keep = {
 			order = 4.4,
-			label = constants['labels'].REPLENISH_THE_RESERVOIR,
-			data = function(alt_data) return tostring(alt_data.replenishTheReservoirText) or "|cFFFF00000/1000|r" end,
+			label = constants['labels'].DRAGONSCALE_KEEP,
+			data = function(alt_data) return alt_data.dragonscaleKeep and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		grand_hunt = {
+			order = 4.5,
+			label = constants['labels'].GRAND_HUNT,
+			data = function(alt_data) return alt_data.grandHunt and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		trial_of_flood = {
+			order = 4.6,
+			label = constants['labels'].TRIAL_OF_FLOOD,
+			data = function(alt_data) return alt_data.trialOfFlood and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		trial_of_elements = {
+			order = 4.7,
+			label = constants['labels'].TRIAL_OF_ELEMENTS,
+			data = function(alt_data) return alt_data.trialOfElements and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		world_boss = {
+			order = 4.8,
+			label = constants['labels'].WORLD_BOSS,
+			data = function(alt_data) return alt_data.worldBoss and "|cFF00CF20Defeated|r" or "|cFFFF0000Alive|r" end,
 		},
 		spacer_5 = {
 			order = 5.0,
@@ -1041,30 +1078,20 @@ function AltManager:CreateContent()
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		stored_anima = {
+		dragon_supplies = {
 			order = 5.2,
-			label = constants['labels'].STORED_ANIMA,
-			data = function(alt_data) return tostring(alt_data.storedAnima) or "0" end,
+			label = constants['labels'].DRAGON_ISLE_SUPPLIES,
+			data = function(alt_data) return (alt_data.dragonIsleSupplies and tostring(alt_data.dragonIsleSupplies) or "0") end,
 		},
-		soul_ash = {
-			order = 5.3,
-			label = constants['labels'].SOUL_ASH,
-			data = function(alt_data) return tostring(alt_data.soulAsh) or "0" end,
+		elemental_overflow = {
+			order = 5.2,
+			label = constants['labels'].ELEMENTAL_OVERFLOW,
+			data = function(alt_data) return (alt_data.elementalOverflow and tostring(alt_data.elementalOverflow) or "0") end,
 		},
-		soul_cinders = {
-			order = 5.4,
-			label = constants['labels'].SOUL_CINDERS,
-			data = function(alt_data) return tostring(alt_data.soulCinders) or "0" end,
-		},
-		cosmic_flux = {
-			order = 5.5,
-			label = constants['labels'].COSMIC_FLUX,
-			data = function(alt_data) return tostring(alt_data.cosmicFlux) or "0" end,
-		},
-		cyphers = {
-			order = 5.6,
-			label = constants['labels'].CYPHERS,
-			data = function(alt_data) return tostring(alt_data.cyphers) or "0" end,
+		storm_sigil = {
+			order = 5.2,
+			label = constants['labels'].STORM_SIGIL,
+			data = function(alt_data) return (alt_data.stormSigil and tostring(alt_data.stormSigil) or "0") end,
 		},
 	}
 
@@ -1138,7 +1165,8 @@ function AltManager:MakeTopBottomTextures(frame)
 		frame.topPanelString:SetJustifyV("CENTER")
 		frame.topPanelString:SetWidth(260)
 		frame.topPanelString:SetHeight(20)
-		frame.topPanelString:SetText("My Alt Manager (" .. constants.VERSION .. ")");
+		--frame.topPanelString:SetText("My Alt Manager (" .. constants.VERSION .. ")");
+		frame.topPanelString:SetText("My Alt Manager");
 		frame.topPanelString:ClearAllPoints();
 		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
 		frame.topPanelString:Show();

@@ -1,4 +1,4 @@
-## Interface: 90205
+## Interface: 100002
 ## Title: My Alt Manager
 ## Author: Qoning, Updated by Faith
 ## Version: v9.2.5.1
