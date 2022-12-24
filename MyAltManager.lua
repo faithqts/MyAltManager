@@ -243,7 +243,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "10.0.2.1";
+constants.VERSION = "10.0.2.2";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
