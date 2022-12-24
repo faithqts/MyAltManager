@@ -9,7 +9,7 @@ _G["AltManager"] = AltManager;
 -- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
 -- Last edit: 28/03/2022
 
-local sizey = 500;
+local sizey = 615;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
@@ -48,6 +48,11 @@ constants['labels'].TRIAL_OF_FLOOD = "Trial of Flood";
 constants['labels'].TRIAL_OF_ELEMENTS = "Trial of Elements";
 constants['labels'].GRAND_HUNT = "The Grand Hunt";
 constants['labels'].WORLD_BOSS = "World Boss";
+constants['labels'].PRIMALIST_INVASIONS = "Primalist Invasions";
+constants['labels'].PRIMALIST_INVASION_AIR = "Air Primalists";
+constants['labels'].PRIMALIST_INVASION_EARTH = "Earth Primalists";
+constants['labels'].PRIMALIST_INVASION_FIRE = "Fire Primalists";
+constants['labels'].PRIMALIST_INVASION_WATER = "Water Primalists";
 
 constants.DUNGEONS = {
 	[2] = "Temple",
@@ -456,6 +461,10 @@ function AltManager:ValidateReset()
 			char_table.grandHunt = false;
 			char_table.trialOfFlood = false;
 			char_table.trialOfElements = false;
+			char_table.primalistInvasionAir = false;
+			char_table.primalistInvasionEarth = false;
+			char_table.primalistInvasionFire = false;
+			char_table.primalistInvasionWater = false;
 		end
 	end
 end
@@ -595,16 +604,18 @@ function AltManager:CollectData()
 	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = C_Container.GetContainerNumSlots(container)
 		for slot=1, slots do
-			local _, _, _, _, _, _, slotLink, _, _, slotItemID = C_Container.GetContainerItemInfo(container, slot)
-			if slotItemID == 180653 or slotItemID == 151086 then
-				local itemString = slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
-				local info = { strsplit(":", itemString) }
-				dungeon = tonumber(info[2])
-				if not dungeon then dungeon = nil end
-				level = "+" .. tonumber(info[3])
-				if not level then level = nil end
-				expire = tonumber(info[4])
-				keystone_found = true;
+			local slotItem = C_Container.GetContainerItemInfo(container, slot)
+			if slotItem ~= nil then
+				if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
+					local itemString = slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
+					local info = { strsplit(":", itemString) }
+					dungeon = tonumber(info[2])
+					if not dungeon then dungeon = nil end
+					level = "+" .. tonumber(info[3])
+					if not level then level = nil end
+					expire = tonumber(info[4])
+					keystone_found = true;
+				end
 			end
 		end
 	end
@@ -616,9 +627,9 @@ function AltManager:CollectData()
 
 	local worldBosses = {
 		[69930] = "Basrikron",
-		[699301] = "Bazual",
-		[699302] = "Liskanoth",
-		[699303] = "Strunraan",
+		[69931] = "Bazual",
+		[69932] = "Liskanoth",
+		[69929] = "Strunraan",
 	}
 	local worldBoss = false
 	for k,v in pairs(worldBosses)do
@@ -641,7 +652,7 @@ function AltManager:CollectData()
 
 	local accordWeekly = false
 	for k,v in pairs(accordWeeklyQuests)do
-		if C_QuestLog.IsComplete(k) then
+		if C_QuestLog.IsQuestFlaggedCompleted(k) then
 			accordWeekly = true
 		end
 	end
@@ -669,6 +680,26 @@ function AltManager:CollectData()
 	local trialOfElements = false
 	if C_QuestLog.IsQuestFlaggedCompleted(71995) then
 		trialOfElements = true
+	end
+
+	local primalistInvasionAir = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70753) then
+		primalistInvasionAir = true
+	end
+
+	local primalistInvasionFire = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70754) then
+		primalistInvasionFire = true
+	end
+
+	local primalistInvasionEarth = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70723) then
+		primalistInvasionEarth = true
+	end
+
+	local primalistInvasionWater = false
+	if C_QuestLog.IsQuestFlaggedCompleted(70752) then
+		primalistInvasionWater = true
 	end
 
 	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
@@ -737,6 +768,10 @@ function AltManager:CollectData()
 	char_table.grandHunt = grandHunt;
 	char_table.trialOfFlood = trialOfFlood;
 	char_table.trialOfElements = trialOfElements;
+	char_table.primalistInvasionAir = primalistInvasionAir;
+	char_table.primalistInvasionEarth = primalistInvasionEarth;
+	char_table.primalistInvasionFire = primalistInvasionFire;
+	char_table.primalistInvasionWater = primalistInvasionWater;
 	char_table.worldBoss = worldBoss;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
@@ -760,9 +795,11 @@ function AltManager:GetTierBonuses()
 	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = C_Container.GetContainerNumSlots(container)
 		for slot=1, slots do
-			local _, _, _, _, _, _, _, _, _, slotItemID = C_Container.GetContainerItemInfo(container, slot)
-			if constants.TIER_SETS[slotItemID] == true then
-				tierItems[slotItemID] = 1;
+			local slotItem = C_Container.GetContainerItemInfo(container, slot)
+			if slotItem ~= nil then
+				if constants.TIER_SETS[slotItem.itemID] == true then
+					tierItems[slotItem.itemID] = 1;
+				end
 			end
 		end
 	end
@@ -1035,7 +1072,7 @@ function AltManager:CreateContent()
 		aiding_the_accord = {
 			order = 4.2,
 			label = constants['labels'].AIDING_THE_ACCORD,
-			data = function(alt_data) return alt_data.accordWeekly and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			data = function(alt_data) return alt_data.accord and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
 		community_feast = {
 			order = 4.3,
@@ -1072,24 +1109,55 @@ function AltManager:CreateContent()
 			label = "",
 			data = function(alt_data) return " " end,
 		},
-		resources = {
+		primalist_invasions = {
 			order = 5.1,
+			label = constants['labels'].PRIMALIST_INVASIONS,
+			title = true,
+			data = function(alt_data) return " " end,
+		},
+		primalist_invasion_air = {
+			order = 5.2,
+			label = constants['labels'].PRIMALIST_INVASION_AIR,
+			data = function(alt_data) return alt_data.primalistInvasionAir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_earth = {
+			order = 5.2,
+			label = constants['labels'].PRIMALIST_INVASION_EARTH,
+			data = function(alt_data) return alt_data.primalistInvasionEarth and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_fire = {
+			order = 5.2,
+			label = constants['labels'].PRIMALIST_INVASION_FIRE,
+			data = function(alt_data) return alt_data.primalistInvasionFire and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_water = {
+			order = 5.2,
+			label = constants['labels'].PRIMALIST_INVASION_WATER,
+			data = function(alt_data) return alt_data.primalistInvasionWater and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		spacer_6 = {
+			order = 6.0,
+			label = "",
+			data = function(alt_data) return " " end,
+		},
+		resources = {
+			order = 6.1,
 			label = constants['labels'].RESOURCES,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
 		dragon_supplies = {
-			order = 5.2,
+			order = 6.2,
 			label = constants['labels'].DRAGON_ISLE_SUPPLIES,
 			data = function(alt_data) return (alt_data.dragonIsleSupplies and tostring(alt_data.dragonIsleSupplies) or "0") end,
 		},
 		elemental_overflow = {
-			order = 5.2,
+			order = 6.3,
 			label = constants['labels'].ELEMENTAL_OVERFLOW,
 			data = function(alt_data) return (alt_data.elementalOverflow and tostring(alt_data.elementalOverflow) or "0") end,
 		},
 		storm_sigil = {
-			order = 5.2,
+			order = 6.4,
 			label = constants['labels'].STORM_SIGIL,
 			data = function(alt_data) return (alt_data.stormSigil and tostring(alt_data.stormSigil) or "0") end,
 		},
