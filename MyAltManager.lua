@@ -9,15 +9,15 @@ _G["AltManager"] = AltManager;
 -- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
 -- Last edit: 28/03/2022
 
-local sizey = 615;
+local sizey = 535;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
 local numel = table.getn;
 
 local per_alt_x = 170;
-local ilvl_text_size = 18;
-local remove_button_size = 22;
+local ilvl_text_size = 14;
+local remove_button_size = 18;
 local min_x_size = 300;
 
 local constants = {};
@@ -36,6 +36,7 @@ constants['labels'].ELEMENTAL_OVERFLOW = "Elemental Overflow";
 constants['labels'].STORM_SIGIL = "Storm Sigil";
 constants['labels'].VALOR = "Valor";
 constants['labels'].WEEKLY_QUESTS = "Weekly Quests";
+constants['labels'].WEEKLY_EVENTS = "Weekly Events";
 constants['labels'].RESOURCES = "Resources";
 constants['labels'].AIDING_THE_ACCORD = "Aiding The Accord";
 constants['labels'].CURRENT_SEASON = "Season 1";
@@ -53,6 +54,8 @@ constants['labels'].PRIMALIST_INVASION_AIR = "Air Primalists";
 constants['labels'].PRIMALIST_INVASION_EARTH = "Earth Primalists";
 constants['labels'].PRIMALIST_INVASION_FIRE = "Fire Primalists";
 constants['labels'].PRIMALIST_INVASION_WATER = "Water Primalists";
+constants['labels'].SPARKS_OF_LIFE = "Sparks of Life"
+constants['labels'].TIER_SET = "Tier 30"
 
 constants.DUNGEONS = {
 	[2] = "Temple",
@@ -243,7 +246,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "10.0.2.2";
+constants.VERSION = "10.0.2.3";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -420,7 +423,7 @@ function AltManager:CreateFontFrame(parent, x_size, height, relative_to, y_offse
 	f:GetFontString():SetJustifyV("CENTER");
 	f:SetPushedTextOffset(0, 0);
 	f:GetFontString():SetWidth(170)
-	f:GetFontString():SetHeight(20)
+	f:GetFontString():SetHeight(16)
 	
 	return f;
 end
@@ -456,6 +459,7 @@ function AltManager:ValidateReset()
 			char_table.completedWeeklyKeystoneRewards = nil;
 			char_table.expires = self:GetNextWeeklyResetTime();
 			char_table.accordWeekly = false;
+			char_table.sparksOfLife = false;
 			char_table.communityFeast = false;
 			char_table.dragonscaleKeep = false;
 			char_table.grandHunt = false;
@@ -627,34 +631,46 @@ function AltManager:CollectData()
 
 	local worldBosses = {
 		[69930] = "Basrikron",
-		[69931] = "Bazual",
-		[69932] = "Liskanoth",
+		[69927] = "Bazual",
+		[69928] = "Liskanoth",
 		[69929] = "Strunraan",
 	}
 	local worldBoss = false
 	for k,v in pairs(worldBosses)do
 		if C_TaskQuest.IsActive(k) then
-			--constants['labels'].WORLD_BOSS = v
 		end
 		if C_QuestLog.IsQuestFlaggedCompleted(k) then
 			worldBoss = true
-			--constants['labels'].WORLD_BOSS = v
 		end
 	end
 
-	local accordWeeklyQuests = {
-		[70750] = "Aiding the Accord",
-		[72068] = "Aiding the Accord: A Feast For All",
-		[72373] = "Aiding the Accord: The Hunt is On",
-		[72374] = "Aiding the Accord: Dragonbane Keep",
-		[72375] = "Aiding the Accord: The Isles Call",
-	}
-
 	local accordWeekly = false
-	for k,v in pairs(accordWeeklyQuests)do
-		if C_QuestLog.IsQuestFlaggedCompleted(k) then
-			accordWeekly = true
-		end
+	local accordWeeklyText = false
+	if C_QuestLog.IsOnQuest(70750) then
+		local questInfo = C_QuestLog.GetQuestObjectives(70750);
+		local progress = questInfo[1].numFulfilled;
+		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
+	elseif C_QuestLog.IsOnQuest(72068) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72068);
+		local progress = questInfo[2].numFulfilled;
+		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
+	elseif C_QuestLog.IsOnQuest(72373) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72373);
+		local progress = questInfo[2].numFulfilled;
+		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
+	elseif C_QuestLog.IsOnQuest(72374) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72374);
+		local progress = questInfo[2].numFulfilled;
+		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
+	elseif C_QuestLog.IsOnQuest(72375) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72375);
+		local progress = questInfo[1].numFulfilled;
+		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
+	elseif C_QuestLog.IsQuestFlaggedCompleted(70750) or C_QuestLog.IsQuestFlaggedCompleted(72068) or C_QuestLog.IsQuestFlaggedCompleted(72373) or C_QuestLog.IsQuestFlaggedCompleted(72374) or C_QuestLog.IsQuestFlaggedCompleted(72375) then
+		accordWeeklyText = "|cFF00CF20Complete|r"
+		accordWeekly = true
+	else
+		accordWeeklyText = "|cFFFF0000Not Started|r";
 	end
 
 	local communityFeast = false
@@ -700,6 +716,31 @@ function AltManager:CollectData()
 	local primalistInvasionWater = false
 	if C_QuestLog.IsQuestFlaggedCompleted(70752) then
 		primalistInvasionWater = true
+	end
+
+	local sparksOfLife = false
+	local sparksOfLifeText = false
+	if C_QuestLog.IsOnQuest(72646) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72646);
+		local progress = questInfo[1].numFulfilled;
+		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
+	elseif C_QuestLog.IsOnQuest(72647) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72647);
+		local progress = questInfo[1].numFulfilled;
+		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
+	elseif C_QuestLog.IsOnQuest(72648) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72648);
+		local progress = questInfo[1].numFulfilled;
+		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
+	elseif C_QuestLog.IsOnQuest(72649) then
+		local questInfo = C_QuestLog.GetQuestObjectives(72649);
+		local progress = questInfo[1].numFulfilled;
+		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
+	elseif C_QuestLog.IsQuestFlaggedCompleted(72646) or C_QuestLog.IsQuestFlaggedCompleted(72647) or C_QuestLog.IsQuestFlaggedCompleted(72648) or C_QuestLog.IsQuestFlaggedCompleted(72649) then
+		sparksOfLifeText = "|cFF00CF20Complete|r"
+		sparksOfLife = true
+	else
+		sparksOfLifeText = "|cFFFF0000Not Started|r";
 	end
 
 	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
@@ -762,7 +803,8 @@ function AltManager:CollectData()
 	char_table.elementalOverflow = self:CommaValues(elementalOverflow);
 	char_table.stormSigil = self:CommaValues(stormSigil);
 	char_table.renown = renown;
-	char_table.accord = accordWeekly;
+	char_table.accordWeekly = accordWeekly;
+	char_table.accordWeeklyText = accordWeeklyText;
 	char_table.communityFeast = communityFeast;
 	char_table.dragonscaleKeep = dragonscaleKeep;
 	char_table.grandHunt = grandHunt;
@@ -772,6 +814,8 @@ function AltManager:CollectData()
 	char_table.primalistInvasionEarth = primalistInvasionEarth;
 	char_table.primalistInvasionFire = primalistInvasionFire;
 	char_table.primalistInvasionWater = primalistInvasionWater;
+	char_table.sparksOfLife = sparksOfLife;
+	char_table.sparksOfLifeText = sparksOfLifeText;
 	char_table.worldBoss = worldBoss;
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
@@ -812,16 +856,16 @@ function AltManager:GetTierBonuses()
 		if tierCount >= 4 then
 			tierCount = 4;
 		end
-		tierText = "Tier (" .. tierCount .. "/4)"
+		tierText = tierCount .. "/4 Set"
 	else
-		tierText = "Tier (0/4)"
+		tierText = "No Set"
 	end
 	
 	return tierText;
 end
 
 function AltManager:UpdateStrings()
-	local font_height = 18;
+	local font_height = 14;
 	local db = MyAltManagerDB;
 	
 	local keyset = {}
@@ -1006,6 +1050,11 @@ function AltManager:CreateContent()
 			data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
 			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end
 		},
+		tier = {
+			order = 1.3,
+			label = constants['labels'].TIER_SET,
+			data = function(alt_data) return (tostring(alt_data.tierBonuses) or "No Set") end,
+		},
 		spacer_2 = {
 			order = 2.0,
 			label = "",
@@ -1072,35 +1121,15 @@ function AltManager:CreateContent()
 		aiding_the_accord = {
 			order = 4.2,
 			label = constants['labels'].AIDING_THE_ACCORD,
-			data = function(alt_data) return alt_data.accord and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			data = function(alt_data) return tostring(alt_data.accordWeeklyText) or "|cFFFF00000/3000|r" end,
 		},
-		community_feast = {
+		sparks_of_life = {
 			order = 4.3,
-			label = constants['labels'].COMMUNITY_FEAST,
-			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		dragonscale_keep = {
-			order = 4.4,
-			label = constants['labels'].DRAGONSCALE_KEEP,
-			data = function(alt_data) return alt_data.dragonscaleKeep and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		grand_hunt = {
-			order = 4.5,
-			label = constants['labels'].GRAND_HUNT,
-			data = function(alt_data) return alt_data.grandHunt and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		trial_of_flood = {
-			order = 4.6,
-			label = constants['labels'].TRIAL_OF_FLOOD,
-			data = function(alt_data) return alt_data.trialOfFlood and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		trial_of_elements = {
-			order = 4.7,
-			label = constants['labels'].TRIAL_OF_ELEMENTS,
-			data = function(alt_data) return alt_data.trialOfElements and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].SPARKS_OF_LIFE,
+			data = function(alt_data) return tostring(alt_data.sparksOfLifeText) or "|cFFFF00000/100|r" end,
 		},
 		world_boss = {
-			order = 4.8,
+			order = 4.4,
 			label = constants['labels'].WORLD_BOSS,
 			data = function(alt_data) return alt_data.worldBoss and "|cFF00CF20Defeated|r" or "|cFFFF0000Alive|r" end,
 		},
@@ -1109,55 +1138,91 @@ function AltManager:CreateContent()
 			label = "",
 			data = function(alt_data) return " " end,
 		},
-		primalist_invasions = {
+		weekly_events = {
 			order = 5.1,
-			label = constants['labels'].PRIMALIST_INVASIONS,
+			label = constants['labels'].WEEKLY_EVENTS,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		primalist_invasion_air = {
+		community_feast = {
 			order = 5.2,
-			label = constants['labels'].PRIMALIST_INVASION_AIR,
-			data = function(alt_data) return alt_data.primalistInvasionAir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].COMMUNITY_FEAST,
+			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		primalist_invasion_earth = {
-			order = 5.2,
-			label = constants['labels'].PRIMALIST_INVASION_EARTH,
-			data = function(alt_data) return alt_data.primalistInvasionEarth and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		dragonscale_keep = {
+			order = 5.3,
+			label = constants['labels'].DRAGONSCALE_KEEP,
+			data = function(alt_data) return alt_data.dragonscaleKeep and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		primalist_invasion_fire = {
-			order = 5.2,
-			label = constants['labels'].PRIMALIST_INVASION_FIRE,
-			data = function(alt_data) return alt_data.primalistInvasionFire and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		grand_hunt = {
+			order = 5.4,
+			label = constants['labels'].GRAND_HUNT,
+			data = function(alt_data) return alt_data.grandHunt and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		primalist_invasion_water = {
-			order = 5.2,
-			label = constants['labels'].PRIMALIST_INVASION_WATER,
-			data = function(alt_data) return alt_data.primalistInvasionWater and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		trial_of_flood = {
+			order = 5.5,
+			label = constants['labels'].TRIAL_OF_FLOOD,
+			data = function(alt_data) return alt_data.trialOfFlood and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		trial_of_elements = {
+			order = 5.6,
+			label = constants['labels'].TRIAL_OF_ELEMENTS,
+			data = function(alt_data) return alt_data.trialOfElements and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
 		spacer_6 = {
 			order = 6.0,
 			label = "",
 			data = function(alt_data) return " " end,
 		},
-		resources = {
+		primalist_invasions = {
 			order = 6.1,
+			label = constants['labels'].PRIMALIST_INVASIONS,
+			title = true,
+			data = function(alt_data) return " " end,
+		},
+		primalist_invasion_air = {
+			order = 6.2,
+			label = constants['labels'].PRIMALIST_INVASION_AIR,
+			data = function(alt_data) return alt_data.primalistInvasionAir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_earth = {
+			order = 6.2,
+			label = constants['labels'].PRIMALIST_INVASION_EARTH,
+			data = function(alt_data) return alt_data.primalistInvasionEarth and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_fire = {
+			order = 6.2,
+			label = constants['labels'].PRIMALIST_INVASION_FIRE,
+			data = function(alt_data) return alt_data.primalistInvasionFire and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		primalist_invasion_water = {
+			order = 6.2,
+			label = constants['labels'].PRIMALIST_INVASION_WATER,
+			data = function(alt_data) return alt_data.primalistInvasionWater and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		spacer_7 = {
+			order = 7.0,
+			label = "",
+			data = function(alt_data) return " " end,
+		},
+		resources = {
+			order = 7.1,
 			label = constants['labels'].RESOURCES,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
 		dragon_supplies = {
-			order = 6.2,
+			order = 7.2,
 			label = constants['labels'].DRAGON_ISLE_SUPPLIES,
 			data = function(alt_data) return (alt_data.dragonIsleSupplies and tostring(alt_data.dragonIsleSupplies) or "0") end,
 		},
 		elemental_overflow = {
-			order = 6.3,
+			order = 7.3,
 			label = constants['labels'].ELEMENTAL_OVERFLOW,
 			data = function(alt_data) return (alt_data.elementalOverflow and tostring(alt_data.elementalOverflow) or "0") end,
 		},
 		storm_sigil = {
-			order = 6.4,
+			order = 7.4,
 			label = constants['labels'].STORM_SIGIL,
 			data = function(alt_data) return (alt_data.stormSigil and tostring(alt_data.stormSigil) or "0") end,
 		},
@@ -1165,7 +1230,7 @@ function AltManager:CreateContent()
 
 	self.columns_table = column_table;
 
-	local font_height = 18;
+	local font_height = 14;
 	local label_column = self.main_frame.label_column or CreateFrame("Button", nil, self.main_frame);
 	if not self.main_frame.label_column then self.main_frame.label_column = label_column; end
 	label_column:SetSize(per_alt_x, sizey);
@@ -1227,7 +1292,7 @@ function AltManager:MakeTopBottomTextures(frame)
 		frame.topPanelTex:SetDrawLayer("ARTWORK", -5);
 		frame.topPanelTex:SetColorTexture(0, 0, 0, 1);
 		frame.topPanelString = frame.topPanel:CreateFontString("AddonName");
-		frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 20)
+		frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 16)
 		frame.topPanelString:SetTextColor(1, 1, 1, 1);
 		frame.topPanelString:SetJustifyH("CENTER")
 		frame.topPanelString:SetJustifyV("CENTER")
