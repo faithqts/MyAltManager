@@ -55,6 +55,7 @@ constants['labels'].PRIMALIST_INVASION_EARTH = "Earth Primalists";
 constants['labels'].PRIMALIST_INVASION_FIRE = "Fire Primalists";
 constants['labels'].PRIMALIST_INVASION_WATER = "Water Primalists";
 constants['labels'].SPARKS_OF_LIFE = "Sparks of Life"
+constants['labels'].THE_STORMS_FURY = "The Storm's Fury"
 constants['labels'].TIER_SET = "Tier 30"
 
 constants.DUNGEONS = {
@@ -246,7 +247,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "10.0.2.3";
+constants.VERSION = "10.0.5.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -469,6 +470,7 @@ function AltManager:ValidateReset()
 			char_table.primalistInvasionEarth = false;
 			char_table.primalistInvasionFire = false;
 			char_table.primalistInvasionWater = false;
+			char_table.theStormsFury = false;
 		end
 	end
 end
@@ -664,7 +666,7 @@ function AltManager:CollectData()
 		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
 	elseif C_QuestLog.IsOnQuest(72375) then
 		local questInfo = C_QuestLog.GetQuestObjectives(72375);
-		local progress = questInfo[1].numFulfilled;
+		local progress = questInfo[2].numFulfilled;
 		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
 	elseif C_QuestLog.IsQuestFlaggedCompleted(70750) or C_QuestLog.IsQuestFlaggedCompleted(72068) or C_QuestLog.IsQuestFlaggedCompleted(72373) or C_QuestLog.IsQuestFlaggedCompleted(72374) or C_QuestLog.IsQuestFlaggedCompleted(72375) then
 		accordWeeklyText = "|cFF00CF20Complete|r"
@@ -716,6 +718,11 @@ function AltManager:CollectData()
 	local primalistInvasionWater = false
 	if C_QuestLog.IsQuestFlaggedCompleted(70752) then
 		primalistInvasionWater = true
+	end
+
+	local theStormsFury = false
+	if C_QuestLog.IsQuestFlaggedCompleted(74378) then
+		theStormsFury = true
 	end
 
 	local sparksOfLife = false
@@ -814,6 +821,7 @@ function AltManager:CollectData()
 	char_table.primalistInvasionEarth = primalistInvasionEarth;
 	char_table.primalistInvasionFire = primalistInvasionFire;
 	char_table.primalistInvasionWater = primalistInvasionWater;
+	char_table.theStormsFury = theStormsFury;
 	char_table.sparksOfLife = sparksOfLife;
 	char_table.sparksOfLifeText = sparksOfLifeText;
 	char_table.worldBoss = worldBoss;
@@ -1128,8 +1136,13 @@ function AltManager:CreateContent()
 			label = constants['labels'].SPARKS_OF_LIFE,
 			data = function(alt_data) return tostring(alt_data.sparksOfLifeText) or "|cFFFF00000/100|r" end,
 		},
-		world_boss = {
+		the_storms_fury = {
 			order = 4.4,
+			label = constants['labels'].THE_STORMS_FURY,
+			data = function(alt_data) return tostring(alt_data.theStormsFury) or "|cFFFF0000Incomplete|r" end,
+		},
+		world_boss = {
+			order = 4.5,
 			label = constants['labels'].WORLD_BOSS,
 			data = function(alt_data) return alt_data.worldBoss and "|cFF00CF20Defeated|r" or "|cFFFF0000Alive|r" end,
 		},
