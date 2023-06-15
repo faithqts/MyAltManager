@@ -6,10 +6,10 @@ _G["AltManager"] = AltManager;
 -- Previously Method Alt Manager
 -- updates for Bfa by: Kabootzey - Tarren Mill <Ended Careers>, 2018
 -- Last edit: 14/10/2020
--- updates for Shadowlands by: Faith - Frostmourne, 2021-2022
--- Last edit: 28/03/2022
+-- updates for Shadowlands by: Faith - Frostmourne, 2021-2023
+-- Last edit: 15/06/2023
 
-local sizey = 535;
+local sizey = 310;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
@@ -54,9 +54,15 @@ constants['labels'].PRIMALIST_INVASION_AIR = "Air Primalists";
 constants['labels'].PRIMALIST_INVASION_EARTH = "Earth Primalists";
 constants['labels'].PRIMALIST_INVASION_FIRE = "Fire Primalists";
 constants['labels'].PRIMALIST_INVASION_WATER = "Water Primalists";
-constants['labels'].SPARKS_OF_LIFE = "Sparks of Life"
-constants['labels'].THE_STORMS_FURY = "The Storm's Fury"
-constants['labels'].TIER_SET = "Tier 30"
+constants['labels'].SPARKS_OF_LIFE = "Sparks of Life";
+constants['labels'].THE_STORMS_FURY = "The Storm's Fury";
+constants['labels'].TIER_SET = "Tier 30";
+constants['labels'].CATALYST_CHARGES = "Catalyst Charges";
+constants['labels'].UPGRADE_FRAGMENTS = "Upgrade System";
+constants['labels'].FRAGMENTS_WHELPLING = "Whelp Crests";
+constants['labels'].FRAGMENTS_DRAKE = "Drake Crests";
+constants['labels'].FRAGMENTS_WYRM = "Wyrm Crests";
+constants['labels'].FRAGMENTS_ASPECT = "Aspect Crests";
 
 constants.DUNGEONS = {
 	[2] = "Temple",
@@ -64,9 +70,12 @@ constants.DUNGEONS = {
 	[166] = "Grimrail",
 	[169] = "Iron Docks",
 	[200] = "Valor",
+	[206] = "Lair",
 	[210] = "Court",
 	[227] = "Kara: Lower",
 	[234] = "Kara: Upper",
+	[245] = "Freehold",
+	[251] = "Underrot",
 	[369] = "Junkyard",
 	[370] = "Workshop",
 	[375] = "Mists",
@@ -87,6 +96,7 @@ constants.DUNGEONS = {
 	[404] = "Neltharus",
 	[405] = "Brackenhide",
 	[406] = "Infusion",
+	[438] = "Vortex",
  };
 
 constants.DUNGEONS_SHORT = {
@@ -95,9 +105,12 @@ constants.DUNGEONS_SHORT = {
 	[166] = "DEPOT",
 	[169] = "DOCKS",
 	[200] = "HOV",
+	[206] = "LAIR",
 	[210] = "COS",
 	[227] = "LOWER",
 	[234] = "UPPER",
+	[245] = "FREE",
+	[251] = "UNDER", 
 	[369] = "JUNK",
 	[370] = "WORK",
 	[375] = "MISTS",
@@ -115,125 +128,126 @@ constants.DUNGEONS_SHORT = {
 	[401] = "AZURE",
 	[402] = "ACADEMY",
 	[403] = "ULDAMAN",
-	[404] = "NELTHARUS",
+	[404] = "NELTH",
 	[405] = "BRACKEN",
 	[406] = "HOI",
+	[438] = "VP",
 };
 
 constants.VAULT_ILVL = {
-	382,
-	385,
-	385,
-	389,
-	389,
-	392,
-	395,
-	395,
-	398,
-	402,
-	405,
-	408,
-	408,
-	411,
-	415,
 	415,
 	418,
-	418,
-	421
+	421,
+	421,
+	424,
+	424,
+	428,
+	428,
+	431,
+	431,
+	434,
+	434,
+	437,
+	437,
+	441,
+	441,
+	444,
+	444,
+	447
 };
 
 constants.TIER_SETS = {
 
 	-- Rogue
-	[200374] = true,
-	[200369] = true,
-	[200371] = true,
-	[200372] = true,
-	[200373] = true,
+	[202500] = true,
+	[202498] = true,
+	[202497] = true,
+	[202496] = true,
+	[202495] = true,
 
 	-- Hunter
-	[200392] = true,
-	[200387] = true,
-	[200389] = true,
-	[200390] = true,
-	[200391] = true,
+	[202482] = true,
+	[202480] = true,
+	[202479] = true,
+	[202478] = true,
+	[202477] = true,
 
 	-- Evoker
-	[200383] = true,
-	[200378] = true,
-	[200380] = true,
-	[200381] = true,
-	[200382] = true,
+	[202491] = true,
+	[202489] = true,
+	[202488] = true,
+	[202487] = true,
+	[202486] = true,
 
 	-- Paladin
-	[200419] = true,
-	[200414] = true,
-	[200416] = true,
-	[200417] = true,
-	[200418] = true,
+	[202455] = true,
+	[202453] = true,
+	[202452] = true,
+	[202451] = true,
+	[202450] = true,
 
 	-- Shaman
-	[200401] = true,
-	[200396] = true,
-	[200398] = true,
-	[200399] = true,
-	[200400] = true,
+	[202473] = true,
+	[202471] = true,
+	[202470] = true,
+	[202469] = true,
+	[202468] = true,
 
 	-- Death Knight
-	[200410] = true,
-	[200405] = true,
-	[200407] = true,
-	[200408] = true,
-	[200409] = true,
+	[202464] = true,
+	[202462] = true,
+	[202461] = true,
+	[202460] = true,
+	[202459] = true,
 
 	-- Demon Hunter
-	[200342] = true,
-	[200347] = true,
-	[200346] = true,
-	[200345] = true,
-	[200344] = true,
+	[202527] = true,
+	[202525] = true,
+	[202524] = true,
+	[202523] = true,
+	[202522] = true,
 
 	-- Druid
-	[200351] = true,
-	[200353] = true,
-	[200354] = true,
-	[200355] = true,
-	[200356] = true,
+	[202518] = true,
+	[202516] = true,
+	[202515] = true,
+	[202514] = true,
+	[202513] = true,
 
 	-- Mage
-	[200315] = true,
-	[200317] = true,
-	[200318] = true,
-	[200319] = true,
-	[200320] = true,
+	[202554] = true,
+	[202552] = true,
+	[202551] = true,
+	[202550] = true,
+	[202549] = true,
 
 	-- Monk
-	[200365] = true,
-	[200360] = true,
-	[200362] = true,
-	[200363] = true,
-	[200364] = true,
+	[202509] = true,
+	[202507] = true,
+	[202506] = true,
+	[202505] = true,
+	[202504] = true,
 
 	-- Priest
-	[200329] = true,
-	[200326] = true,
-	[200327] = true,
-	[200328] = true,
-	[200324] = true,
+	[202543] = true,
+	[202542] = true,
+	[202541] = true,
+	[202545] = true,
+	[202540] = true,
 
 	-- Warrior
-	[200423] = true,
-	[200425] = true,
-	[200426] = true,
-	[200427] = true,
-	[200428] = true,
+	[202441] = true,
+	[202446] = true,
+	[202444] = true,
+	[202443] = true,
+	[202442] = true,
 
 	-- Warlock
-	[200338] = true,
-	[200335] = true,
-	[200336] = true,
-	[200337] = true,
-	[200333] = true
+	[202534] = true,
+	[202533] = true,
+	[202532] = true,
+	[202536] = true,
+	[202531] = true
 
 };
 
@@ -247,7 +261,7 @@ constants.TIER_SLOTS = {
 
 };
 
-constants.VERSION = "10.0.5.1";
+constants.VERSION = "10.1.0.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -690,41 +704,6 @@ function AltManager:CollectData()
 		grandHunt = true
 	end
 
-	local trialOfFlood = false
-	if C_QuestLog.IsQuestFlaggedCompleted(71033) then
-		trialOfFlood = true
-	end
-
-	local trialOfElements = false
-	if C_QuestLog.IsQuestFlaggedCompleted(71995) then
-		trialOfElements = true
-	end
-
-	local primalistInvasionAir = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70753) then
-		primalistInvasionAir = true
-	end
-
-	local primalistInvasionFire = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70754) then
-		primalistInvasionFire = true
-	end
-
-	local primalistInvasionEarth = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70723) then
-		primalistInvasionEarth = true
-	end
-
-	local primalistInvasionWater = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70752) then
-		primalistInvasionWater = true
-	end
-
-	local theStormsFury = false
-	if C_QuestLog.IsQuestFlaggedCompleted(74378) then
-		theStormsFury = true
-	end
-
 	local sparksOfLife = false
 	local sparksOfLifeText = false
 	if C_QuestLog.IsOnQuest(72646) then
@@ -780,9 +759,16 @@ function AltManager:CollectData()
 
 	local _, ilevel = GetAverageItemLevel();
 
+	local whelpFragments = GetItemCount(204075, nil, true);
+	local drakeFragments = GetItemCount(204076, nil, true);
+	local wyrmFragments = GetItemCount(204077, nil, true);
+	local aspectFragments = GetItemCount(204078, nil, true);
+
 	local dragonIsleSupplies = GetCurrencyAmount(2003);
 	local elementalOverflow = GetCurrencyAmount(2118);
 	local stormSigil = GetCurrencyAmount(2122);
+	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(2533).quantity or 0);
+	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(2533).maxQuantity or 0);
 
 	local cypherAnalysisTool = "|cFFFF0000Not Unlocked|r";
 	if C_QuestLog.IsQuestFlaggedCompleted(65282) then
@@ -821,10 +807,15 @@ function AltManager:CollectData()
 	char_table.primalistInvasionEarth = primalistInvasionEarth;
 	char_table.primalistInvasionFire = primalistInvasionFire;
 	char_table.primalistInvasionWater = primalistInvasionWater;
+	char_table.whelpFragments = whelpFragments;
+	char_table.drakeFragments = drakeFragments;
+	char_table.wyrmFragments = wyrmFragments;
+	char_table.aspectFragments = aspectFragments;
 	char_table.theStormsFury = theStormsFury;
 	char_table.sparksOfLife = sparksOfLife;
 	char_table.sparksOfLifeText = sparksOfLifeText;
 	char_table.worldBoss = worldBoss;
+	char_table.catalystCharges = string.format("%s / %s", catalystCharges, catalystChargesMax);
 	
 	char_table.expires = self:GetNextWeeklyResetTime();
 	char_table.dataObtained = time();
@@ -1014,19 +1005,19 @@ function AltManager:GetWeeklyKeystoneVaultRewards()
 
 	if keystoneTotal >= 8 then
 
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 15)] .. "|r";
-		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)] .. "|r";
+		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 20)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
 
 	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
 
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
 
 	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 15)] .. "|r";
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
 	end
 
@@ -1062,6 +1053,11 @@ function AltManager:CreateContent()
 			order = 1.3,
 			label = constants['labels'].TIER_SET,
 			data = function(alt_data) return (tostring(alt_data.tierBonuses) or "No Set") end,
+		},
+		catalyst_charges = {
+			order = 1.4,
+			label = constants['labels'].CATALYST_CHARGES,
+			data = function(alt_data) return (alt_data.catalystCharges and tostring(alt_data.catalystCharges) or "0") end,
 		},
 		spacer_2 = {
 			order = 2.0,
@@ -1101,19 +1097,29 @@ function AltManager:CreateContent()
 		},
 		current_season = {
 			order = 3.1,
-			label = constants['labels'].CURRENT_SEASON,
+			label = constants['labels'].UPGRADE_FRAGMENTS,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		valor_points = {
+		whelp_fragments = {
 			order = 3.2,
-			label = constants['labels'].VALOR,
-			data = function(alt_data) return (alt_data.valorPoints and tostring(alt_data.valorPoints) or "0") end,
+			label = constants['labels'].FRAGMENTS_WHELPLING,
+			data = function(alt_data) return (alt_data.whelpFragments and tostring(alt_data.whelpFragments) or "0") end,
 		},
-		conquest_points = {
+		drake_fragments = {
 			order = 3.3,
-			label = constants['labels'].CONQUEST,
-			data = function(alt_data) return (alt_data.conquestPoints and tostring(alt_data.conquestPoints) or "0") end,
+			label = constants['labels'].FRAGMENTS_DRAKE,
+			data = function(alt_data) return (alt_data.drakeFragments and tostring(alt_data.drakeFragments) or "0") end,
+		},
+		wyrm_fragments = {
+			order = 3.4,
+			label = constants['labels'].FRAGMENTS_WYRM,
+			data = function(alt_data) return (alt_data.wyrmFragments and tostring(alt_data.wyrmFragments) or "0") end,
+		},
+		aspect_fragments = {
+			order = 3.5,
+			label = constants['labels'].FRAGMENTS_ASPECT,
+			data = function(alt_data) return (alt_data.aspectFragments and tostring(alt_data.aspectFragments) or "0") end,
 		},
 		spacer_4 = {
 			order = 4.0,
@@ -1131,113 +1137,10 @@ function AltManager:CreateContent()
 			label = constants['labels'].AIDING_THE_ACCORD,
 			data = function(alt_data) return tostring(alt_data.accordWeeklyText) or "|cFFFF00000/3000|r" end,
 		},
-		sparks_of_life = {
-			order = 4.3,
-			label = constants['labels'].SPARKS_OF_LIFE,
-			data = function(alt_data) return tostring(alt_data.sparksOfLifeText) or "|cFFFF00000/100|r" end,
-		},
-		the_storms_fury = {
-			order = 4.4,
-			label = constants['labels'].THE_STORMS_FURY,
-			data = function(alt_data) return tostring(alt_data.theStormsFury) or "|cFFFF0000Incomplete|r" end,
-		},
-		world_boss = {
-			order = 4.5,
-			label = constants['labels'].WORLD_BOSS,
-			data = function(alt_data) return alt_data.worldBoss and "|cFF00CF20Defeated|r" or "|cFFFF0000Alive|r" end,
-		},
-		spacer_5 = {
-			order = 5.0,
-			label = "",
-			data = function(alt_data) return " " end,
-		},
-		weekly_events = {
-			order = 5.1,
-			label = constants['labels'].WEEKLY_EVENTS,
-			title = true,
-			data = function(alt_data) return " " end,
-		},
 		community_feast = {
-			order = 5.2,
+			order = 4.3,
 			label = constants['labels'].COMMUNITY_FEAST,
 			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		dragonscale_keep = {
-			order = 5.3,
-			label = constants['labels'].DRAGONSCALE_KEEP,
-			data = function(alt_data) return alt_data.dragonscaleKeep and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		grand_hunt = {
-			order = 5.4,
-			label = constants['labels'].GRAND_HUNT,
-			data = function(alt_data) return alt_data.grandHunt and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		trial_of_flood = {
-			order = 5.5,
-			label = constants['labels'].TRIAL_OF_FLOOD,
-			data = function(alt_data) return alt_data.trialOfFlood and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		trial_of_elements = {
-			order = 5.6,
-			label = constants['labels'].TRIAL_OF_ELEMENTS,
-			data = function(alt_data) return alt_data.trialOfElements and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		spacer_6 = {
-			order = 6.0,
-			label = "",
-			data = function(alt_data) return " " end,
-		},
-		primalist_invasions = {
-			order = 6.1,
-			label = constants['labels'].PRIMALIST_INVASIONS,
-			title = true,
-			data = function(alt_data) return " " end,
-		},
-		primalist_invasion_air = {
-			order = 6.2,
-			label = constants['labels'].PRIMALIST_INVASION_AIR,
-			data = function(alt_data) return alt_data.primalistInvasionAir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		primalist_invasion_earth = {
-			order = 6.2,
-			label = constants['labels'].PRIMALIST_INVASION_EARTH,
-			data = function(alt_data) return alt_data.primalistInvasionEarth and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		primalist_invasion_fire = {
-			order = 6.2,
-			label = constants['labels'].PRIMALIST_INVASION_FIRE,
-			data = function(alt_data) return alt_data.primalistInvasionFire and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		primalist_invasion_water = {
-			order = 6.2,
-			label = constants['labels'].PRIMALIST_INVASION_WATER,
-			data = function(alt_data) return alt_data.primalistInvasionWater and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		spacer_7 = {
-			order = 7.0,
-			label = "",
-			data = function(alt_data) return " " end,
-		},
-		resources = {
-			order = 7.1,
-			label = constants['labels'].RESOURCES,
-			title = true,
-			data = function(alt_data) return " " end,
-		},
-		dragon_supplies = {
-			order = 7.2,
-			label = constants['labels'].DRAGON_ISLE_SUPPLIES,
-			data = function(alt_data) return (alt_data.dragonIsleSupplies and tostring(alt_data.dragonIsleSupplies) or "0") end,
-		},
-		elemental_overflow = {
-			order = 7.3,
-			label = constants['labels'].ELEMENTAL_OVERFLOW,
-			data = function(alt_data) return (alt_data.elementalOverflow and tostring(alt_data.elementalOverflow) or "0") end,
-		},
-		storm_sigil = {
-			order = 7.4,
-			label = constants['labels'].STORM_SIGIL,
-			data = function(alt_data) return (alt_data.stormSigil and tostring(alt_data.stormSigil) or "0") end,
 		},
 	}
 
@@ -1311,7 +1214,6 @@ function AltManager:MakeTopBottomTextures(frame)
 		frame.topPanelString:SetJustifyV("CENTER")
 		frame.topPanelString:SetWidth(260)
 		frame.topPanelString:SetHeight(20)
-		--frame.topPanelString:SetText("My Alt Manager (" .. constants.VERSION .. ")");
 		frame.topPanelString:SetText("My Alt Manager");
 		frame.topPanelString:ClearAllPoints();
 		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
