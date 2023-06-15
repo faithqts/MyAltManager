@@ -136,6 +136,7 @@ constants.DUNGEONS_SHORT = {
 
 constants.VAULT_ILVL = {
 	415,
+	415,
 	418,
 	421,
 	421,
