@@ -5,11 +5,11 @@ _G["AltManager"] = AltManager;
 -- Made by: Qooning - Tarren Mill, 2017-2020
 -- Previously Method Alt Manager
 -- updates for Bfa by: Kabootzey - Tarren Mill <Ended Careers>, 2018
--- Last edit: 14/10/2020
--- updates for Shadowlands by: Faith - Frostmourne, 2021-2023
--- Last edit: 15/06/2023
+-- Last edit: 2020-10-14
+-- updates for Dragonflight by: Faith - Frostmourne, 2021-2023
+-- Last edit: 2023-11-12
 
-local sizey = 310;
+local sizey = 425;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
@@ -25,67 +25,83 @@ local constants = {};
 constants.config = {};
 constants['config'].MIN_LEVEL = 70;
 
-constants.labels = {};
-constants['labels'].NAME = "";
-constants['labels'].WEEKLY_HIGHEST = "Weekly Highest";
-constants['labels'].CURRENT_KEYSTONE = "Current Keystone";
-constants['labels'].CONQUEST = "Conquest";
-constants['labels'].RENOWN = "Renown";
-constants['labels'].DRAGON_ISLE_SUPPLIES = "Dragon Isle Supplies";
-constants['labels'].ELEMENTAL_OVERFLOW = "Elemental Overflow";
-constants['labels'].STORM_SIGIL = "Storm Sigil";
-constants['labels'].VALOR = "Valor";
-constants['labels'].WEEKLY_QUESTS = "Weekly Quests";
-constants['labels'].WEEKLY_EVENTS = "Weekly Events";
-constants['labels'].RESOURCES = "Resources";
-constants['labels'].AIDING_THE_ACCORD = "Aiding The Accord";
-constants['labels'].CURRENT_SEASON = "Season 1";
-constants['labels'].KEYSTONE = "Mythic+";
-constants['labels'].MYTHIC_RATING = "Overall Rating";
-constants['labels'].WEEKLY_REWARDS = "Weekly Vault";
-constants['labels'].COMMUNITY_FEAST = "Community Feast";
-constants['labels'].DRAGONSCALE_KEEP = "Dragonscale Keep";
-constants['labels'].TRIAL_OF_FLOOD = "Trial of Flood";
-constants['labels'].TRIAL_OF_ELEMENTS = "Trial of Elements";
-constants['labels'].GRAND_HUNT = "The Grand Hunt";
-constants['labels'].WORLD_BOSS = "World Boss";
-constants['labels'].PRIMALIST_INVASIONS = "Primalist Invasions";
-constants['labels'].PRIMALIST_INVASION_AIR = "Air Primalists";
-constants['labels'].PRIMALIST_INVASION_EARTH = "Earth Primalists";
-constants['labels'].PRIMALIST_INVASION_FIRE = "Fire Primalists";
-constants['labels'].PRIMALIST_INVASION_WATER = "Water Primalists";
-constants['labels'].SPARKS_OF_LIFE = "Sparks of Life";
-constants['labels'].THE_STORMS_FURY = "The Storm's Fury";
-constants['labels'].TIER_SET = "Tier 30";
-constants['labels'].CATALYST_CHARGES = "Catalyst Charges";
-constants['labels'].UPGRADE_FRAGMENTS = "Upgrade System";
-constants['labels'].FRAGMENTS_WHELPLING = "Whelp Crests";
-constants['labels'].FRAGMENTS_DRAKE = "Drake Crests";
-constants['labels'].FRAGMENTS_WYRM = "Wyrm Crests";
-constants['labels'].FRAGMENTS_ASPECT = "Aspect Crests";
+constants.labels = {
+    NAME = "",
+    WEEKLY_HIGHEST = "Weekly Highest",
+    CURRENT_KEYSTONE = "Current Keystone",
+    WEEKLY_QUESTS = "Weekly Quests",
+    WEEKLY_EVENTS = "Weekly Events",
+    AIDING_THE_ACCORD = "Aiding The Accord",
+    KEYSTONE = "Mythic+",
+    MYTHIC_RATING = "Overall Rating",
+    WEEKLY_REWARDS = "Weekly Vault",
+    COMMUNITY_FEAST = "Community Feast",
+    SPARKS_OF_LIFE = "Sparks of Life",
+    TIER_SET = "Tier 31",
+    CATALYST_CHARGES = "Catalyst Charges",
+    CURRENCIES = "Currencies",
+    WHELPLINGS_CREST = "Whelplings Crest",
+    DRAKES_CREST = "Drakes Crest",
+    WYRMS_CREST = "Wyrms Crest",
+    ASPECTS_CREST = "Aspects Crest",
+    FLIGHTSTONES = "Flightstones",
+    ALLY_LOAMM_NIFFEN = "Ally: Loamm Niffen",
+    ALLY_DREAM_WARDENS = "Ally: Dream Wardens",
+    THE_SUPERBLOOM = "The Superbloom",
+    BLOOMING_DREAMSEEDS = "Blooming Dreamseeds"
+}
 
 constants.DUNGEONS = {
-	[2] = "Temple",
+	[2] = "Serpent",
+	[56] = "Brewery",
+	[57] = "Setting Sun",
+	[58] = "Monastery",
+	[59] = "Niuzao",
+	[60] = "Mogu'shan",
+	[76] = "Scholomance",
+	[77] = "Halls",
+	[78] = "Monastery",
+	[161] = "Skyreach",
+	[163] = "Bloodmaul",
+	[164] = "Auchindoun",
 	[165] = "Shadowmoon",
-	[166] = "Grimrail",
-	[169] = "Iron Docks",
+	[166] = "Depot",
+	[167] = "UBRS",
+	[168] = "Everbloom",
+	[169] = "Docks",
+	[197] = "Azshara",
+	[198] = "Darkheart",
+	[199] = "Black Rook",
 	[200] = "Valor",
 	[206] = "Lair",
+	[207] = "Wardens",
+	[208] = "Maw",
+	[209] = "Arcway",
 	[210] = "Court",
 	[227] = "Kara: Lower",
+	[233] = "Eternal Night",
 	[234] = "Kara: Upper",
+	[239] = "Triumvirate",
+	[244] = "Atal'Dazar",
 	[245] = "Freehold",
+	[246] = "Tol Dagor",
+	[247] = "Motherlode",
+	[248] = "Waycrest",
+	[249] = "Kings Rest",
+	[250] = "Sethraliss",
 	[251] = "Underrot",
+	[252] = "Storm",
+	[353] = "Boralus",
 	[369] = "Junkyard",
 	[370] = "Workshop",
 	[375] = "Mists",
 	[376] = "Necrotic",
 	[377] = "DoS",
-	[378] = "Halls",
-	[379] = "Plague",
+	[378] = "Atonement",
+	[379] = "Plaguefall",
 	[380] = "Sanguine",
 	[381] = "Spires",
-	[382] = "Theatre",
+	[382] = "Theater",
 	[391] = "Streets",
 	[392] = "Gambit",
 	[399] = "Ruby",
@@ -97,172 +113,135 @@ constants.DUNGEONS = {
 	[405] = "Brackenhide",
 	[406] = "Infusion",
 	[438] = "Vortex",
- };
-
-constants.DUNGEONS_SHORT = {
-	[2] = "TEMPLE",
-	[165] = "SMV",
-	[166] = "DEPOT",
-	[169] = "DOCKS",
-	[200] = "HOV",
-	[206] = "LAIR",
-	[210] = "COS",
-	[227] = "LOWER",
-	[234] = "UPPER",
-	[245] = "FREE",
-	[251] = "UNDER", 
-	[369] = "JUNK",
-	[370] = "WORK",
-	[375] = "MISTS",
-	[376] = "NW",
-	[377] = "DOS",
-	[378] = "HOA",
-	[379] = "PF",
-	[380] = "SD",
-	[381] = "SOA",
-	[382] = "TOP",
-	[391] = "STRT",
-	[392] = "GMBT",
-	[399] = "RUBY",
-	[400] = "NOKHUD",
-	[401] = "AZURE",
-	[402] = "ACADEMY",
-	[403] = "ULDAMAN",
-	[404] = "NELTH",
-	[405] = "BRACKEN",
-	[406] = "HOI",
-	[438] = "VP",
-};
+	[456] = "Tides",
+	[463] = "Galakrond",
+	[464] = "Murozond",
+}
 
 constants.VAULT_ILVL = {
-	415,
-	415,
-	418,
-	421,
-	421,
-	424,
-	424,
-	428,
-	428,
-	431,
-	431,
-	434,
-	434,
-	437,
-	437,
-	441,
-	441,
-	444,
-	444,
-	447
+	454,
+	457,
+	460,
+	460,
+	463,
+	463,
+	467,
+	467,
+	470,
+	470,
+	473,
+	473,
+	473,
+	476,
+	476,
+	476,
+	480,
+	480,
+	483
 };
 
 constants.TIER_SETS = {
+    -- Death Knight
+    ["207198"] = true,
+    ["207199"] = true,
+    ["207200"] = true,
+    ["207201"] = true,
+    ["207203"] = true,
 
-	-- Rogue
-	[202500] = true,
-	[202498] = true,
-	[202497] = true,
-	[202496] = true,
-	[202495] = true,
+    -- Demon Hunter
+    ["207261"] = true,
+    ["207262"] = true,
+    ["207263"] = true,
+    ["207264"] = true,
+    ["207266"] = true,
 
-	-- Hunter
-	[202482] = true,
-	[202480] = true,
-	[202479] = true,
-	[202478] = true,
-	[202477] = true,
+    -- Druid
+    ["207252"] = true,
+    ["207253"] = true,
+    ["207254"] = true,
+    ["207255"] = true,
+    ["207257"] = true,
 
-	-- Evoker
-	[202491] = true,
-	[202489] = true,
-	[202488] = true,
-	[202487] = true,
-	[202486] = true,
+    -- Evoker
+    ["207225"] = true,
+    ["207226"] = true,
+    ["207227"] = true,
+    ["207228"] = true,
+    ["207230"] = true,
 
-	-- Paladin
-	[202455] = true,
-	[202453] = true,
-	[202452] = true,
-	[202451] = true,
-	[202450] = true,
+    -- Hunter
+    ["207216"] = true,
+    ["207217"] = true,
+    ["207218"] = true,
+    ["207219"] = true,
+    ["207221"] = true,
 
-	-- Shaman
-	[202473] = true,
-	[202471] = true,
-	[202470] = true,
-	[202469] = true,
-	[202468] = true,
+    -- Mage
+    ["207288"] = true,
+    ["207289"] = true,
+    ["207290"] = true,
+    ["207291"] = true,
+    ["207293"] = true,
 
-	-- Death Knight
-	[202464] = true,
-	[202462] = true,
-	[202461] = true,
-	[202460] = true,
-	[202459] = true,
+    -- Monk
+    ["207243"] = true,
+    ["207244"] = true,
+    ["207245"] = true,
+    ["207246"] = true,
+    ["207248"] = true,
 
-	-- Demon Hunter
-	[202527] = true,
-	[202525] = true,
-	[202524] = true,
-	[202523] = true,
-	[202522] = true,
+    -- Paladin
+    ["207189"] = true,
+    ["207190"] = true,
+    ["207191"] = true,
+    ["207192"] = true,
+    ["207194"] = true,
 
-	-- Druid
-	[202518] = true,
-	[202516] = true,
-	[202515] = true,
-	[202514] = true,
-	[202513] = true,
+    -- Priest
+    ["207279"] = true,
+    ["207280"] = true,
+    ["207281"] = true,
+    ["207282"] = true,
+    ["207284"] = true,
 
-	-- Mage
-	[202554] = true,
-	[202552] = true,
-	[202551] = true,
-	[202550] = true,
-	[202549] = true,
+    -- Rogue
+    ["207234"] = true,
+    ["207235"] = true,
+    ["207236"] = true,
+    ["207237"] = true,
+    ["207239"] = true,
 
-	-- Monk
-	[202509] = true,
-	[202507] = true,
-	[202506] = true,
-	[202505] = true,
-	[202504] = true,
+    -- Shaman
+    ["207207"] = true,
+    ["207208"] = true,
+    ["207209"] = true,
+    ["207210"] = true,
+    ["207212"] = true,
 
-	-- Priest
-	[202543] = true,
-	[202542] = true,
-	[202541] = true,
-	[202545] = true,
-	[202540] = true,
+    -- Warlock
+    ["207270"] = true,
+    ["207271"] = true,
+    ["207272"] = true,
+    ["207273"] = true,
+    ["207275"] = true,
 
-	-- Warrior
-	[202441] = true,
-	[202446] = true,
-	[202444] = true,
-	[202443] = true,
-	[202442] = true,
-
-	-- Warlock
-	[202534] = true,
-	[202533] = true,
-	[202532] = true,
-	[202536] = true,
-	[202531] = true
-
-};
+    -- Warrior
+    ["207180"] = true,
+    ["207181"] = true,
+    ["207182"] = true,
+    ["207183"] = true,
+    ["207185"] = true,
+}
 
 constants.TIER_SLOTS = {
+    [1] = "Helm",
+    [3] = "Shoulders",
+    [5] = "Chest",
+    [7] = "Pants",
+    [10] = "Gloves",
+}
 
-	[1] = "Helm",
-	[3] = "Shoulders",
-	[5] = "Chest",
-	[7] = "Pants",
-	[10] = "Gloves"
-
-};
-
-constants.VERSION = "10.1.0.1";
+constants.VERSION = "10.2.0.0";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -332,7 +311,6 @@ do
 	main_frame:RegisterEvent("CHAT_MSG_CURRENCY");
 	main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
 	main_frame:RegisterEvent("PLAYER_LEAVING_WORLD");
-	main_frame:RegisterEvent("COVENANT_SANCTUM_RENOWN_LEVEL_CHANGED");
 
 	main_frame:SetScript("OnEvent", function(self, ...)
 		local event, loaded = ...;
@@ -343,12 +321,9 @@ do
 		end
 		if event == "PLAYER_LOGIN" then
         	AltManager:OnLogin();
-		end
-		if event == "PLAYER_LEAVING_WORLD" then
-			local data = AltManager:CollectData(false);
 			AltManager:StoreData(data);
 		end
-		if event == "COVENANT_SANCTUM_RENOWN_LEVEL_CHANGED" then
+		if event == "PLAYER_LEAVING_WORLD" then
 			local data = AltManager:CollectData(false);
 			AltManager:StoreData(data);
 		end
@@ -394,11 +369,11 @@ function AltManager:OnLogin()
 	AltManager:MakeBorder(self.main_frame, 5);
 end
 
-function AltManager:PurgeDbShadowlands()
+function AltManager:PurgeOldVersions()
 	if MyAltManagerDB == nil or MyAltManagerDB.data == nil then return end
 	local remove = {}
 	for alt_guid, alt_data in spairs(MyAltManagerDB.data, function(t, a, b) return t[a].ilevel > t[b].ilevel end) do
-		if alt_data.charLevel == nil or alt_data.charLevel < constants.config.MIN_LEVEL then
+		if alt_data.version == nil or alt_data.version < constants.config.VERSION then
 			table.insert(remove, alt_guid)
 		end
 	end
@@ -413,7 +388,7 @@ function AltManager:OnLoad()
 	
 	MyAltManagerDB = MyAltManagerDB or self:InitDB();
 
-	self:PurgeDbShadowlands();
+	self:PurgeOldVersions();
 
 	if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
 		print("Altcount inconsistent, using", true_numel(MyAltManagerDB.data))
@@ -477,15 +452,10 @@ function AltManager:ValidateReset()
 			char_table.accordWeekly = false;
 			char_table.sparksOfLife = false;
 			char_table.communityFeast = false;
-			char_table.dragonscaleKeep = false;
-			char_table.grandHunt = false;
-			char_table.trialOfFlood = false;
-			char_table.trialOfElements = false;
-			char_table.primalistInvasionAir = false;
-			char_table.primalistInvasionEarth = false;
-			char_table.primalistInvasionFire = false;
-			char_table.primalistInvasionWater = false;
-			char_table.theStormsFury = false;
+			char_table.allyDreamWardens = false;
+			char_table.allyLoammNiffen = false;
+			char_table.theSuperbloom = false;
+			char_table.bloomingDreamseeds = false;
 		end
 	end
 end
@@ -557,10 +527,6 @@ end
 
 function AltManager:StoreData(data)
 
-	if not self.addon_loaded then
-		return
-	end
-
 	if not data or not data.guid then
 		return
 	end
@@ -569,7 +535,7 @@ function AltManager:StoreData(data)
 
 	local db = MyAltManagerDB;
 	local guid = data.guid;
-	
+
 	db.data = db.data or {};
 	
 	local update = false;
@@ -583,18 +549,17 @@ function AltManager:StoreData(data)
 		db.data[guid] = data;
 		db.alts = db.alts + 1;
 	else
-
 		db.data[guid] = data;
 	end
 end
 
 function AltManager:CollectData()
 	
-	if UnitLevel('player') < constants.config.MIN_LEVEL then return end;
+	if UnitLevel('player') < constants.config.MIN_LEVEL then return	end
 
 	_, i = GetAverageItemLevel()
-	if i == 0 then return end;
-	
+	if i == 0 then return end
+
 	local name = UnitName('player')
 	local _, class = UnitClass('player')
 	local dungeon = nil;
@@ -604,61 +569,50 @@ function AltManager:CollectData()
 
 	local guid = UnitGUID('player');
 
-	local mine_old = nil
-	if MyAltManagerDB and MyAltManagerDB.data then
-		mine_old = MyAltManagerDB.data[guid];
-	end
-	
-	C_MythicPlus.RequestCurrentAffixes();
-	C_MythicPlus.RequestMapInfo();
-	for k,v in pairs(constants.DUNGEONS) do
-		C_MythicPlus.RequestMapInfo(k);
-	end
-	local maps = C_ChallengeMode.GetMapTable();
-	for i = 1, #maps do
-        C_ChallengeMode.RequestLeaders(maps[i]);
-    end
+	C_MythicPlus.RequestCurrentAffixes()
+	C_MythicPlus.RequestMapInfo()
 
-	local runHistory = C_MythicPlus.GetRunHistory(false, true);
-	
-	local keystone_found = false;
-	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+	for k, v in pairs(constants.DUNGEONS) do
+		C_MythicPlus.RequestMapInfo(k)
+	end
+
+	local maps = C_ChallengeMode.GetMapTable()
+	for i = 1, #maps do
+		C_ChallengeMode.RequestLeaders(maps[i])
+	end
+
+	local runHistory = C_MythicPlus.GetRunHistory(false, true)
+
+	local function extractKeystoneInfo(slotItem)
+		if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
+			local itemString = slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
+			if itemString then
+				local info = { strsplit(":", itemString) }
+				local dungeon = tonumber(info[2]) or nil
+				local level = "+" .. tonumber(info[3]) or nil
+				local expire = tonumber(info[4]) or nil
+				return dungeon, level, expire
+			end
+		end
+	end
+
+	local keystone_found = false
+	for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = C_Container.GetContainerNumSlots(container)
-		for slot=1, slots do
+		for slot = 1, slots do
 			local slotItem = C_Container.GetContainerItemInfo(container, slot)
-			if slotItem ~= nil then
-				if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
-					local itemString = slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
-					local info = { strsplit(":", itemString) }
-					dungeon = tonumber(info[2])
-					if not dungeon then dungeon = nil end
-					level = "+" .. tonumber(info[3])
-					if not level then level = nil end
-					expire = tonumber(info[4])
-					keystone_found = true;
+			if slotItem then
+				local dungeon, level, expire = extractKeystoneInfo(slotItem)
+				if dungeon then
+					keystone_found = true
+					keystone_details = level .. " " .. constants.DUNGEONS[dungeon]
 				end
 			end
 		end
 	end
   
 	if not keystone_found then
-		dungeon = "None";
-		level = ""
-	end
-
-	local worldBosses = {
-		[69930] = "Basrikron",
-		[69927] = "Bazual",
-		[69928] = "Liskanoth",
-		[69929] = "Strunraan",
-	}
-	local worldBoss = false
-	for k,v in pairs(worldBosses)do
-		if C_TaskQuest.IsActive(k) then
-		end
-		if C_QuestLog.IsQuestFlaggedCompleted(k) then
-			worldBoss = true
-		end
+		keystone_details = "None"
 	end
 
 	local accordWeekly = false
@@ -690,19 +644,29 @@ function AltManager:CollectData()
 		accordWeeklyText = "|cFFFF0000Not Started|r";
 	end
 
+	local allyDreamWardens = false
+	if C_QuestLog.IsQuestFlaggedCompleted(78444) then
+		allyDreamWardens = true
+	end
+
+	local allyLoammNiffen = false
+	if C_QuestLog.IsQuestFlaggedCompleted(75665) then
+		allyLoammNiffen = true
+	end
+
+	local theSuperbloom = false
+	if C_QuestLog.IsQuestFlaggedCompleted(78319) then
+		theSuperbloom = true
+	end
+
+	local bloomingDreamseeds = false
+	if C_QuestLog.IsQuestFlaggedCompleted(78821) then
+		bloomingDreamseeds = true
+	end
+
 	local communityFeast = false
 	if C_QuestLog.IsQuestFlaggedCompleted(70893) then
 		communityFeast = true
-	end
-
-	local dragonscaleKeep = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70866) then
-		dragonscaleKeep = true
-	end
-
-	local grandHunt = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70906) then
-		grandHunt = true
 	end
 
 	local sparksOfLife = false
@@ -729,139 +693,91 @@ function AltManager:CollectData()
 	else
 		sparksOfLifeText = "|cFFFF0000Not Started|r";
 	end
-
-	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID);
-	local maxProgress = currencyInfo.maxQuantity;
-	local conquest_earned = math.min(currencyInfo.totalEarned, maxProgress);
-	local conquest_total = currencyInfo.quantity;
-	local conquest_spent = conquest_earned-conquest_total;
-	local conquest_max = ((C_CurrencyInfo.GetCurrencyInfo(Constants.CurrencyConsts.CONQUEST_CURRENCY_ID).maxQuantity)-conquest_spent);
-
-	local conquestPoints = "";
-	if conquest_max == 0 then
-		conquestPoints = string.format("%s", self:CommaValues(conquest_total));
-	else 
-		conquestPoints = string.format("%s / %s", self:CommaValues(conquest_total), self:CommaValues(conquest_max));
-	end
-
-	local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(1191);
-	local maxProgress = currencyInfo.maxQuantity;
-	local valor_earned = math.min(currencyInfo.totalEarned, maxProgress);
-	local valor_total = currencyInfo.quantity;
-	local valor_spent = valor_earned-valor_total;
-	local valor_max = ((C_CurrencyInfo.GetCurrencyInfo(1191).maxQuantity)-valor_spent);
-
-	local valorPoints = "";
-	if valor_max == 0 then
-		valorPoints = string.format("%s", self:CommaValues(valor_total));
-	else 
-		valorPoints = string.format("%s / %s", self:CommaValues(valor_total), self:CommaValues(valor_max));
-	end
-
+	
 	local _, ilevel = GetAverageItemLevel();
 
-	local whelpFragments = GetItemCount(204075, nil, true);
-	local drakeFragments = GetItemCount(204076, nil, true);
-	local wyrmFragments = GetItemCount(204077, nil, true);
-	local aspectFragments = GetItemCount(204078, nil, true);
+	local whelpCrests = GetCurrencyAmount(2706);
+	local drakeCrests = GetCurrencyAmount(2707);
+	local wyrmCrests = GetCurrencyAmount(2708);
+	local aspectCrests = GetCurrencyAmount(2709);
+	local flightstones = GetCurrencyAmount(2245);
 
-	local dragonIsleSupplies = GetCurrencyAmount(2003);
-	local elementalOverflow = GetCurrencyAmount(2118);
-	local stormSigil = GetCurrencyAmount(2122);
 	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(2533).quantity or 0);
 	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(2533).maxQuantity or 0);
 
-	local cypherAnalysisTool = "|cFFFF0000Not Unlocked|r";
-	if C_QuestLog.IsQuestFlaggedCompleted(65282) then
-		cypherAnalysisTool = "|cFF00CF20Unlocked|r"
-	end
-
 	local char_table = {}
 
-	char_table.guid = UnitGUID('player');
-	char_table.name = name;
-	char_table.class = class;
-	char_table.ilevel = math.floor(ilevel);
+	char_table.guid = UnitGUID('player')
+	char_table.name = name
+	char_table.class = class
+	char_table.ilevel = math.floor(ilevel)
 	char_table.charLevel = UnitLevel('player')
-	char_table.realmName = GetRealmName();
-	char_table.dungeon = dungeon;
-	char_table.level = level;
-	char_table.runHistory = runHistory;
-	char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone();
-	char_table.completedWeeklyKeystoneRewards = self:GetWeeklyKeystoneVaultRewards();
-	char_table.tierBonuses = self:GetTierBonuses();
-	char_table.overallDungeonScore = self:GetOverallDungeonScore();
-	char_table.valorPoints = valorPoints;
-	char_table.conquestPoints = self:CommaValues(conquestPoints);
-	char_table.dragonIsleSupplies = self:CommaValues(dragonIsleSupplies);
-	char_table.elementalOverflow = self:CommaValues(elementalOverflow);
-	char_table.stormSigil = self:CommaValues(stormSigil);
-	char_table.renown = renown;
-	char_table.accordWeekly = accordWeekly;
-	char_table.accordWeeklyText = accordWeeklyText;
-	char_table.communityFeast = communityFeast;
-	char_table.dragonscaleKeep = dragonscaleKeep;
-	char_table.grandHunt = grandHunt;
-	char_table.trialOfFlood = trialOfFlood;
-	char_table.trialOfElements = trialOfElements;
-	char_table.primalistInvasionAir = primalistInvasionAir;
-	char_table.primalistInvasionEarth = primalistInvasionEarth;
-	char_table.primalistInvasionFire = primalistInvasionFire;
-	char_table.primalistInvasionWater = primalistInvasionWater;
-	char_table.whelpFragments = whelpFragments;
-	char_table.drakeFragments = drakeFragments;
-	char_table.wyrmFragments = wyrmFragments;
-	char_table.aspectFragments = aspectFragments;
-	char_table.theStormsFury = theStormsFury;
-	char_table.sparksOfLife = sparksOfLife;
-	char_table.sparksOfLifeText = sparksOfLifeText;
-	char_table.worldBoss = worldBoss;
-	char_table.catalystCharges = string.format("%s / %s", catalystCharges, catalystChargesMax);
-	
-	char_table.expires = self:GetNextWeeklyResetTime();
-	char_table.dataObtained = time();
-	char_table.timeUntilReset = C_DateAndTime.GetSecondsUntilDailyReset();
+	char_table.realmName = GetRealmName()
+	char_table.dungeon = dungeon
+	char_table.level = level
+	char_table.keystone_details = keystone_details
+	char_table.runHistory = runHistory
+	char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone()
+	char_table.completedWeeklyKeystoneRewards = self:GetWeeklyKeystoneVaultRewards()
+	char_table.tierBonuses = self:GetTierBonuses()
+	char_table.overallDungeonScore = self:GetOverallDungeonScore()
+	char_table.accordWeekly = accordWeekly
+	char_table.accordWeeklyText = accordWeeklyText
+	char_table.communityFeast = communityFeast
+	char_table.whelpCrests = whelpCrests
+	char_table.drakeCrests = drakeCrests
+	char_table.wyrmCrests = wyrmCrests
+	char_table.aspectCrests = aspectCrests
+	char_table.flightstones = flightstones
+	char_table.sparksOfLife = sparksOfLife
+	char_table.sparksOfLifeText = sparksOfLifeText
+	char_table.catalystCharges = string.format("%s / %s", catalystCharges, catalystChargesMax)
+	char_table.allyDreamWardens = allyDreamWardens
+	char_table.allyLoammNiffen = allyLoammNiffen
+	char_table.theSuperbloom = theSuperbloom
+	char_table.bloomingDreamseeds = bloomingDreamseeds
+	char_table.version = constants.VERSION
+	char_table.expires = self:GetNextWeeklyResetTime()
+	char_table.dataObtained = time()
+	char_table.timeUntilReset = C_DateAndTime.GetSecondsUntilDailyReset()
 
-	return char_table;
+	return char_table
 end
 
 function AltManager:GetTierBonuses()
-	local tierText = "";
-	local tierCount = 0;
-	local tierItems = {};
+    local tierText = ""
+    local tierCount = 0
+    local tierItems = {}
 
-	for k,v in pairs(constants.TIER_SLOTS) do
-		if constants.TIER_SETS[GetInventoryItemID("player", k)] == true then
-			tierItems[GetInventoryItemID("player", k)] = 1;
-		end
-	end
+    for _, slotID in pairs(constants.TIER_SLOTS) do
+        local itemID = GetInventoryItemID("player", slotID)
+        if constants.TIER_SETS[itemID] then
+            tierItems[itemID] = 1
+        end
+    end
 
-	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-		local slots = C_Container.GetContainerNumSlots(container)
-		for slot=1, slots do
-			local slotItem = C_Container.GetContainerItemInfo(container, slot)
-			if slotItem ~= nil then
-				if constants.TIER_SETS[slotItem.itemID] == true then
-					tierItems[slotItem.itemID] = 1;
-				end
-			end
-		end
-	end
+    for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+        local slots = C_Container.GetContainerNumSlots(container)
+        for slot = 1, slots do
+            local slotItem = C_Container.GetContainerItemInfo(container, slot)
+            if slotItem and constants.TIER_SETS[slotItem.itemID] then
+                tierItems[slotItem.itemID] = 1
+            end
+        end
+    end
 
-	for i,v in pairs(tierItems) do
-		tierCount = tierCount + 1;
-	end
+    for _, _ in pairs(tierItems) do
+        tierCount = tierCount + 1
+    end
 
-	if tierCount > 0 then
-		if tierCount >= 4 then
-			tierCount = 4;
-		end
-		tierText = tierCount .. "/4 Set"
-	else
-		tierText = "No Set"
-	end
-	
-	return tierText;
+    if tierCount > 0 then
+        tierCount = math.min(tierCount, 4)
+        tierText = tierCount .. "/4 Set"
+    else
+        tierText = "No Set"
+    end
+
+    return tierText
 end
 
 function AltManager:UpdateStrings()
@@ -926,111 +842,97 @@ function AltManager:UpdateStrings()
 end
 
 function AltManager:GetOverallDungeonScore()
-	local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore();
-	local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore);
-	local colorString = "|cff";
-	local r = color.r * 255;
-	local g = color.g * 255;
-	local b = color.b * 255;
-	colorString = colorString..string.format("%2x%2x%2x", r, g, b);
-	return colorString .. overallDungeonScore .. "|r";
+	local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore()
+	local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore)
+	local r, g, b = color.r * 255, color.g * 255, color.b * 255
+
+	local colorString = string.format("|cff%02x%02x%02x", r, g, b)
+	return colorString .. overallDungeonScore .. "|r"
 end
 
 function AltManager:GetHighestCompletedWeeklyKeystone()
+    local info = C_MythicPlus.GetRunHistory(false, true)
+    local keys, dungeons = {}, {}
 
-	local level = 0;
-	local dungeon = "";
-	local info = C_MythicPlus.GetRunHistory(false,true);
-	local keys = {};
-	local dungeons = {};
+    for _, run in ipairs(info) do
+        tinsert(keys, run.level)
+        tinsert(dungeons, run.mapChallengeModeID)
+    end
 
-	for l = 1, #info do
-		level = info[l].level;
-		dungeon = info[l].mapChallengeModeID;
-		tinsert(keys, level)
-		tinsert(dungeons, dungeon)
-	end
-	table.sort(keys, function(a,b) return b<a end)
-	table.sort(dungeons, function(a,b) return b<a end)
-	level = keys[1];
-	dungeon = dungeons[1];
-	if level == 0 then
-		return " ";
-	elseif level and level > 0 then
+    table.sort(keys, function(a, b) return b < a end)
+    table.sort(dungeons, function(a, b) return b < a end)
+
+    local level, dungeon = keys[1], dungeons[1]
+
+    if level == 0 then
+        return " "
+    elseif level and level > 0 then
         local color
         if level >= 20 then
-			color = "|cFFFF8000";
-		elseif level >= 15 then
-			color = "|cFFA335EE";
+            color = "|cFFFF8000"
+        elseif level >= 15 then
+            color = "|cFFA335EE"
         elseif level >= 10 then
-			color = "|cFF0070DD";
+            color = "|cFF0070DD"
         elseif level >= 7 then
-			color = "|cFF1EFF00";
-		elseif level >= 2 then
-			color = "|cFFFFFFFF";
+            color = "|cFF1EFF00"
+        elseif level >= 2 then
+            color = "|cFFFFFFFF"
         end
-		return "+" .. level .. " " .. constants.DUNGEONS[dungeon] .. "|r";
-	else
-		return " ";
-	end
-
+        return "+" .. level .. " " .. constants.DUNGEONS[dungeon] .. "|r"
+    else
+        return "None"
+    end
 end
 
 function AltManager:GetLowestLevelInTopRuns(numRuns)
-	local runHistory = C_MythicPlus.GetRunHistory(false, true)
-	table.sort(runHistory, function(left, right) return left.level > right.level; end);
-	local lowestLevel;
-	local lowestCount = 0;
-	for i = math.min(numRuns, #runHistory), 1, -1 do
-		local run = runHistory[i];
-		if not lowestLevel then
-			lowestLevel = run.level;
-		end
-		if lowestLevel == run.level then
-			lowestCount = lowestCount + 1;
-		else
-			break;
-		end
-	end
-	return lowestLevel;
+    local runHistory = C_MythicPlus.GetRunHistory(false, true)
+    table.sort(runHistory, function(left, right) return left.level > right.level end)
+
+    local lowestLevel = runHistory[1] and runHistory[1].level or nil
+    local lowestCount = 0
+
+    for i = 2, math.min(numRuns, #runHistory) do
+        local run = runHistory[i]
+
+        if lowestLevel == run.level then
+            lowestCount = lowestCount + 1
+        else
+            break
+        end
+    end
+
+    return lowestLevel
 end
 
 function AltManager:GetWeeklyKeystoneVaultRewards()
+    local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
+    local keystoneTotal = #keystoneHistory
+    local keystoneRewardSlotOne, keystoneRewardSlotTwo, keystoneRewardSlotThree = 0, 0, 0
+    local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r"
 
-	local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
-	local keystoneTotal = #keystoneHistory;
-	local keystoneRewardSlotOne = 0;
-	local keystoneRewardSlotTwo = 0;
-	local keystoneRewardSlotThree = 0;
-	local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r";
+    if keystoneTotal >= 8 then
+        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
+        keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20) + 1] .. "|r"
+        keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 20) + 1] .. "|r"
+        keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree
+    elseif keystoneTotal < 8 and keystoneTotal >= 4 then
+        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
+        keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20) + 1] .. "|r"
+        keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r"
+    elseif keystoneTotal < 4 and keystoneTotal >= 1 then
+        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
+        keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r"
+    end
 
-	if keystoneTotal >= 8 then
-
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)] .. "|r";
-		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 20)] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
-
-	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
-
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
-
-	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
-	end
-
-	return keystoneRewards;
-
+    return keystoneRewards
 end
 
 function AltManager:CreateContent()
 
 	self.main_frame.closeButton = CreateFrame("Button", "CloseButton", self.main_frame, "UIPanelCloseButton");
 	self.main_frame.closeButton:ClearAllPoints()
-	self.main_frame.closeButton:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPRIGHT", -10, -2);
+	self.main_frame.closeButton:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPRIGHT", -3, 2);
 	self.main_frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface(); end);
 
 	local column_table = {
@@ -1079,7 +981,7 @@ function AltManager:CreateContent()
 		current_keystone = {
 			order = 2.3,
 			label = constants['labels'].CURRENT_KEYSTONE,
-			data = function(alt_data) return tostring(alt_data.level) .. " " .. (constants.DUNGEONS[alt_data.dungeon] or alt_data.dungeon); end,
+			data = function(alt_data) return tostring(alt_data.keystone_details) or "None"; end,
 		},
 		weekly_highest = {
 			order = 2.4,
@@ -1096,52 +998,93 @@ function AltManager:CreateContent()
 			label = "",
 			data = function(alt_data) return " " end,
 		},
-		current_season = {
+		weekly_quests = {
 			order = 3.1,
-			label = constants['labels'].UPGRADE_FRAGMENTS,
+			label = constants['labels'].WEEKLY_QUESTS,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		whelp_fragments = {
+		aiding_the_accord = {
 			order = 3.2,
-			label = constants['labels'].FRAGMENTS_WHELPLING,
-			data = function(alt_data) return (alt_data.whelpFragments and tostring(alt_data.whelpFragments) or "0") end,
+			label = constants['labels'].AIDING_THE_ACCORD,
+			data = function(alt_data) return tostring(alt_data.accordWeeklyText) or "|cFFFF00000/3000|r" end,
 		},
-		drake_fragments = {
+		sparks_of_life = {
 			order = 3.3,
-			label = constants['labels'].FRAGMENTS_DRAKE,
-			data = function(alt_data) return (alt_data.drakeFragments and tostring(alt_data.drakeFragments) or "0") end,
+			label = constants['labels'].SPARKS_OF_LIFE,
+			data = function(alt_data) return tostring(alt_data.sparksOfLifeText) or "|cFFFF00000/3000|r" end,
 		},
-		wyrm_fragments = {
+		ally_loamm_niffen = {
 			order = 3.4,
-			label = constants['labels'].FRAGMENTS_WYRM,
-			data = function(alt_data) return (alt_data.wyrmFragments and tostring(alt_data.wyrmFragments) or "0") end,
+			label = constants['labels'].ALLY_LOAMM_NIFFEN,
+			data = function(alt_data) return alt_data.allyLoammNiffen and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		aspect_fragments = {
+		ally_dream_wardens = {
 			order = 3.5,
-			label = constants['labels'].FRAGMENTS_ASPECT,
-			data = function(alt_data) return (alt_data.aspectFragments and tostring(alt_data.aspectFragments) or "0") end,
+			label = constants['labels'].ALLY_DREAM_WARDENS,
+			data = function(alt_data) return alt_data.allyDreamWardens and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
 		spacer_4 = {
 			order = 4.0,
 			label = "",
 			data = function(alt_data) return " " end,
 		},
-		weekly_quests = {
+		weekly_events = {
 			order = 4.1,
-			label = constants['labels'].WEEKLY_QUESTS,
+			label = constants['labels'].WEEKLY_EVENTS,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		aiding_the_accord = {
-			order = 4.2,
-			label = constants['labels'].AIDING_THE_ACCORD,
-			data = function(alt_data) return tostring(alt_data.accordWeeklyText) or "|cFFFF00000/3000|r" end,
-		},
 		community_feast = {
-			order = 4.3,
+			order = 4.2,
 			label = constants['labels'].COMMUNITY_FEAST,
 			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		the_superbloom = {
+			order = 4.3,
+			label = constants['labels'].THE_SUPERBLOOM,
+			data = function(alt_data) return alt_data.theSuperbloom and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		blooming_dreamseeds = {
+			order = 4.4,
+			label = constants['labels'].BLOOMING_DREAMSEEDS,
+			data = function(alt_data) return alt_data.bloomingDreamseeds and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		spacer_5 = {
+			order = 5.0,
+			label = "",
+			data = function(alt_data) return " " end,
+		},
+		currencies = {
+			order = 5.1,
+			label = constants['labels'].CURRENCIES,
+			title = true,
+			data = function(alt_data) return " " end,
+		},
+		flightstones = {
+			order = 5.2,
+			label = constants['labels'].FLIGHTSTONES,
+			data = function(alt_data) return (alt_data.flightstones and tostring(alt_data.flightstones) or "0") end,
+		},
+		whelp_fragments = {
+			order = 5.3,
+			label = constants['labels'].WHELPLINGS_CREST,
+			data = function(alt_data) return (alt_data.whelpCrests and tostring(alt_data.whelpCrests) or "0") end,
+		},
+		drake_fragments = {
+			order = 5.4,
+			label = constants['labels'].DRAKES_CREST,
+			data = function(alt_data) return (alt_data.drakeCrests and tostring(alt_data.drakeCrests) or "0") end,
+		},
+		wyrm_fragments = {
+			order = 5.5,
+			label = constants['labels'].WYRMS_CREST,
+			data = function(alt_data) return (alt_data.wyrmCrests and tostring(alt_data.wyrmCrests) or "0") end,
+		},
+		aspect_fragments = {
+			order = 5.6,
+			label = constants['labels'].ASPECTS_CREST,
+			data = function(alt_data) return (alt_data.aspectCrests and tostring(alt_data.aspectCrests) or "0") end,
 		},
 	}
 
