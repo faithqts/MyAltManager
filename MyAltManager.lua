@@ -241,7 +241,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "10.2.0.0";
+constants.VERSION = "10.2.0.1";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -373,7 +373,7 @@ function AltManager:PurgeOldVersions()
 	if MyAltManagerDB == nil or MyAltManagerDB.data == nil then return end
 	local remove = {}
 	for alt_guid, alt_data in spairs(MyAltManagerDB.data, function(t, a, b) return t[a].ilevel > t[b].ilevel end) do
-		if alt_data.version == nil or alt_data.version < constants.config.VERSION then
+		if alt_data.version == nil or alt_data.version < constants.VERSION then
 			table.insert(remove, alt_guid)
 		end
 	end
@@ -702,8 +702,8 @@ function AltManager:CollectData()
 	local aspectCrests = GetCurrencyAmount(2709);
 	local flightstones = GetCurrencyAmount(2245);
 
-	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(2533).quantity or 0);
-	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(2533).maxQuantity or 0);
+	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(2796).quantity or 0);
+	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(2796).maxQuantity or 0);
 
 	local char_table = {}
 
@@ -828,8 +828,8 @@ function AltManager:UpdateStrings()
 						self.main_frame.remove_buttons[alt_data.guid] = extra
 					end
 					extra:SetParent(current_row)
-					extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -18, 2 );
-					extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size+6);
+					extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -20, 0 );
+					extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size+4);
 					extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
 					extra:Show();
 				end
@@ -886,46 +886,50 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 end
 
 function AltManager:GetLowestLevelInTopRuns(numRuns)
-    local runHistory = C_MythicPlus.GetRunHistory(false, true)
-    table.sort(runHistory, function(left, right) return left.level > right.level end)
-
-    local lowestLevel = runHistory[1] and runHistory[1].level or nil
-    local lowestCount = 0
-
-    for i = 2, math.min(numRuns, #runHistory) do
-        local run = runHistory[i]
-
-        if lowestLevel == run.level then
-            lowestCount = lowestCount + 1
-        else
-            break
-        end
-    end
-
-    return lowestLevel
+	local runHistory = C_MythicPlus.GetRunHistory(false, true)
+	table.sort(runHistory, function(left, right) return left.level > right.level; end);
+	local lowestLevel;
+	local lowestCount = 0;
+	for i = math.min(numRuns, #runHistory), 1, -1 do
+		local run = runHistory[i];
+		if not lowestLevel then
+			lowestLevel = run.level;
+		end
+		if lowestLevel == run.level then
+			lowestCount = lowestCount + 1;
+		else
+			break;
+		end
+	end
+	return lowestLevel;
 end
 
 function AltManager:GetWeeklyKeystoneVaultRewards()
-    local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
-    local keystoneTotal = #keystoneHistory
-    local keystoneRewardSlotOne, keystoneRewardSlotTwo, keystoneRewardSlotThree = 0, 0, 0
-    local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r"
+	local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
+	local keystoneTotal = #keystoneHistory;
+	local keystoneRewardSlotOne = 0;
+	local keystoneRewardSlotTwo = 0;
+	local keystoneRewardSlotThree = 0;
+	local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r";
 
-    if keystoneTotal >= 8 then
-        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
-        keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20) + 1] .. "|r"
-        keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)), 20) + 1] .. "|r"
-        keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree
-    elseif keystoneTotal < 8 and keystoneTotal >= 4 then
-        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
-        keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20) + 1] .. "|r"
-        keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r"
-    elseif keystoneTotal < 4 and keystoneTotal >= 1 then
-        keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20) + 1] .. "|r"
-        keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r"
-    end
+	if keystoneTotal >= 8 then
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)),20)-1] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)),20)-1] .. "|r";
+		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)),20)-1] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
 
-    return keystoneRewards
+	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
+
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
+		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)-1] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
+
+	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
+		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
+		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
+	end
+
+	return keystoneRewards;
 end
 
 function AltManager:CreateContent()
@@ -950,7 +954,7 @@ function AltManager:CreateContent()
 		realm = {
 			order = 1.2,
 			data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
-			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end
+			remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end,
 		},
 		tier = {
 			order = 1.3,
