@@ -141,96 +141,98 @@ constants.VAULT_ILVL = {
 };
 
 constants.TIER_SETS = {
+
     -- Death Knight
-    ["207198"] = true,
-    ["207199"] = true,
-    ["207200"] = true,
-    ["207201"] = true,
-    ["207203"] = true,
+    [207198] = true,
+    [207199] = true,
+    [207200] = true,
+    [207201] = true,
+    [207203] = true,
 
     -- Demon Hunter
-    ["207261"] = true,
-    ["207262"] = true,
-    ["207263"] = true,
-    ["207264"] = true,
-    ["207266"] = true,
+    [207261] = true,
+    [207262] = true,
+    [207263] = true,
+    [207264] = true,
+    [207266] = true,
 
     -- Druid
-    ["207252"] = true,
-    ["207253"] = true,
-    ["207254"] = true,
-    ["207255"] = true,
-    ["207257"] = true,
+    [207252] = true,
+    [207253] = true,
+    [207254] = true,
+    [207255] = true,
+    [207257] = true,
 
     -- Evoker
-    ["207225"] = true,
-    ["207226"] = true,
-    ["207227"] = true,
-    ["207228"] = true,
-    ["207230"] = true,
+    [207225] = true,
+    [207226] = true,
+    [207227] = true,
+    [207228] = true,
+    [207230] = true,
 
     -- Hunter
-    ["207216"] = true,
-    ["207217"] = true,
-    ["207218"] = true,
-    ["207219"] = true,
-    ["207221"] = true,
+    [207216] = true,
+    [207217] = true,
+    [207218] = true,
+    [207219] = true,
+    [207221] = true,
 
     -- Mage
-    ["207288"] = true,
-    ["207289"] = true,
-    ["207290"] = true,
-    ["207291"] = true,
-    ["207293"] = true,
+    [207288] = true,
+    [207289] = true,
+    [207290] = true,
+    [207291] = true,
+    [207293] = true,
 
     -- Monk
-    ["207243"] = true,
-    ["207244"] = true,
-    ["207245"] = true,
-    ["207246"] = true,
-    ["207248"] = true,
+    [207243] = true,
+    [207244] = true,
+    [207245] = true,
+    [207246] = true,
+    [207248] = true,
 
     -- Paladin
-    ["207189"] = true,
-    ["207190"] = true,
-    ["207191"] = true,
-    ["207192"] = true,
-    ["207194"] = true,
+    [207189] = true,
+    [207190] = true,
+    [207191] = true,
+    [207192] = true,
+    [207194] = true,
 
     -- Priest
-    ["207279"] = true,
-    ["207280"] = true,
-    ["207281"] = true,
-    ["207282"] = true,
-    ["207284"] = true,
+    [207279] = true,
+    [207280] = true,
+    [207281] = true,
+    [207282] = true,
+    [207284] = true,
 
     -- Rogue
-    ["207234"] = true,
-    ["207235"] = true,
-    ["207236"] = true,
-    ["207237"] = true,
-    ["207239"] = true,
+    [207234] = true,
+    [207235] = true,
+    [207236] = true,
+    [207237] = true,
+    [207239] = true,
 
     -- Shaman
-    ["207207"] = true,
-    ["207208"] = true,
-    ["207209"] = true,
-    ["207210"] = true,
-    ["207212"] = true,
+    [207207] = true,
+    [207208] = true,
+    [207209] = true,
+    [207210] = true,
+    [207212] = true,
 
     -- Warlock
-    ["207270"] = true,
-    ["207271"] = true,
-    ["207272"] = true,
-    ["207273"] = true,
-    ["207275"] = true,
+    [207270] = true,
+    [207271] = true,
+    [207272] = true,
+    [207273] = true,
+    [207275] = true,
 
     -- Warrior
-    ["207180"] = true,
-    ["207181"] = true,
-    ["207182"] = true,
-    ["207183"] = true,
-    ["207185"] = true,
+    [207180] = true,
+    [207181] = true,
+    [207182] = true,
+    [207183] = true,
+    [207185] = true,
+
 }
 
 constants.TIER_SLOTS = {
@@ -241,7 +243,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "10.2.0.1";
+constants.VERSION = "10.2.0.2";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -745,39 +747,42 @@ function AltManager:CollectData()
 end
 
 function AltManager:GetTierBonuses()
-    local tierText = ""
-    local tierCount = 0
-    local tierItems = {}
+	local tierText = "";
+	local tierCount = 0;
+	local tierItems = {};
 
-    for _, slotID in pairs(constants.TIER_SLOTS) do
-        local itemID = GetInventoryItemID("player", slotID)
-        if constants.TIER_SETS[itemID] then
-            tierItems[itemID] = 1
-        end
-    end
+	for k,v in pairs(constants.TIER_SLOTS) do
+		if constants.TIER_SETS[GetInventoryItemID("player", k)] == true then
+			tierItems[GetInventoryItemID("player", k)] = 1;
+		end
+	end
 
-    for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        local slots = C_Container.GetContainerNumSlots(container)
-        for slot = 1, slots do
-            local slotItem = C_Container.GetContainerItemInfo(container, slot)
-            if slotItem and constants.TIER_SETS[slotItem.itemID] then
-                tierItems[slotItem.itemID] = 1
-            end
-        end
-    end
+	for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+		local slots = C_Container.GetContainerNumSlots(container)
+		for slot=1, slots do
+			local slotItem = C_Container.GetContainerItemInfo(container, slot)
+			if slotItem ~= nil then
+				if constants.TIER_SETS[slotItem.itemID] == true then
+					tierItems[slotItem.itemID] = 1;
+				end
+			end
+		end
+	end
 
-    for _, _ in pairs(tierItems) do
-        tierCount = tierCount + 1
-    end
+	for i,v in pairs(tierItems) do
+		tierCount = tierCount + 1;
+	end
 
-    if tierCount > 0 then
-        tierCount = math.min(tierCount, 4)
-        tierText = tierCount .. "/4 Set"
-    else
-        tierText = "No Set"
-    end
-
-    return tierText
+	if tierCount > 0 then
+		if tierCount >= 4 then
+			tierCount = 4;
+		end
+		tierText = tierCount .. "/4 Set"
+	else
+		tierText = "No Set"
+	end
+	
+	return tierText;
 end
 
 function AltManager:UpdateStrings()
@@ -915,15 +920,12 @@ function AltManager:GetWeeklyKeystoneVaultRewards()
 	if keystoneTotal >= 8 then
 		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)),20)-1] .. "|r";
 		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)),20)-1] .. "|r";
-		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(keystoneTotal)),20)-1] .. "|r";
+		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(8)),20)-1] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
-
 	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
-
 		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
 		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)-1] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
-
 	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
 		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
 		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
