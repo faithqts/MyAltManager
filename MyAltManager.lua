@@ -9,7 +9,7 @@ _G["AltManager"] = AltManager;
 -- updates for Dragonflight by: Faith - Frostmourne, 2021-2023
 -- Last edit: 2023-11-12
 
-local sizey = 425;
+local sizey = 450;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
@@ -48,7 +48,9 @@ constants.labels = {
     ALLY_LOAMM_NIFFEN = "Ally: Loamm Niffen",
     ALLY_DREAM_WARDENS = "Ally: Dream Wardens",
     THE_SUPERBLOOM = "The Superbloom",
-    BLOOMING_DREAMSEEDS = "Blooming Dreamseeds"
+    BLOOMING_DREAMSEEDS = "Blooming Dreamseeds",
+	TIME_RIFTS = "Time Rift",
+	DREAMSURGE = "The Dreamsurge"
 }
 
 constants.DUNGEONS = {
@@ -243,7 +245,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "10.2.0.2";
+constants.VERSION = "10.2.0.3";
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -458,6 +460,8 @@ function AltManager:ValidateReset()
 			char_table.allyLoammNiffen = false;
 			char_table.theSuperbloom = false;
 			char_table.bloomingDreamseeds = false;
+			char_table.theDreamsurge = false;
+			char_table.timeRift = false;
 		end
 	end
 end
@@ -666,6 +670,16 @@ function AltManager:CollectData()
 		bloomingDreamseeds = true
 	end
 
+	local timeRift = false
+	if C_QuestLog.IsQuestFlaggedCompleted(77236) then
+		timeRift = true
+	end
+
+	local theDreamsurge = false
+	if C_QuestLog.IsQuestFlaggedCompleted(77251) then
+		theDreamsurge = true
+	end
+
 	local communityFeast = false
 	if C_QuestLog.IsQuestFlaggedCompleted(70893) then
 		communityFeast = true
@@ -738,6 +752,8 @@ function AltManager:CollectData()
 	char_table.allyLoammNiffen = allyLoammNiffen
 	char_table.theSuperbloom = theSuperbloom
 	char_table.bloomingDreamseeds = bloomingDreamseeds
+	char_table.timeRift = timeRift
+	char_table.theDreamsurge = theDreamsurge
 	char_table.version = constants.VERSION
 	char_table.expires = self:GetNextWeeklyResetTime()
 	char_table.dataObtained = time()
@@ -1046,13 +1062,23 @@ function AltManager:CreateContent()
 			label = constants['labels'].COMMUNITY_FEAST,
 			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		the_superbloom = {
+		time_rifts = {
 			order = 4.3,
+			label = constants['labels'].TIME_RIFTS,
+			data = function(alt_data) return alt_data.timeRift and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		the_dreamsurge = {
+			order = 4.4,
+			label = constants['labels'].DREAMSURGE,
+			data = function(alt_data) return alt_data.theDreamsurge and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		the_superbloom = {
+			order = 4.5,
 			label = constants['labels'].THE_SUPERBLOOM,
 			data = function(alt_data) return alt_data.theSuperbloom and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
 		blooming_dreamseeds = {
-			order = 4.4,
+			order = 4.6,
 			label = constants['labels'].BLOOMING_DREAMSEEDS,
 			data = function(alt_data) return alt_data.bloomingDreamseeds and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
