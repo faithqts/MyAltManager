@@ -309,10 +309,8 @@ end
 
 function AltManager:GetCurrentExpansion()
     local _, _, _, interface = GetBuildInfo()
-    if not interface then return nil end
     return math.floor(interface / 10000)
 end
-
 local function GetExpansionFromVersion(versionStr)
     if type(versionStr) ~= "string" then return nil end
     return tonumber(versionStr:match("^(%d+)"))
