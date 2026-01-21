@@ -844,7 +844,7 @@ function AltManager:CollectData()
     local runHistory = C_MythicPlus.GetRunHistory(false, true)
 
     local function extractKeystoneInfo(slotItem)
-        if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
+        if slotItem.itemID == 180653 or slotItem.itemID == 151086 then
             local itemString = slotItem.hyperlink and slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
             if itemString then
                 local info = { strsplit(":", itemString) }
