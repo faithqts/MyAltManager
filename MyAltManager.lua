@@ -688,7 +688,16 @@ function AltManager:ValidateReset()
 end
 
 function AltManager:Purge()
+    -- Preserve user configuration before purging
+    local savedMinItemLevel = MyAltManagerDB and MyAltManagerDB.config and MyAltManagerDB.config.MIN_ITEM_LEVEL
+    
     MyAltManagerDB = self:InitDB()
+    
+    -- Restore preserved MIN_ITEM_LEVEL if it was set
+    if savedMinItemLevel ~= nil then
+        MyAltManagerDB.config.MIN_ITEM_LEVEL = savedMinItemLevel
+    end
+    
     self:LoadConfigFromDB()
 end
 
