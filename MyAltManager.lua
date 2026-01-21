@@ -24,7 +24,7 @@ local constants = {}
 
 constants.config = {}
 constants.config.MIN_LEVEL = 80
-constants.config.MIN_ITEM_LEVEL = 0 -- controlled via /alts min <ilevel>, default 0
+constants.config.MIN_ITEM_LEVEL = 160 -- controlled via /alts min <ilevel>, default 160 for pre-patch
 
 constants.labels = {
     NAME = "",
