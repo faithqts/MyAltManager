@@ -444,7 +444,7 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
     if rqst == "help" then
         print("MyAltManager help:")
         print("   \"/alts\" to open the UI.")
-        print("   \"/alts min <ilevel>\" to set minimum item level to store data (default 0).")
+        print("   \"/alts min <ilevel>\" to set minimum item level to store character data (default 0).")
         print("   \"/alts purge\" to remove all stored data.")
         print("   \"/alts remove <name>\" to remove characters by name.")
     elseif rqst == "purge" then
