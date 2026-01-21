@@ -807,9 +807,9 @@ function AltManager:CollectData()
 
     local name = UnitName("player")
     local _, class = UnitClass("player")
-    local dungeon = nil
+    local dungeon = " "
     local expire = nil
-    local level = nil
+    local level = " "
 
     local guid = UnitGUID("player")
 
