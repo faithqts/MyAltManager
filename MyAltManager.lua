@@ -409,19 +409,22 @@ function AltManager:ScheduleCollect(reason)
     if not self.addon_loaded then return end
     if not self:CanCollectNow() then return end
 
-    -- Cancel any existing timer to prevent accumulation
+    -- Mark that we want to collect; cancel any existing pending timer
     if self._collectTimer then
         self._collectTimer:Cancel()
         self._collectTimer = nil
     end
 
-    -- Create new timer with cleanup
-    self._collectTimer = C_Timer.NewTimer(0.5, function()
-        self._collectTimer = nil
+    -- Use NewTicker with single iteration for cancellable timer
+    self._collectTimer = C_Timer.NewTicker(0.5, function()
+        if self._collectTimer then
+            self._collectTimer:Cancel()
+            self._collectTimer = nil
+        end
         if not self:CanCollectNow() then return end
         local data = self:CollectData(false)
         self:StoreData(data)
-    end)
+    end, 1)
 end
 
 -- ------------------------------------------------------------
