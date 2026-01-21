@@ -417,7 +417,7 @@ function AltManager:ScheduleCollect(reason)
     C_Timer.After(0.5, function()
         -- Only execute if this is still the current generation (not superseded)
         if self._collectTimerGen ~= currentGen then return end
-        
+
         if not self:CanCollectNow() then return end
         local data = self:CollectData(false)
         self:StoreData(data)
