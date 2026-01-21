@@ -304,7 +304,7 @@ end
 
 local function GetCurrencyAmount(id)
     local info = C_CurrencyInfo.GetCurrencyInfo(id)
-    return info and info.quantity or 0
+    return info and info.quantity
 end
 
 -- ------------------------------------------------------------
