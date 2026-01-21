@@ -1523,8 +1523,37 @@ end
 
 function AltManager:ShowInterface()
     self.main_frame:Show()
+
     if self:CanCollectNow() then
         self:StoreData(self:CollectData())
+    else
+        -- Data collection is currently not possible (e.g., in combat).
+        -- Schedule a collection and UI refresh for when combat ends.
+        self.pending_update_after_combat = true
+
+        if self.main_frame and self.main_frame.RegisterEvent then
+            self.main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+
+            if not self.main_frame.combatUpdateHandlerSet and self.main_frame.HookScript then
+                self.main_frame.combatUpdateHandlerSet = true
+                self.main_frame:HookScript("OnEvent", function(frame, event, ...)
+                    if event == "PLAYER_REGEN_ENABLED" and AltManager and AltManager.pending_update_after_combat then
+                        AltManager.pending_update_after_combat = false
+                        if frame.UnregisterEvent then
+                            frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                        end
+
+                        if AltManager.CanCollectNow and AltManager:CanCollectNow() then
+                            AltManager:StoreData(AltManager:CollectData())
+                        end
+
+                        if AltManager.UpdateStrings then
+                            AltManager:UpdateStrings()
+                        end
+                    end
+                end)
+            end
+        end
     end
     self:UpdateStrings()
 end
