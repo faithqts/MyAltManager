@@ -24,7 +24,7 @@ local constants = {}
 
 constants.config = {}
 constants.config.MIN_LEVEL = 80
-constants.config.MIN_ITEM_LEVEL = 0 -- controlled via /alts min <ilevel>, default 0
+constants.config.MIN_ITEM_LEVEL = 160 -- controlled via /alts min <ilevel>, default 160 for pre-patch
 
 constants.labels = {
     NAME = "",
@@ -195,6 +195,9 @@ constants.DELVE_ILVL = {
 
 -- Great Vault rewards (Keystones)
 -- Base item level progression for Mythic+ keystones
+-- Dungeon item level rewards by mythic keystone level.
+-- Intentionally capped at level 10 as the maximum reward tier.
+-- Higher keystone levels (11+) map to level 10 rewards (see GetWeeklyDungeonRewards).
 constants.DUNGEON_ILVL = {
     [0]  = "246", -- Mythic +0
     [1]  = "259", -- Mythic +1
@@ -310,10 +313,8 @@ end
 
 function AltManager:GetCurrentExpansion()
     local _, _, _, interface = GetBuildInfo()
-    if not interface then return nil end
     return math.floor(interface / 10000)
 end
-
 local function GetExpansionFromVersion(versionStr)
     if type(versionStr) ~= "string" then return nil end
     return tonumber(versionStr:match("^(%d+)"))
@@ -688,7 +689,16 @@ function AltManager:ValidateReset()
 end
 
 function AltManager:Purge()
+    -- Preserve user configuration before purging
+    local preservedMinItemLevel = MyAltManagerDB and MyAltManagerDB.config and MyAltManagerDB.config.MIN_ITEM_LEVEL
+    
     MyAltManagerDB = self:InitDB()
+    
+    -- Restore preserved MIN_ITEM_LEVEL if it was set
+    if preservedMinItemLevel ~= nil then
+        MyAltManagerDB.config.MIN_ITEM_LEVEL = preservedMinItemLevel
+    end
+    
     self:LoadConfigFromDB()
 end
 
@@ -798,9 +808,9 @@ function AltManager:CollectData()
 
     local name = UnitName("player")
     local _, class = UnitClass("player")
-    local dungeon = nil
+    local dungeon = " "
     local expire = nil
-    local level = nil
+    local level = " "
 
     local guid = UnitGUID("player")
 
@@ -1524,8 +1534,37 @@ end
 
 function AltManager:ShowInterface()
     self.main_frame:Show()
+
     if self:CanCollectNow() then
         self:StoreData(self:CollectData())
+    else
+        -- Data collection is currently not possible (e.g., in combat).
+        -- Schedule a collection and UI refresh for when combat ends.
+        self.pending_update_after_combat = true
+
+        if self.main_frame and self.main_frame.RegisterEvent then
+            self.main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+
+            if not self.main_frame.combatUpdateHandlerSet and self.main_frame.HookScript then
+                self.main_frame.combatUpdateHandlerSet = true
+                self.main_frame:HookScript("OnEvent", function(frame, event, ...)
+                    if event == "PLAYER_REGEN_ENABLED" and AltManager and AltManager.pending_update_after_combat then
+                        AltManager.pending_update_after_combat = false
+                        if frame.UnregisterEvent then
+                            frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                        end
+
+                        if AltManager.CanCollectNow and AltManager:CanCollectNow() then
+                            AltManager:StoreData(AltManager:CollectData())
+                        end
+
+                        if AltManager.UpdateStrings then
+                            AltManager:UpdateStrings()
+                        end
+                    end
+                end)
+            end
+        end
     end
     self:UpdateStrings()
 end
