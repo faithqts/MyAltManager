@@ -845,7 +845,10 @@ function AltManager:CollectData()
 
     local function extractKeystoneInfo(slotItem)
         if slotItem.itemID == 180653 or slotItem.itemID == 151086 then
-            local itemString = slotItem.hyperlink and slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
+            if not slotItem.hyperlink then
+                return
+            end
+            local itemString = slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
             if itemString then
                 local info = { strsplit(":", itemString) }
                 local d = tonumber(info[2]) or nil
