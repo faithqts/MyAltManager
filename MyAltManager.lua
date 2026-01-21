@@ -304,8 +304,8 @@ end
 
 local function GetCurrencyAmount(id)
     local info = C_CurrencyInfo.GetCurrencyInfo(id)
-    if not info then
-        return nil
+    if not info or not info.quantity then
+        return 0
     end
     return info.quantity
 end
