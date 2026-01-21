@@ -483,7 +483,6 @@ do
     main_frame:RegisterEvent("CHAT_MSG_CURRENCY")
     main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
     main_frame:RegisterEvent("PLAYER_LEAVING_WORLD")
-    main_frame:RegisterEvent("UNIT_SPELLCAST_SENT")
 
     main_frame:SetScript("OnEvent", function(self, ...)
         local event, loadedOrType = ...
