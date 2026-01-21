@@ -412,9 +412,9 @@ function AltManager:ScheduleCollect(reason)
 
     self._collectTimer = C_Timer.After(0.5, function()
         self._collectTimer = nil
-        if not AltManager:CanCollectNow() then return end
-        local data = AltManager:CollectData(false)
-        AltManager:StoreData(data)
+        if not self:CanCollectNow() then return end
+        local data = self:CollectData(false)
+        self:StoreData(data)
     end)
 end
 
