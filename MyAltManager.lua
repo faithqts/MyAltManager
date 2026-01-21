@@ -6,24 +6,25 @@ _G["AltManager"] = AltManager;
 -- Previously Method Alt Manager
 -- updates for Bfa by: Kabootzey - Tarren Mill <Ended Careers>, 2018
 -- Last edit: 2020-10-14
--- updates for Dragonflight by: Faith - Frostmourne, 2021-2023
+-- updates for Dragonflight, and The War Within by: Faith - Frostmourne, 2021-2024
 -- Last edit: 2023-11-12
 
-local sizey = 450;
+local sizey = 535;
 local xoffset = 0;
 local yoffset = 50;
 local addon = "MyAltManager";
 local numel = table.getn;
 
-local per_alt_x = 170;
-local ilvl_text_size = 14;
-local remove_button_size = 18;
+local per_alt_x = 150;
+local ilvl_text_size = 12;
+local remove_button_size = 16;
 local min_x_size = 300;
 
 local constants = {};
 
 constants.config = {};
-constants['config'].MIN_LEVEL = 70;
+constants['config'].MIN_LEVEL = 80;
+constants['config'].MIN_ITEM_LEVEL = 685;
 
 constants.labels = {
     NAME = "",
@@ -31,26 +32,44 @@ constants.labels = {
     CURRENT_KEYSTONE = "Current Keystone",
     WEEKLY_QUESTS = "Weekly Quests",
     WEEKLY_EVENTS = "Weekly Events",
-    AIDING_THE_ACCORD = "Aiding The Accord",
     KEYSTONE = "Mythic+",
     MYTHIC_RATING = "Overall Rating",
-    WEEKLY_REWARDS = "Weekly Vault",
-    COMMUNITY_FEAST = "Community Feast",
-    SPARKS_OF_LIFE = "Sparks of Life",
-    TIER_SET = "Tier 31",
+    WEEKLY_KEYSTONE_REWARDS = "Weekly Keystones",
+    WEEKLY_RAID_REWARDS = "Weekly Raids",
+    WEEKLY_DUNGEON_REWARDS = "Weekly Dungeons",
+    WEEKLY_DELVE_REWARDS = "Weekly Delves",
+    TIER_SET = "Tier 34",
     CATALYST_CHARGES = "Catalyst Charges",
     CURRENCIES = "Currencies",
-    WHELPLINGS_CREST = "Whelplings Crest",
-    DRAKES_CREST = "Drakes Crest",
-    WYRMS_CREST = "Wyrms Crest",
-    ASPECTS_CREST = "Aspects Crest",
-    FLIGHTSTONES = "Flightstones",
-    ALLY_LOAMM_NIFFEN = "Ally: Loamm Niffen",
-    ALLY_DREAM_WARDENS = "Ally: Dream Wardens",
-    THE_SUPERBLOOM = "The Superbloom",
-    BLOOMING_DREAMSEEDS = "Blooming Dreamseeds",
-	TIME_RIFTS = "Time Rift",
-	DREAMSURGE = "The Dreamsurge"
+	CONQUEST = "Conquest |TInterface\\Icons\\achievement_legionpvp2tier3:12:12:0:0|t",
+	FORGED_WEAPONS = "Forged Weapons |TInterface\\Icons\\inv_misc_token_pvp02:12:12:0:0|t",
+	HONOR = "Honor |TInterface\\Icons\\achievement_legionpvptier4:12:12:0:0|t",
+	BLOODY_TOKENS = "Bloody Tokens |TInterface\\Icons\\inv_10_dungeonjewelry_titan_trinket_2_color2:12:12:0:0|t",
+    LFR_CRESTS = "Weathered |TInterface\\Icons\\inv_crestupgrade_ethereal_weathered:12:12:0:0|t",
+    NORMAL_CRESTS = "Carved |TInterface\\Icons\\inv_crestupgrade_ethereal_carved:12:12:0:0|t",
+    HEROIC_CRESTS = "Runed |TInterface\\Icons\\inv_crestupgrade_ethereal_runed:12:12:0:0|t",
+    MYTHIC_CRESTS = "Gilded |TInterface\\Icons\\inv_crestupgrade_ethereal_gilded_enchanted:12:12:0:0|t",
+    VALORSTONES = "Valorstones |TInterface\\Icons\\inv_valorstone_base:12:12:0:0|t",
+    FLAME_BLESSED_IRON = "Flame-Blessed |TInterface\\Icons\\inv_siren_isle_flameblessed_iron:12:12:0:0|t",
+	UNDERCOIN = "Undercoin |TInterface\\Icons\\inv_misc_elvencoins:12:12:0:0|t",
+	STARLIGHT_SPARKS = "Starlight Sparks |TInterface\\Icons\\inv_10_enchanting_dust_color4:12:12:0:0|t",
+	HIDDEN_TROVE = "Hidden Trove (Delves)",
+	RESTORED_COFFER_KEY = "Bountiful Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
+	RESONANCE_CRYSTALS = "Resonance Crystals",
+	KHAZ_ALGAR_EMISSARY = "Khaz Algar Emissary",
+	PHASE_DIVING = "Phase Diving",
+	ECOLOGICAL_SUCCESSION = "Ecological Succession",
+	URGE_TO_SURGE = "Urge to Surge",
+	SPREADING_THE_LIGHT = "Spreading the Light",
+	SPECIAL_ASSIGNMENT = "Special Assignment",
+	AZJ_KAHET_PACT = "Azj-Kahet Pacts",
+	EARTHEN_THEATER = "Earthen Theater",
+	COLLECTING_WAX = "Collecting Wax",
+	AWAKENING_THE_MACHINE = "Awakening the Machine",
+	GREAT_VAULT_REWARDS = "Great Vault",
+	WORLD_BOSS = "World Boss",
+	PVP = "PVP",
+	UNTAINTED_MANA_CRYSTALS = "Untainted Mana |TInterface\\Icons\\inv_elemental_primal_mana:12:12:0:0|t"
 }
 
 constants.DUNGEONS = {
@@ -118,122 +137,104 @@ constants.DUNGEONS = {
 	[456] = "Tides",
 	[463] = "Galakrond",
 	[464] = "Murozond",
+	[499] = "Priory",
+	[500] = "Rookery",
+	[501] = "Stonevault",
+	[502] = "Threads",
+	[503] = "Ara-Kara",
+	[504] = "Darkflame",
+	[505] = "Dawnbreaker",
+	[506] = "Meadery",
+	[507] = "Grim Batol",
+	[525] = "Floodgate",
+	[541] = "Stonecore",
+	[542] = "Eco-Dome",
 }
 
-constants.VAULT_ILVL = {
-	454,
-	457,
-	460,
-	460,
-	463,
-	463,
-	467,
-	467,
-	470,
-	470,
-	473,
-	473,
-	473,
-	476,
-	476,
-	476,
-	480,
-	480,
-	483
+constants.RAID_ILVL = {
+	[1] = "D:N",
+	[2] = "D:H",
+	[3] = "R:10N",
+	[4] = "R:25N",
+	[5] = "R:10H",
+	[6] = "R:25H",
+	[7] = "671", -- LFR
+	[8] = "D:CM",
+	[9] = "R:40",
+	[14] = "684", -- Normal
+	[15] = "697", -- Heroic
+	[16] = "710", -- Mythic
+	[17] = "671", -- LFR
+	[23] = "D:M",
+	[24] = "D:TW",
+	[33] = "R:TW",
+	[202] = "Story",
+}
+
+constants.DELVE_ILVL = {
+	[1] = "655",
+	[2] = "668",
+	[3] = "671",
+	[4] = "681",
+	[5] = "688",
+	[6] = "691",
+	[7] = "691",
+	[8] = "694",
+	[9] = "694",
+	[10] = "694",
+	[11] = "694",
+}
+
+constants.DUNGEON_ILVL = {
+	[0] = "681",
+	[1] = "694",
+	[2] = "694",
+	[3] = "694",
+	[4] = "697",
+	[5] = "697",
+	[6] = "701",
+	[7] = "704",
+	[8] = "704",
+	[9] = "704",
+	[10] = "707",
+	[11] = "707",
+	[12] = "707",
+}
+
+constants.currencies = {
+	conquest = "1602",
+	honor = "1792",
+	bloodyTokens = "2123",
+	catalyst = "3269",
+	valorstones = "3008",
+	undercoin = "2803",
+	resonance_crystals = "2815",
+	restored_coffer_keys = "3028",
+	lfr_crests = "3284",
+	normal_crests = "3286",
+	heroic_crests = "3288",
+	mythic_crests = "3290",
+	flameBlessedIron = "3090",
+	starlightSparks = "3141",
+	untaintedManaCrystals = "3356",
 };
 
 constants.TIER_SETS = {
 
-    -- Death Knight
-    [207198] = true,
-    [207199] = true,
-    [207200] = true,
-    [207201] = true,
-    [207203] = true,
-
-    -- Demon Hunter
-    [207261] = true,
-    [207262] = true,
-    [207263] = true,
-    [207264] = true,
-    [207266] = true,
-
-    -- Druid
-    [207252] = true,
-    [207253] = true,
-    [207254] = true,
-    [207255] = true,
-    [207257] = true,
-
-    -- Evoker
-    [207225] = true,
-    [207226] = true,
-    [207227] = true,
-    [207228] = true,
-    [207230] = true,
-
-    -- Hunter
-    [207216] = true,
-    [207217] = true,
-    [207218] = true,
-    [207219] = true,
-    [207221] = true,
-
-    -- Mage
-    [207288] = true,
-    [207289] = true,
-    [207290] = true,
-    [207291] = true,
-    [207293] = true,
-
-    -- Monk
-    [207243] = true,
-    [207244] = true,
-    [207245] = true,
-    [207246] = true,
-    [207248] = true,
-
-    -- Paladin
-    [207189] = true,
-    [207190] = true,
-    [207191] = true,
-    [207192] = true,
-    [207194] = true,
-
-    -- Priest
-    [207279] = true,
-    [207280] = true,
-    [207281] = true,
-    [207282] = true,
-    [207284] = true,
-
-    -- Rogue
-    [207234] = true,
-    [207235] = true,
-    [207236] = true,
-    [207237] = true,
-    [207239] = true,
-
-    -- Shaman
-    [207207] = true,
-    [207208] = true,
-    [207209] = true,
-    [207210] = true,
-    [207212] = true,
-
-    -- Warlock
-    [207270] = true,
-    [207271] = true,
-    [207272] = true,
-    [207273] = true,
-    [207275] = true,
-
-    -- Warrior
-    [207180] = true,
-    [207181] = true,
-    [207182] = true,
-    [207183] = true,
-    [207185] = true,
+    -- Uses SetId (ie; https://www.wowhead.com/item-sets?filter=13:11;10:2;0:100205)
+	[1919] = true,
+	[1920] = true,
+	[1921] = true,
+	[1922] = true,
+	[1923] = true,
+	[1924] = true,
+	[1925] = true,
+	[1926] = true,
+	[1927] = true,
+	[1928] = true,
+	[1929] = true,
+	[1930] = true,
+	[1931] = true,
 
 }
 
@@ -245,7 +246,37 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "10.2.0.3";
+constants.VERSION = "11.2.0.1";
+
+local texturePath = "Interface\\AddOns\\MyAltManager\\media\\lizard.tga"
+local soundPath   = "Interface\\AddOns\\MyAltManager\\media\\sounds\\lizard.ogg"
+
+-- Create a frame to handle events
+local frame = CreateFrame("Frame")
+
+-- Functionality for instant catalyst
+frame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+frame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
+
+local catalystButton
+
+frame:SetScript("OnEvent", function(self, event, type)
+	local db = MyAltManagerDB;
+    if event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" and type == 44 and db.Tweaks == 1 then
+        if not catalystButton then
+            catalystButton = CreateFrame("Button", nil, ItemInteractionFrame, "UIPanelButtonTemplate")
+            catalystButton:SetText("Catalyst Now")
+            catalystButton:SetSize(120, 30)
+            catalystButton:SetPoint("CENTER", ItemInteractionFrameTitleText, 0, 30)
+            catalystButton:SetScript("OnClick", function()
+                ItemInteractionFrame:CompleteItemInteraction()
+            end)
+        end
+        catalystButton:Show()
+    elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" and catalystButton then
+        catalystButton:Hide()
+    end
+end)
 
 local function GetCurrencyAmount(id)
 	local info = C_CurrencyInfo.GetCurrencyInfo(id)
@@ -255,6 +286,9 @@ end
 SLASH_ALTMANAGER1 = "/alts";
 
 local function spairs(t, order)
+	if not t then
+		return
+	end
     local keys = {}
     for k in pairs(t) do keys[#keys+1] = k end
 
@@ -283,21 +317,39 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
 	local rqst, arg = strsplit(' ', cmd)
 	if rqst == "help" then
 		print("Alt Manager help:")
+		print("   \"/alts tweaks\" to toggle quality of life tweaks.")
+		print("   \"/alts lizard\" to toggle LIZARD.")
 		print("   \"/alts purge\" to remove all stored data.")
 		print("   \"/alts remove name\" to remove characters by name.")
 	elseif rqst == "purge" then
 		AltManager:Purge();
 	elseif rqst == "remove" then
 		AltManager:RemoveCharactersByName(arg)
+	elseif rqst == "tweaks" then
+		AltManager:ChangeTweaks()
+	elseif rqst == "lizard" then
+		AltManager:ChangeLizard()
 	else
 		AltManager:ShowInterface();
 	end
 end
 
+function AltManager:ChangeTweaks()
+    local db = MyAltManagerDB
+    db.Tweaks = 1 - (db.Tweaks or 0)
+    print("MyAltManager Tweaks:", db.Tweaks == 1 and "Enabled" or "Disabled")
+end
+
+function AltManager:ChangeLizard()
+    local db = MyAltManagerDB
+    db.Lizard = 1 - (db.Lizard or 0)
+    print("MyAltManager Lizard:", db.Lizard == 1 and "Enabled" or "Disabled")
+end
+
 do
 	local main_frame = CreateFrame("frame", "AltManagerFrame", UIParent);
 	AltManager.main_frame = main_frame;
-	main_frame:SetFrameStrata("MEDIUM");
+	main_frame:SetFrameStrata("HIGH");
 	main_frame.background = main_frame:CreateTexture(nil, "BACKGROUND");
 	main_frame.background:SetAllPoints();
 	main_frame.background:SetDrawLayer("ARTWORK", 1);
@@ -313,11 +365,15 @@ do
 	main_frame:RegisterEvent("BAG_UPDATE_DELAYED");
 	main_frame:RegisterEvent("ARTIFACT_XP_UPDATE");
 	main_frame:RegisterEvent("CHAT_MSG_CURRENCY");
+	main_frame:RegisterEvent("CHAT_MSG_PING");
 	main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
 	main_frame:RegisterEvent("PLAYER_LEAVING_WORLD");
+	main_frame:RegisterEvent("UNIT_SPELLCAST_SENT");
+	main_frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 	main_frame:SetScript("OnEvent", function(self, ...)
 		local event, loaded = ...;
+		local db = MyAltManagerDB;
 		if event == "ADDON_LOADED" then
 			if addon == loaded then
       			AltManager:OnLoad();
@@ -326,6 +382,7 @@ do
 		if event == "PLAYER_LOGIN" then
         	AltManager:OnLogin();
 			AltManager:StoreData(data);
+			LeaveChannelByName("Services");
 		end
 		if event == "PLAYER_LEAVING_WORLD" then
 			local data = AltManager:CollectData(false);
@@ -335,7 +392,25 @@ do
 			local data = AltManager:CollectData(false);
 			AltManager:StoreData(data);
 		end
-		
+		if event == "CHAT_MSG_PING" and db.Tweaks == 1 then
+			local text = select(2, ...)
+			if string.find(text, "ping_chat_attack") then
+				PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\attack.ogg", "Master")
+			elseif string.find(text, "ping_chat_nonthreat") then
+				--PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\look_here.ogg", "Master")
+			elseif string.find(text, "ping_chat_onmyway") then
+				--PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\on_my_way.ogg", "Master")
+			elseif string.find(text, "ping_chat_assist") then
+				--PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\assist.ogg", "Master")
+			elseif string.find(text, "ping_chat_warning") then
+				--PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\warning.ogg", "Master")
+			elseif string.find(text, "ping_chat_threat") then
+				--PlaySoundFile("Interface\\AddOns\\MyAltManager\\media\\sounds\\threatening.ogg", "Master")
+			end
+		end
+		if event == "COMBAT_LOG_EVENT_UNFILTERED" and db.Lizard == 1 then
+			MyAltManagerCombatLogEvent()
+		end
 	end)
 
 	main_frame:EnableKeyboard(true);
@@ -392,6 +467,11 @@ function AltManager:OnLoad()
 	
 	MyAltManagerDB = MyAltManagerDB or self:InitDB();
 
+	if (MyAltManagerDB.Tweaks ~= 0 and MyAltManagerDB.Tweaks ~= 1) then
+		MyAltManagerDB.Tweaks = 1
+		print("MyAltManager: Setting tweaks to enabled by default, you can disable these with /alts tweaks")
+	end
+
 	self:PurgeOldVersions();
 
 	if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
@@ -415,12 +495,78 @@ function AltManager:CreateFontFrame(parent, x_size, height, relative_to, y_offse
 	f:SetText(label)
 	f:SetPoint("TOPLEFT", relative_to, "TOPLEFT", 0, y_offset);
 	f:GetFontString():SetJustifyH(justify);
-	f:GetFontString():SetJustifyV("CENTER");
+	f:GetFontString():SetJustifyV("MIDDLE");
 	f:SetPushedTextOffset(0, 0);
-	f:GetFontString():SetWidth(170)
-	f:GetFontString():SetHeight(16)
+	f:GetFontString():SetWidth(150)
+	f:GetFontString():SetHeight(14)
 	
 	return f;
+end
+
+function SpawnCritIcon()
+	local screenWidth = UIParent:GetWidth()
+	local screenHeight = UIParent:GetHeight()
+    local texFrame = CreateFrame("Frame", nil, UIParent)
+    texFrame:SetSize(128, 128)
+    texFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+
+    local tex = texFrame:CreateTexture(nil, "OVERLAY")
+    tex:SetAllPoints(texFrame)
+    tex:SetTexture(texturePath)
+
+    local x = math.random(0, screenWidth - 128)
+    local y = math.random(0, screenHeight - 128)
+    texFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+
+    -- animation group for fade in/out
+    local ag = texFrame:CreateAnimationGroup()
+
+    local fadeIn = ag:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0)
+    fadeIn:SetToAlpha(1)
+    fadeIn:SetDuration(0.2)
+    fadeIn:SetOrder(1)
+
+    local hold = ag:CreateAnimation("Alpha")
+    hold:SetFromAlpha(1)
+    hold:SetToAlpha(1)
+    hold:SetDuration(0.6)
+    hold:SetOrder(2)
+
+    local fadeOut = ag:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(1)
+    fadeOut:SetToAlpha(0)
+    fadeOut:SetDuration(0.2)
+    fadeOut:SetOrder(3)
+
+    ag:SetScript("OnFinished", function()
+        texFrame:Hide()
+        texFrame:SetParent(nil)
+    end)
+
+    ag:Play()
+
+    -- play sound
+    PlaySoundFile(soundPath, "Master")
+end
+
+function MyAltManagerCombatLogEvent()
+    local _, subEvent, _, sourceGUID, _, _, _, _, _, _, _, _, critical = CombatLogGetCurrentEventInfo()
+
+    if sourceGUID == UnitGUID("player") then
+        if subEvent == "SWING_DAMAGE" or subEvent == "SPELL_DAMAGE" or subEvent == "RANGE_DAMAGE" then
+            local isCrit
+            if subEvent == "SWING_DAMAGE" then
+                _, _, _, _, _, _, isCrit = CombatLogGetCurrentEventInfo()
+            else
+                _, _, _, _, _, _, _, _, _, _, _, _, _, _, isCrit = CombatLogGetCurrentEventInfo()
+            end
+
+            if isCrit then
+                SpawnCritIcon()
+            end
+        end
+    end
 end
 
 function AltManager:Keyset()
@@ -450,18 +596,25 @@ function AltManager:ValidateReset()
 			char_table.dungeon = " ";
 			char_table.level = " ";
 			char_table.runHistory = nil;
-			char_table.highestCompletedWeeklyKeystone = nil;
+			char_table.highestCompletedWeeklyKeystone = " ";
 			char_table.completedWeeklyKeystoneRewards = nil;
-			char_table.expires = self:GetNextWeeklyResetTime();
-			char_table.accordWeekly = false;
-			char_table.sparksOfLife = false;
-			char_table.communityFeast = false;
-			char_table.allyDreamWardens = false;
-			char_table.allyLoammNiffen = false;
-			char_table.theSuperbloom = false;
-			char_table.bloomingDreamseeds = false;
-			char_table.theDreamsurge = false;
-			char_table.timeRift = false;
+			char_table.weeklyDungeonRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r";
+			char_table.weeklyDelveRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r";
+			char_table.weeklyRaidRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r";
+			char_table.expires = self:GetNextWeeklyResetTime();	
+			char_table.khazAlgarEmissary = false;
+			char_table.azjKahetPacts = false;
+			char_table.spreadingTheLight = false;
+			char_table.specialAssignment = false;
+			char_table.collectingWax = false;
+			char_table.worldBoss = false;
+			char_table.earthenTheater = false;
+			char_table.awakeningTheMachine = false;
+			char_table.phaseDiving = false;
+			char_table.ecologicalSuccession = false;
+			char_table.urgeToSurge = false;
+			char_table.hiddenTrove = false;
+			char_table.weeklyCofferKeysCollected = 0;
 		end
 	end
 end
@@ -537,7 +690,11 @@ function AltManager:StoreData(data)
 		return
 	end
 
-	if UnitLevel('player') < constants.config.MIN_LEVEL then return end;
+	if UnitLevel('player') < constants.config.MIN_LEVEL then return	end
+
+	_, i = GetAverageItemLevel()
+	if i == 0 then return end
+	if i < constants.config.MIN_ITEM_LEVEL then return end
 
 	local db = MyAltManagerDB;
 	local guid = data.guid;
@@ -560,11 +717,11 @@ function AltManager:StoreData(data)
 end
 
 function AltManager:CollectData()
-	
-	if UnitLevel('player') < constants.config.MIN_LEVEL then return	end
 
 	_, i = GetAverageItemLevel()
 	if i == 0 then return end
+
+	if UnitLevel('player') < constants.config.MIN_LEVEL then return	end
 
 	local name = UnitName('player')
 	local _, class = UnitClass('player')
@@ -602,6 +759,124 @@ function AltManager:CollectData()
 		end
 	end
 
+	local function checkKhazAlgarEmissaryStatus()
+		local khazAlgarEmissaryText = false
+		local questIDs = {
+			82449, 82452, 82453, 82458, 82482, 82483, 82485, 82486, 82487, 82488,
+			82489, 82490, 82491, 82492, 82493, 82494, 82495, 82496, 82497, 82498,
+			82499, 82500, 82501, 82502, 82503, 82504, 82505, 82506, 82507, 82508,
+			82509, 82510, 82511, 82512, 82659, 82678, 82679, 82706, 82707, 82709,
+			82711, 82712, 82746, 87417, 87419, 87422, 87423, 87424, 89514, 91052,
+			91855
+		}
+
+		for _, QUEST_ID in ipairs(questIDs) do
+			if C_QuestLog.IsOnQuest(QUEST_ID) then
+				khazAlgarEmissaryText = "|cFFFBD910In Progress|r"
+				return khazAlgarEmissaryText
+			end
+		end
+
+		for _, QUEST_ID in ipairs(questIDs) do
+			if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
+				khazAlgarEmissaryText = "|cFF00CF20Complete|r"
+				return khazAlgarEmissaryText
+			else
+				khazAlgarEmissaryText = "|cFFFF0000Not Started|r"
+			end
+		end
+	
+		return khazAlgarEmissaryText
+	end
+
+	local function checkSpecialAssignmentStatus()
+		local specialAssignmentsText = false
+		local questIDs = {
+			82355, 82852, 82787, 83229, 81691, 82414, 82531, 81650, 85488, 85487
+		}
+	
+		for _, QUEST_ID in ipairs(questIDs) do
+			if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
+				specialAssignmentsText = "|cFF00CF20Complete|r"
+				break
+			else
+				specialAssignmentsText = "|cFFFF0000Incomplete|r"
+			end
+		end
+	
+		return specialAssignmentsText
+	end
+
+	local function checkAzjKahetPactStatus()
+		local azjKahetPactText = false
+		local questIDs = {
+			80670, 80671, 80672
+		}
+	
+		for _, QUEST_ID in ipairs(questIDs) do
+			if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
+				azjKahetPactText = "|cFF00CF20Complete|r"
+				break
+			else
+				azjKahetPactText = "|cFFFF0000Incomplete|r"
+			end
+		end
+	
+		return azjKahetPactText
+	end
+
+	local function checkWorldBossStatus()
+		local db = MyAltManagerDB
+		if not db or not db.data then
+			return "|cFFFF0000Incomplete|r"
+		end
+
+		for _, charData in pairs(db.data) do
+			if charData.worldBoss == "|cFF00CF20Complete|r" then
+				return "|cFF00CF20Complete|r"
+			end
+		end
+
+		local questIDs = { 87354 }
+		for _, QUEST_ID in ipairs(questIDs) do
+			if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
+				for _, charData in pairs(db.data) do
+					charData.worldBoss = "|cFF00CF20Complete|r"
+				end
+				return "|cFF00CF20Complete|r"
+			end
+		end
+
+		return "|cFFFF0000Incomplete|r"
+	end
+
+	local function checkWeeklyCofferKeysCollected()
+		local cofferKeyQuestIds = {
+			84736,
+			84737,
+			84738,
+			84739
+		}
+		local cofferKeysObtained = 0
+		for i, questID in ipairs(cofferKeyQuestIds) do
+			if C_QuestLog.IsQuestFlaggedCompleted(questID) then
+				cofferKeysObtained = cofferKeysObtained + 1
+			end
+		end
+	
+		return cofferKeysObtained .. "/4"
+	end
+
+	local function GetRollingCurrencyProgress(currencyID)
+		local info = C_CurrencyInfo.GetCurrencyInfo(currencyID)
+		if not info then return "0/0" end
+	
+		local spent = info.totalEarned - info.quantity
+		local rollingMax = math.max(info.quantity, info.maxQuantity - spent)
+	
+		return ("%d/%d"):format(info.quantity, rollingMax)
+	end	
+
 	local keystone_found = false
 	for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = C_Container.GetContainerNumSlots(container)
@@ -621,105 +896,137 @@ function AltManager:CollectData()
 		keystone_details = "None"
 	end
 
-	local accordWeekly = false
-	local accordWeeklyText = false
-	if C_QuestLog.IsOnQuest(70750) then
-		local questInfo = C_QuestLog.GetQuestObjectives(70750);
-		local progress = questInfo[1].numFulfilled;
-		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
-	elseif C_QuestLog.IsOnQuest(72068) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72068);
-		local progress = questInfo[2].numFulfilled;
-		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
-	elseif C_QuestLog.IsOnQuest(72373) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72373);
-		local progress = questInfo[2].numFulfilled;
-		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
-	elseif C_QuestLog.IsOnQuest(72374) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72374);
-		local progress = questInfo[2].numFulfilled;
-		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
-	elseif C_QuestLog.IsOnQuest(72375) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72375);
-		local progress = questInfo[2].numFulfilled;
-		accordWeeklyText = "|cFFFBD910" .. progress .. "/3000|r";
-	elseif C_QuestLog.IsQuestFlaggedCompleted(70750) or C_QuestLog.IsQuestFlaggedCompleted(72068) or C_QuestLog.IsQuestFlaggedCompleted(72373) or C_QuestLog.IsQuestFlaggedCompleted(72374) or C_QuestLog.IsQuestFlaggedCompleted(72375) then
-		accordWeeklyText = "|cFF00CF20Complete|r"
-		accordWeekly = true
-	else
-		accordWeeklyText = "|cFFFF0000Not Started|r";
+	-- Khaz Algar Emissary Quest IDs
+	-- 82449, 82452, 82453, 82458, 82482, 82483, 82485, 82486, 82487, 82488, 82489, 82490, 82491, 82492, 82493, 82494, 82495, 82496, 82497, 82498,
+	-- 82499, 82500, 82501, 82502, 82503, 82504, 82505, 82506, 82507, 82508, 82509, 82510, 82511, 82512, 82516, 82659, 82678, 82679, 82706, 82707,
+	-- 82709, 82711, 82712, 82746, 87423
+
+	local khazAlgarEmissary = checkKhazAlgarEmissaryStatus()
+
+	-- Azj-Kahet Pacts Quest IDs
+	-- 80670, 80671, 80672
+
+	local azjKahetPacts = checkAzjKahetPactStatus()
+
+	-- World Boss Quest IDs
+	-- 82653, 81653, 81624, 81630
+
+	local worldBoss = checkWorldBossStatus()
+
+	-- Earthen Theater Quest ID
+	-- 83240
+
+	local earthenTheater = false
+	if C_QuestLog.IsQuestFlaggedCompleted(83240) then
+		earthenTheater = true
 	end
 
-	local allyDreamWardens = false
-	if C_QuestLog.IsQuestFlaggedCompleted(78444) then
-		allyDreamWardens = true
+	-- Wax Collecting Quest ID
+	-- 82946
+
+	local collectingWax = false
+	if C_QuestLog.IsQuestFlaggedCompleted(82946) then
+		collectingWax = true
 	end
 
-	local allyLoammNiffen = false
-	if C_QuestLog.IsQuestFlaggedCompleted(75665) then
-		allyLoammNiffen = true
+	-- Awakening the Machine Quest ID
+	-- 83333
+
+	local awakeningTheMachine = false
+	if C_QuestLog.IsQuestFlaggedCompleted(83333) then
+		awakeningTheMachine = true
 	end
 
-	local theSuperbloom = false
-	if C_QuestLog.IsQuestFlaggedCompleted(78319) then
-		theSuperbloom = true
+	-- Spreading the Light Quest ID
+	-- 76586
+
+	local spreadingTheLight = false
+	if C_QuestLog.IsQuestFlaggedCompleted(76586) then
+		spreadingTheLight = true
 	end
 
-	local bloomingDreamseeds = false
-	if C_QuestLog.IsQuestFlaggedCompleted(78821) then
-		bloomingDreamseeds = true
+	-- Urge to Surge ID
+	-- 86775
+
+	local urgeToSurge = false
+	if C_QuestLog.IsQuestFlaggedCompleted(86775) then
+		urgeToSurge = true
 	end
 
-	local timeRift = false
-	if C_QuestLog.IsQuestFlaggedCompleted(77236) then
-		timeRift = true
+	-- Ecological Succession ID
+	-- 85460
+
+	local ecologicalSuccession = false
+	if C_QuestLog.IsQuestFlaggedCompleted(85460) then
+		ecologicalSuccession = true
 	end
 
-	local theDreamsurge = false
-	if C_QuestLog.IsQuestFlaggedCompleted(77251) then
-		theDreamsurge = true
+	-- More Than Just a Phase Quest ID
+	-- 91093
+
+	local phaseDiving = false
+	if C_QuestLog.IsQuestFlaggedCompleted(91093) then
+		phaseDiving = true
 	end
 
-	local communityFeast = false
-	if C_QuestLog.IsQuestFlaggedCompleted(70893) then
-		communityFeast = true
+	-- More Than Just a Phase Quest ID
+	-- 91093
+
+	local hiddenTrove = false
+	if C_QuestLog.IsQuestFlaggedCompleted(86371) then
+		hiddenTrove = true
 	end
 
-	local sparksOfLife = false
-	local sparksOfLifeText = false
-	if C_QuestLog.IsOnQuest(72646) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72646);
-		local progress = questInfo[1].numFulfilled;
-		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
-	elseif C_QuestLog.IsOnQuest(72647) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72647);
-		local progress = questInfo[1].numFulfilled;
-		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
-	elseif C_QuestLog.IsOnQuest(72648) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72648);
-		local progress = questInfo[1].numFulfilled;
-		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
-	elseif C_QuestLog.IsOnQuest(72649) then
-		local questInfo = C_QuestLog.GetQuestObjectives(72649);
-		local progress = questInfo[1].numFulfilled;
-		sparksOfLifeText = "|cFFFBD910" .. progress .. "/100|r";
-	elseif C_QuestLog.IsQuestFlaggedCompleted(72646) or C_QuestLog.IsQuestFlaggedCompleted(72647) or C_QuestLog.IsQuestFlaggedCompleted(72648) or C_QuestLog.IsQuestFlaggedCompleted(72649) then
-		sparksOfLifeText = "|cFF00CF20Complete|r"
-		sparksOfLife = true
-	else
-		sparksOfLifeText = "|cFFFF0000Not Started|r";
-	end
-	
+	-- Special Assignment Quest IDs
+	-- 82355, 82852, 82787, 83229, 81691, 82414, 82531
+
+	local specialAssignment = checkSpecialAssignmentStatus()
+	local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
+
 	local _, ilevel = GetAverageItemLevel();
 
-	local whelpCrests = GetCurrencyAmount(2706);
-	local drakeCrests = GetCurrencyAmount(2707);
-	local wyrmCrests = GetCurrencyAmount(2708);
-	local aspectCrests = GetCurrencyAmount(2709);
-	local flightstones = GetCurrencyAmount(2245);
+	local total_conquest_earned = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].conquest).totalEarned
+	local conquest = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].conquest).quantity
+	local honor = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].honor).quantity
+	local bloody_tokens = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].bloodyTokens).quantity
 
-	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(2796).quantity or 0);
-	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(2796).maxQuantity or 0);
+	local forged_weapons = "PH"
+
+	if total_conquest_earned > 2500 then
+		forged_weapons = "|cFF00CF20Complete|r" 
+	else 
+		forged_weapons = "|cFFFFCD44" .. total_conquest_earned .. "/2500|r"
+	end
+
+	local lfr_crests = GetRollingCurrencyProgress(constants['currencies'].lfr_crests);
+	local normal_crests = GetRollingCurrencyProgress(constants['currencies'].normal_crests);
+	local heroic_crests = GetRollingCurrencyProgress(constants['currencies'].heroic_crests);
+	local heroic_crests_current = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].heroic_crests).quantity;
+	local mythic_crests = GetRollingCurrencyProgress(constants['currencies'].mythic_crests);
+	local mythic_crests_current = C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].mythic_crests).quantity;
+	local valorstones = GetCurrencyAmount(constants['currencies'].valorstones) or 0;
+	local starlightSparks = GetRollingCurrencyProgress(constants['currencies'].starlightSparks);
+	local undercoin = GetCurrencyAmount(constants['currencies'].undercoin) or 0;
+	local resonance_crystals = GetCurrencyAmount(constants['currencies'].resonance_crystals) or 0;
+	local restored_coffer_keys = GetCurrencyAmount(constants['currencies'].restored_coffer_keys) or 0;
+	local flame_blessed_iron = GetCurrencyAmount(constants['currencies'].flameBlessedIron) or 0;
+	local untaintedManaCrystals = GetCurrencyAmount(constants['currencies'].untaintedManaCrystals) or 0;
+
+	local catalystCharges = (C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].catalyst).quantity or 0);
+	local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(constants['currencies'].catalyst).maxQuantity or 0);
+
+	local isTimerunner = function()
+		local i = 1
+		while true do
+			local aura = C_UnitAuras.GetBuffDataByIndex("player", i)
+			if not aura then break end
+			if aura.spellId == 1213439 then
+				return true
+			end
+			i = i + 1
+		end
+		return false
+	end
 
 	local char_table = {}
 
@@ -734,26 +1041,42 @@ function AltManager:CollectData()
 	char_table.keystone_details = keystone_details
 	char_table.runHistory = runHistory
 	char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone()
-	char_table.completedWeeklyKeystoneRewards = self:GetWeeklyKeystoneVaultRewards()
+	char_table.weeklyDungeonRewards = self:GetWeeklyDungeonRewards()
+	char_table.weeklyDelveRewards = self:GetWeeklyDelvesRewards()
+	char_table.weeklyRaidRewards = self:GetWeeklyRaidRewards();
 	char_table.tierBonuses = self:GetTierBonuses()
 	char_table.overallDungeonScore = self:GetOverallDungeonScore()
-	char_table.accordWeekly = accordWeekly
-	char_table.accordWeeklyText = accordWeeklyText
-	char_table.communityFeast = communityFeast
-	char_table.whelpCrests = whelpCrests
-	char_table.drakeCrests = drakeCrests
-	char_table.wyrmCrests = wyrmCrests
-	char_table.aspectCrests = aspectCrests
-	char_table.flightstones = flightstones
-	char_table.sparksOfLife = sparksOfLife
-	char_table.sparksOfLifeText = sparksOfLifeText
+	char_table.khazAlgarEmissary = khazAlgarEmissary
+	char_table.phaseDiving = phaseDiving
+	char_table.ecologicalSuccession = ecologicalSuccession
+	char_table.urgeToSurge = urgeToSurge
+	char_table.hiddenTrove = hiddenTrove
+	char_table.azjKahetPacts = azjKahetPacts
+	char_table.specialAssignment = specialAssignment
+	char_table.spreadingTheLight = spreadingTheLight
+	char_table.awakeningTheMachine = awakeningTheMachine
+	char_table.earthenTheater = earthenTheater
+	char_table.collectingWax = collectingWax
+	char_table.worldBoss = worldBoss
+	char_table.conquest = conquest
+	char_table.forged_weapons = forged_weapons
+	char_table.honor = honor
+	char_table.bloody_tokens = bloody_tokens
+	char_table.lfr_crests = lfr_crests
+	char_table.normal_crests = normal_crests
+	char_table.heroic_crests = heroic_crests
+	char_table.heroic_crests_current = heroic_crests_current
+	char_table.mythic_crests = mythic_crests
+	char_table.mythic_crests_current = mythic_crests_current
+	char_table.valorstones = valorstones
+	char_table.starlightSparks = starlightSparks
+	char_table.undercoin = undercoin
+	char_table.resonance_crystals = resonance_crystals
+	char_table.restored_coffer_keys = restored_coffer_keys
+	char_table.untaintedManaCrystals = untaintedManaCrystals
+	char_table.flame_blessed_iron = flame_blessed_iron
+	char_table.weeklyCofferKeysCollected = weeklyCofferKeysCollected
 	char_table.catalystCharges = string.format("%s / %s", catalystCharges, catalystChargesMax)
-	char_table.allyDreamWardens = allyDreamWardens
-	char_table.allyLoammNiffen = allyLoammNiffen
-	char_table.theSuperbloom = theSuperbloom
-	char_table.bloomingDreamseeds = bloomingDreamseeds
-	char_table.timeRift = timeRift
-	char_table.theDreamsurge = theDreamsurge
 	char_table.version = constants.VERSION
 	char_table.expires = self:GetNextWeeklyResetTime()
 	char_table.dataObtained = time()
@@ -768,8 +1091,9 @@ function AltManager:GetTierBonuses()
 	local tierItems = {};
 
 	for k,v in pairs(constants.TIER_SLOTS) do
-		if constants.TIER_SETS[GetInventoryItemID("player", k)] == true then
-			tierItems[GetInventoryItemID("player", k)] = 1;
+		local _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,setId = GetItemInfo(GetInventoryItemID("player", k))
+		if constants.TIER_SETS[setId] == true then
+			tierItems[k] = 1;
 		end
 	end
 
@@ -778,8 +1102,9 @@ function AltManager:GetTierBonuses()
 		for slot=1, slots do
 			local slotItem = C_Container.GetContainerItemInfo(container, slot)
 			if slotItem ~= nil then
-				if constants.TIER_SETS[slotItem.itemID] == true then
-					tierItems[slotItem.itemID] = 1;
+				local _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,setId = GetItemInfo(slotItem.itemID)
+				if constants.TIER_SETS[setId] == true then
+					tierItems[slot] = 1;
 				end
 			end
 		end
@@ -871,38 +1196,88 @@ function AltManager:GetOverallDungeonScore()
 	return colorString .. overallDungeonScore .. "|r"
 end
 
-function AltManager:GetHighestCompletedWeeklyKeystone()
-    local info = C_MythicPlus.GetRunHistory(false, true)
-    local keys, dungeons = {}, {}
+function AltManager:GetWeeklyDelvesRewards()
+    local completedDelves = C_WeeklyRewards.GetActivities(6)
+    local delveRewards = {}
 
-    for _, run in ipairs(info) do
-        tinsert(keys, run.level)
-        tinsert(dungeons, run.mapChallengeModeID)
+    for i = 1, 3 do
+        local status = completedDelves[i] or { level = 0, progress = 0 }
+        if status.level > 0 then
+            delveRewards[i] = "|cFF00CF20" .. constants.DELVE_ILVL[status.level] .. "|r"
+        else
+			local progress = status and status.progress or 0
+			local total = (i == 1 and 2) or (i == 2 and 4) or (i == 3 and 8)
+            delveRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
+        end
     end
 
-    table.sort(keys, function(a, b) return b < a end)
-    table.sort(dungeons, function(a, b) return b < a end)
+    return table.concat(delveRewards, " | ")
+end
 
-    local level, dungeon = keys[1], dungeons[1]
+function AltManager:GetWeeklyRaidRewards()
+    local completedRaids = C_WeeklyRewards.GetActivities(3)
+    local raidRewards = {}
+
+    for i = 1, 3 do
+        local status = completedRaids[i] or { level = 0, progress = 0 }
+        if status.level > 0 then
+            raidRewards[i] = "|cFF00CF20" .. constants.RAID_ILVL[status.level] .. "|r"
+        else
+			local progress = status and status.progress or 0
+			local total = (i == 1 and 2) or (i == 2 and 4) or (i == 3 and 6)
+            raidRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
+        end
+    end
+
+    return table.concat(raidRewards, " | ")
+end
+
+function AltManager:GetWeeklyDungeonRewards()
+    local completedDungeons = C_WeeklyRewards.GetActivities(1)
+    local dungeonRewards = {}
+
+	for i = 1, 3 do
+		local status = completedDungeons[i] or nil
+		if status and status.level >= 0 and status.progress >= status.threshold then
+			local levelToUse = status.level > 10 and 10 or status.level
+			dungeonRewards[i] = "|cFF00CF20" .. constants.DUNGEON_ILVL[levelToUse] .. "|r"
+		else
+			local progress = status and status.progress or 0
+			local total = (i == 1 and 1) or (i == 2 and 4) or (i == 3 and 8)
+			dungeonRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
+		end
+	end	
+
+    return table.concat(dungeonRewards, " | ")
+end
+
+function AltManager:GetHighestCompletedWeeklyKeystone()
+    local info = C_MythicPlus.GetRunHistory(false, true)
+
+    table.sort(info, function(a, b)
+        return a.level > b.level
+    end)
+
+    local highestRun = info[1]
+    local level = highestRun and highestRun.level or 0
+    local dungeon = highestRun and highestRun.mapChallengeModeID or ""
 
     if level == 0 then
         return " "
     elseif level and level > 0 then
         local color
-        if level >= 20 then
+        if level >= 10 then
             color = "|cFFFF8000"
-        elseif level >= 15 then
-            color = "|cFFA335EE"
-        elseif level >= 10 then
-            color = "|cFF0070DD"
         elseif level >= 7 then
-            color = "|cFF1EFF00"
+            color = "|cFFA335EE"
+        elseif level >= 5 then
+            color = "|cFF0070DD"
         elseif level >= 2 then
-            color = "|cFFFFFFFF"
+            color = "|cFF1EFF00"
         end
-        return "+" .. level .. " " .. constants.DUNGEONS[dungeon] .. "|r"
+        return color .. "+" .. level .. " " .. constants.DUNGEONS[dungeon] .. "|r"
     else
-        return "None"
+        return " "
     end
 end
 
@@ -923,31 +1298,6 @@ function AltManager:GetLowestLevelInTopRuns(numRuns)
 		end
 	end
 	return lowestLevel;
-end
-
-function AltManager:GetWeeklyKeystoneVaultRewards()
-	local keystoneHistory = C_MythicPlus.GetRunHistory(false, true)
-	local keystoneTotal = #keystoneHistory;
-	local keystoneRewardSlotOne = 0;
-	local keystoneRewardSlotTwo = 0;
-	local keystoneRewardSlotThree = 0;
-	local keystoneRewards = "|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r";
-
-	if keystoneTotal >= 8 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)),20)-1] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)),20)-1] .. "|r";
-		keystoneRewardSlotThree = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(8)),20)-1] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | " .. keystoneRewardSlotThree;
-	elseif keystoneTotal < 8 and keystoneTotal >= 4 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
-		keystoneRewardSlotTwo = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(4)), 20)-1] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | " .. keystoneRewardSlotTwo .. " | |cFFFFCD44" .. keystoneTotal .. "/8|r";
-	elseif keystoneTotal < 4 and keystoneTotal >= 1 then
-		keystoneRewardSlotOne = "|cFF00CF20" .. constants.VAULT_ILVL[math.min(math.floor(AltManager:GetLowestLevelInTopRuns(1)), 20)-1] .. "|r";
-		keystoneRewards = keystoneRewardSlotOne .. " | |cFFFFCD44" .. keystoneTotal .. "/4|r | |cFFFFCD44" .. keystoneTotal .. "/8|r";
-	end
-
-	return keystoneRewards;
 end
 
 function AltManager:CreateContent()
@@ -1008,12 +1358,64 @@ function AltManager:CreateContent()
 		weekly_highest = {
 			order = 2.4,
 			label = constants['labels'].WEEKLY_HIGHEST,
-			data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or "" end,
+			data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or " " end,
+		},
+		spacer_2_5 = {
+			order = 2.5,
+			label = "",
+			data = function(alt_data) return " " end,
+		},
+		great_vault_rewards = {
+			order = 2.6,
+			label = constants['labels'].GREAT_VAULT_REWARDS,
+			title = true,
+			data = function(alt_data) return "|TInterface\\Icons\\inv_crestupgrade_ethereal_runed:12:12:0:0|t " .. tostring(alt_data.heroic_crests_current or 0) .. " | |TInterface\\Icons\\inv_crestupgrade_ethereal_gilded:12:12:0:0|t " .. tostring(alt_data.mythic_crests_current or 0) end,
+		},
+		weekly_raid_rewards = {
+			order = 2.7,
+			label = constants['labels'].WEEKLY_RAID_REWARDS,
+			data = function(alt_data) return tostring(alt_data.weeklyRaidRewards) or tostring("|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r") end,
 		},
 		weekly_key_rewards = {
-			order = 2.5,
-			label = constants['labels'].WEEKLY_REWARDS,
-			data = function(alt_data) return tostring(alt_data.completedWeeklyKeystoneRewards) or tostring("|cFFFFCD440/8|r | |cFFFFCD440/8|r | |cFFFFCD440/8|r") end,
+			order = 2.8,
+			label = constants['labels'].WEEKLY_DUNGEON_REWARDS,
+			data = function(alt_data) return tostring(alt_data.weeklyDungeonRewards) or tostring("|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r") end,
+		},
+		weekly_delve_rewards = {
+			order = 2.9,
+			label = constants['labels'].WEEKLY_DELVE_REWARDS,
+			data = function(alt_data) return tostring(alt_data.weeklyDelveRewards) or tostring("|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r") end,
+		},
+		spacer_2_9_1 = {
+			order = 2.91,
+			label = "",
+			data = function(alt_data) return " " end,
+		},
+		pvp_data = {
+			order = 2.92,
+			label = constants['labels'].PVP,
+			title = true,
+			data = function(alt_data) return " " end,
+		},
+		pvp_honor = {
+			order = 2.93,
+			label = constants['labels'].HONOR,
+			data = function(alt_data) return (alt_data.honor and tostring(alt_data.honor) or "0") end,
+		},
+		pvp_conquest = {
+			order = 2.94,
+			label = constants['labels'].CONQUEST,
+			data = function(alt_data) return (alt_data.conquest and tostring(alt_data.conquest) or "0") end,
+		},
+		pvp_conquest_earned = {
+			order = 2.95,
+			label = constants['labels'].FORGED_WEAPONS,
+			data = function(alt_data) return (alt_data.forged_weapons and tostring(alt_data.forged_weapons) or "|cFFFF0000Incomplete|r") end,
+		},
+		pvp_bloody_tokens = {
+			order = 2.96,
+			label = constants['labels'].BLOODY_TOKENS,
+			data = function(alt_data) return (alt_data.bloody_tokens and tostring(alt_data.bloody_tokens) or "0") end,
 		},
 		spacer_3 = {
 			order = 3.0,
@@ -1026,97 +1428,122 @@ function AltManager:CreateContent()
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		aiding_the_accord = {
+		khaz_algar_emissary = {
 			order = 3.2,
-			label = constants['labels'].AIDING_THE_ACCORD,
-			data = function(alt_data) return tostring(alt_data.accordWeeklyText) or "|cFFFF00000/3000|r" end,
+			label = constants['labels'].KHAZ_ALGAR_EMISSARY,
+			data = function(alt_data) return (alt_data.khazAlgarEmissary and tostring(alt_data.khazAlgarEmissary) or "|cFFFF0000Not Started|r") end,
+		},--[[
+		phase_diving = {
+			order = 3.21,
+			label = constants['labels'].PHASE_DIVING,
+			data = function(alt_data) return alt_data.phaseDiving and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},]]
+		ecological_succession = {
+			order = 3.22,
+			label = constants['labels'].ECOLOGICAL_SUCCESSION,
+			data = function(alt_data) return alt_data.ecologicalSuccession and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		sparks_of_life = {
+		urge_to_surge = {
+			order = 3.23,
+			label = constants['labels'].URGE_TO_SURGE,
+			data = function(alt_data) return alt_data.urgeToSurge and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		hidden_trove = {
+			order = 3.24,
+			label = constants['labels'].HIDDEN_TROVE,
+			data = function(alt_data) return alt_data.hiddenTrove and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		world_boss = {
 			order = 3.3,
-			label = constants['labels'].SPARKS_OF_LIFE,
-			data = function(alt_data) return tostring(alt_data.sparksOfLifeText) or "|cFFFF00000/3000|r" end,
-		},
-		ally_loamm_niffen = {
-			order = 3.4,
-			label = constants['labels'].ALLY_LOAMM_NIFFEN,
-			data = function(alt_data) return alt_data.allyLoammNiffen and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-		},
-		ally_dream_wardens = {
-			order = 3.5,
-			label = constants['labels'].ALLY_DREAM_WARDENS,
-			data = function(alt_data) return alt_data.allyDreamWardens and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].WORLD_BOSS,
+			data = function(alt_data) return (alt_data.worldBoss and tostring(alt_data.worldBoss) or "|cFFFF0000Incomplete|r") end,
 		},
 		spacer_4 = {
 			order = 4.0,
 			label = "",
 			data = function(alt_data) return " " end,
-		},
+		},--[[
 		weekly_events = {
 			order = 4.1,
 			label = constants['labels'].WEEKLY_EVENTS,
 			title = true,
-			data = function(alt_data) return " " end,
+			data = function(alt_data) return tostring(alt_data.weeklyCofferKeysCollected) or "" end,
 		},
-		community_feast = {
+		special_assignment = {
 			order = 4.2,
-			label = constants['labels'].COMMUNITY_FEAST,
-			data = function(alt_data) return alt_data.communityFeast and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].SPECIAL_ASSIGNMENT,
+			data = function(alt_data) return alt_data.specialAssignment and tostring(alt_data.specialAssignment) or "|cFFFF0000Incomplete|r" end,
 		},
-		time_rifts = {
+		azj_kahet_pacts = {
 			order = 4.3,
-			label = constants['labels'].TIME_RIFTS,
-			data = function(alt_data) return alt_data.timeRift and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].AZJ_KAHET_PACT,
+			data = function(alt_data) return alt_data.azjKahetPacts and tostring(alt_data.azjKahetPacts) or "|cFFFF0000Incomplete|r" end,
 		},
-		the_dreamsurge = {
+		spreading_the_light = {
 			order = 4.4,
-			label = constants['labels'].DREAMSURGE,
-			data = function(alt_data) return alt_data.theDreamsurge and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].SPREADING_THE_LIGHT,
+			data = function(alt_data) return alt_data.spreadingTheLight and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		the_superbloom = {
+		awakening_the_machine = {
 			order = 4.5,
-			label = constants['labels'].THE_SUPERBLOOM,
-			data = function(alt_data) return alt_data.theSuperbloom and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].AWAKENING_THE_MACHINE,
+			data = function(alt_data) return alt_data.awakeningTheMachine and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
-		blooming_dreamseeds = {
+		earthen_theater = {
 			order = 4.6,
-			label = constants['labels'].BLOOMING_DREAMSEEDS,
-			data = function(alt_data) return alt_data.bloomingDreamseeds and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+			label = constants['labels'].EARTHEN_THEATER,
+			data = function(alt_data) return alt_data.earthenTheater and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+		},
+		collecting_wax = {
+			order = 4.7,
+			label = constants['labels'].COLLECTING_WAX,
+			data = function(alt_data) return alt_data.collectingWax and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
 		},
 		spacer_5 = {
 			order = 5.0,
 			label = "",
 			data = function(alt_data) return " " end,
-		},
+		},]]
 		currencies = {
 			order = 5.1,
 			label = constants['labels'].CURRENCIES,
 			title = true,
 			data = function(alt_data) return " " end,
 		},
-		flightstones = {
+		starlightSparks = {
 			order = 5.2,
-			label = constants['labels'].FLIGHTSTONES,
-			data = function(alt_data) return (alt_data.flightstones and tostring(alt_data.flightstones) or "0") end,
+			label = constants['labels'].STARLIGHT_SPARKS,
+			data = function(alt_data) return (alt_data.starlightSparks and tostring(alt_data.starlightSparks) or "0") end,
 		},
-		whelp_fragments = {
+		valorstones = {
+			order = 5.21,
+			label = constants['labels'].VALORSTONES,
+			data = function(alt_data) return (alt_data.valorstones and tostring(alt_data.valorstones) or "0") end,
+		},
+		runed_crests = {
+			order = 5.22,
+			label = constants['labels'].HEROIC_CRESTS,
+			data = function(alt_data) return (alt_data.heroic_crests and tostring(alt_data.heroic_crests) or "0") end,
+		},
+		gilded_crests = {
+			order = 5.23,
+			label = constants['labels'].MYTHIC_CRESTS,
+			data = function(alt_data) return (alt_data.mythic_crests and tostring(alt_data.mythic_crests) or "0") end,
+		},
+		restored_coffer_keys = {
 			order = 5.3,
-			label = constants['labels'].WHELPLINGS_CREST,
-			data = function(alt_data) return (alt_data.whelpCrests and tostring(alt_data.whelpCrests) or "0") end,
+			label = constants['labels'].RESTORED_COFFER_KEY,
+			data = function(alt_data) return (alt_data.restored_coffer_keys and tostring(alt_data.restored_coffer_keys) or "0") end,
 		},
-		drake_fragments = {
-			order = 5.4,
-			label = constants['labels'].DRAKES_CREST,
-			data = function(alt_data) return (alt_data.drakeCrests and tostring(alt_data.drakeCrests) or "0") end,
+		undercoin = {
+			order = 5.3,
+			label = constants['labels'].UNDERCOIN,
+			data = function(alt_data) return (alt_data.undercoin and tostring(alt_data.undercoin) or "0") end,
 		},
-		wyrm_fragments = {
-			order = 5.5,
-			label = constants['labels'].WYRMS_CREST,
-			data = function(alt_data) return (alt_data.wyrmCrests and tostring(alt_data.wyrmCrests) or "0") end,
-		},
-		aspect_fragments = {
-			order = 5.6,
-			label = constants['labels'].ASPECTS_CREST,
-			data = function(alt_data) return (alt_data.aspectCrests and tostring(alt_data.aspectCrests) or "0") end,
+		untaintedManaCrystals = {
+			order = 5.31,
+			label = constants['labels'].UNTAINTED_MANA_CRYSTALS,
+			data = function(alt_data) return (alt_data.untaintedManaCrystals and tostring(alt_data.untaintedManaCrystals) or "0") end,
 		},
 	}
 
@@ -1174,49 +1601,66 @@ function AltManager:MakeRemoveTexture(frame)
 end
 
 function AltManager:MakeTopBottomTextures(frame)
-	if frame.bottomPanel == nil then
-		frame.bottomPanel = frame:CreateTexture(nil);
-	end
-	if frame.topPanel == nil then
-		frame.topPanel = CreateFrame("Frame", "AltManagerTopPanel", frame);
-		frame.topPanelTex = frame.topPanel:CreateTexture(nil, "BACKGROUND");
-		frame.topPanelTex:SetAllPoints();
-		frame.topPanelTex:SetDrawLayer("ARTWORK", -5);
-		frame.topPanelTex:SetColorTexture(0, 0, 0, 1);
-		frame.topPanelString = frame.topPanel:CreateFontString("AddonName");
-		frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 16)
-		frame.topPanelString:SetTextColor(1, 1, 1, 1);
-		frame.topPanelString:SetJustifyH("CENTER")
-		frame.topPanelString:SetJustifyV("CENTER")
-		frame.topPanelString:SetWidth(260)
-		frame.topPanelString:SetHeight(20)
-		frame.topPanelString:SetText("My Alt Manager");
-		frame.topPanelString:ClearAllPoints();
-		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
-		frame.topPanelString:Show();
-	end
-	frame.bottomPanel:SetColorTexture(0, 0, 0, 1);
-	frame.bottomPanel:ClearAllPoints();
-	frame.bottomPanel:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 0);
-	frame.bottomPanel:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 0);
-	frame.bottomPanel:SetSize(frame:GetWidth(), 30);
-	frame.bottomPanel:SetDrawLayer("ARTWORK", 7);
-	frame.topPanel:ClearAllPoints();
-	frame.topPanel:SetSize(frame:GetWidth(), 30);
-	frame.topPanel:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 0);
-	frame.topPanel:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 0);
-	frame:SetMovable(true);
-	frame.topPanel:EnableMouse(true);
-	frame.topPanel:RegisterForDrag("LeftButton");
-	frame.topPanel:SetScript("OnDragStart", function(self,button)
-		frame:SetMovable(true);
+    if frame.bottomPanel == nil then
+        frame.bottomPanel = frame:CreateTexture(nil);
+    end
+    if frame.topPanel == nil then
+        frame.topPanel = CreateFrame("Frame", "AltManagerTopPanel", frame);
+        frame.topPanelTex = frame.topPanel:CreateTexture(nil, "BACKGROUND");
+        frame.topPanelTex:SetAllPoints();
+        frame.topPanelTex:SetDrawLayer("ARTWORK", -5);
+        frame.topPanelTex:SetColorTexture(0, 0, 0, 1);
+        frame.topPanelString = frame.topPanel:CreateFontString("AddonName");
+        frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 16)
+        frame.topPanelString:SetTextColor(1, 1, 1, 1);
+        frame.topPanelString:SetJustifyH("CENTER")
+        frame.topPanelString:SetJustifyV("MIDDLE")
+        frame.topPanelString:SetWidth(260)
+        frame.topPanelString:SetHeight(20)
+        frame.topPanelString:SetText("My Alt Manager");
+        frame.topPanelString:ClearAllPoints();
+        frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
+        frame.topPanelString:Show();
+    end
+    frame.bottomPanel:SetColorTexture(0, 0, 0, 1);
+    frame.bottomPanel:ClearAllPoints();
+    frame.bottomPanel:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 0);
+    frame.bottomPanel:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 0);
+    frame.bottomPanel:SetSize(frame:GetWidth(), 30);
+    frame.bottomPanel:SetDrawLayer("ARTWORK", 7);
+
+    -- Adding text to the bottom panel
+    if frame.bottomPanelString == nil then
+        frame.bottomPanelString = frame:CreateFontString(nil, "OVERLAY");
+        frame.bottomPanelString:SetFont("Fonts\\FRIZQT__.TTF", 12);
+        frame.bottomPanelString:SetTextColor(1, 1, 1, 1);
+        frame.bottomPanelString:SetJustifyH("CENTER");
+        frame.bottomPanelString:SetJustifyV("MIDDLE");
+        frame.bottomPanelString:SetWidth(260);
+        frame.bottomPanelString:SetHeight(20);
+        frame.bottomPanelString:SetText("Version " .. constants.VERSION);
+        frame.bottomPanelString:ClearAllPoints();
+        frame.bottomPanelString:SetPoint("CENTER", frame.bottomPanel, "CENTER", 0, 0);
+        frame.bottomPanelString:Show();
+    end
+
+    frame.topPanel:ClearAllPoints();
+    frame.topPanel:SetSize(frame:GetWidth(), 30);
+    frame.topPanel:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 0);
+    frame.topPanel:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 0);
+    frame:SetMovable(true);
+    frame.topPanel:EnableMouse(true);
+    frame.topPanel:RegisterForDrag("LeftButton");
+    frame.topPanel:SetScript("OnDragStart", function(self, button)
+        frame:SetMovable(true);
         frame:StartMoving();
     end);
-	frame.topPanel:SetScript("OnDragStop", function(self,button)
+    frame.topPanel:SetScript("OnDragStop", function(self, button)
         frame:StopMovingOrSizing();
-		frame:SetMovable(false);
+        frame:SetMovable(false);
     end);
 end
+
 
 function AltManager:MakeBorderPart(frame, x, y, xoff, yoff, part)
 	if part == nil then
