@@ -361,6 +361,15 @@ function AltManager:RunExpansionMigrationIfNeeded()
 
     -- One-time migration: pre-expansion cleanup wipe
     -- Preserve config so /alts min survives. Remove if you want a full nuke.
+    
+    -- Notify user before wiping data
+    print("==============================================")
+    print("MyAltManager: New expansion detected!")
+    print(("Migrating from expansion %d to %d"):format(last, current))
+    print("All character data will be reset to prepare for new content.")
+    print("Your MIN_ITEM_LEVEL setting will be preserved.")
+    print("==============================================")
+    
     local preservedConfig = nil
     if MyAltManagerDB and MyAltManagerDB.config then
         preservedConfig = MyAltManagerDB.config
@@ -374,7 +383,6 @@ function AltManager:RunExpansionMigrationIfNeeded()
         MyAltManagerDB.config = preservedConfig
     end
 
-    print(("MyAltManager: Expansion migration %d -> %d complete. Saved data reset."):format(last, current))
     return true
 end
 
