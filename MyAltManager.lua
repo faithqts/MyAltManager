@@ -594,17 +594,17 @@ function AltManager:OnLoad()
     MyAltManagerDB = MyAltManagerDB or self:InitDB()
 
     -- One-time per-expansion migration (pre-expansion cleanup wipe)
-    if self:RunExpansionMigrationIfNeeded() then
-        self:LoadConfigFromDB()
-        self.addon_loaded = true
-        return
-    end
+    local migrationRan = self:RunExpansionMigrationIfNeeded()
 
     self:LoadConfigFromDB()
-    self:PurgeOldVersions()
-
-    if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
-        MyAltManagerDB.alts = true_numel(MyAltManagerDB.data)
+    
+    -- Skip cleanup operations after migration since DB was just re-initialized
+    if not migrationRan then
+        self:PurgeOldVersions()
+        
+        if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
+            MyAltManagerDB.alts = true_numel(MyAltManagerDB.data)
+        end
     end
 
     self.addon_loaded = true
