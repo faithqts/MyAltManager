@@ -196,8 +196,8 @@ constants.DELVE_ILVL = {
 -- Great Vault rewards (Keystones)
 -- Base item level progression for Mythic+ keystones
 -- Dungeon item level rewards by mythic keystone level.
--- Intentionally capped at level 10 as the maximum reward tier.
--- Higher keystone levels (11+) map to level 10 rewards (see GetWeeklyDungeonRewards).
+-- This table is intentionally defined only up to level 10, the maximum reward tier.
+-- Logic in GetWeeklyDungeonRewards caps higher keystone levels (11+) to use the level 10 entry.
 constants.DUNGEON_ILVL = {
     [0]  = "246", -- Mythic +0
     [1]  = "259", -- Mythic +1
