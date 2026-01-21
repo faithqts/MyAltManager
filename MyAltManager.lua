@@ -409,22 +409,20 @@ function AltManager:ScheduleCollect(reason)
     if not self.addon_loaded then return end
     if not self:CanCollectNow() then return end
 
-    -- Mark that we want to collect; cancel any existing pending timer
-    if self._collectTimer then
-        self._collectTimer:Cancel()
-        self._collectTimer = nil
-    end
+    -- Increment generation to invalidate any pending timers
+    self._collectTimerGen = (self._collectTimerGen or 0) + 1
+    local currentGen = self._collectTimerGen
 
-    -- Use NewTicker with single iteration for cancellable timer
-    self._collectTimer = C_Timer.NewTicker(0.5, function()
-        if self._collectTimer then
-            self._collectTimer:Cancel()
-            self._collectTimer = nil
-        end
+    -- Schedule data collection with debounce
+    C_Timer.After(0.5, function()
+        -- Only execute if this is still the current generation (not superseded)
+        if self._collectTimerGen ~= currentGen then return end
+        self._collectTimerGen = nil
+        
         if not self:CanCollectNow() then return end
         local data = self:CollectData(false)
         self:StoreData(data)
-    end, 1)
+    end)
 end
 
 -- ------------------------------------------------------------
