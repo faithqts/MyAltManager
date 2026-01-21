@@ -326,10 +326,12 @@ function AltManager:InferExpansionFromStoredData()
 
     local lowest
     for _, alt_data in pairs(db.data) do
-        local exp = GetExpansionFromVersion(alt_data and alt_data.version)
-        if exp then
-            if not lowest or exp < lowest then
-                lowest = exp
+        if alt_data then
+            local exp = GetExpansionFromVersion(alt_data.version)
+            if exp then
+                if not lowest or exp < lowest then
+                    lowest = exp
+                end
             end
         end
     end
