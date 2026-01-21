@@ -924,12 +924,12 @@ function AltManager:CollectData()
     end
 
     local function checkWorldBossStatus()
-        local db2 = MyAltManagerDB
-        if not db2 or not db2.data then
+        local savedDB = MyAltManagerDB
+        if not savedDB or not savedDB.data then
             return "|cFFFF0000Incomplete|r"
         end
 
-        for _, charData in pairs(db2.data) do
+        for _, charData in pairs(savedDB.data) do
             if charData.worldBoss == "|cFF00CF20Complete|r" then
                 return "|cFF00CF20Complete|r"
             end
@@ -938,7 +938,7 @@ function AltManager:CollectData()
         local questIDs = { 87354 }
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                for _, charData in pairs(db2.data) do
+                for _, charData in pairs(savedDB.data) do
                     charData.worldBoss = "|cFF00CF20Complete|r"
                 end
                 return "|cFF00CF20Complete|r"
