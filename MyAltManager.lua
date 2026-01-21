@@ -24,7 +24,7 @@ local constants = {}
 
 constants.config = {}
 constants.config.MIN_LEVEL = 80
-constants.config.MIN_ITEM_LEVEL = 0 -- controlled via /alts min <ilevel>, default 0
+constants.config.MIN_ITEM_LEVEL = 160 -- controlled via /alts min <ilevel>, default 0
 
 constants.labels = {
     NAME = "",
@@ -38,7 +38,7 @@ constants.labels = {
     WEEKLY_RAID_REWARDS = "Weekly Raids",
     WEEKLY_DUNGEON_REWARDS = "Weekly Dungeons",
     WEEKLY_DELVE_REWARDS = "Weekly Delves",
-    TIER_SET = "Tier 34",
+    TIER_SET = "Tier (S3)",
     CATALYST_CHARGES = "Catalyst Charges",
     CURRENCIES = "Currencies",
     CONQUEST = "Conquest |TInterface\\Icons\\achievement_legionpvp2tier3:12:12:0:0|t",
