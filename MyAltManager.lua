@@ -596,6 +596,7 @@ function AltManager:OnLoad()
 
     self:LoadConfigFromDB()
     
+    -- Skip cleanup operations after migration since DB was just re-initialized
     if not migrationRan then
         self:PurgeOldVersions()
         
