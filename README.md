@@ -1,5 +1,5 @@
 # MyAltManager
-A fork of the AltManager Addon for World of Warcraft, renamed and updated to Patch 10.0 for personal use.
+A fork of the AltManager Addon for World of Warcraft, renamed and updated to Patch 12.0.1 (Midnight) for personal use.
 
 **Addon Credits**
 * Qooning - Tarren Mill, 2017-2020 (Method Alt Manager)

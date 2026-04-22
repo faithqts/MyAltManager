@@ -10,7 +10,8 @@ _G["AltManager"] = AltManager
 -- Last edit: 2023-11-12
 -- updates for Midnight pre-patch 12.0 by: Faith - Frostmourne, 2026-01-21
 
-local sizey = 535
+local sizey = 535 -- initial default, recalculated after CreateContent
+local font_height = 14
 local xoffset = 0
 local yoffset = 50
 local addon = "MyAltManager"
@@ -24,7 +25,7 @@ local constants = {}
 
 constants.config = {}
 constants.config.MIN_LEVEL = 80
-constants.config.MIN_ITEM_LEVEL = 160 -- controlled via /alts min <ilevel>, default 0
+constants.config.MIN_ITEM_LEVEL = 0 -- controlled via settings panel
 
 constants.labels = {
     NAME = "",
@@ -37,40 +38,112 @@ constants.labels = {
     WEEKLY_KEYSTONE_REWARDS = "Weekly Keystones",
     WEEKLY_RAID_REWARDS = "Weekly Raids",
     WEEKLY_DUNGEON_REWARDS = "Weekly Dungeons",
-    WEEKLY_DELVE_REWARDS = "Weekly Delves",
-    TIER_SET = "Tier (S3)",
+    WEEKLY_DELVE_REWARDS = "Weekly Activities",
+    TIER_SET = "Tier (S1)",
     CATALYST_CHARGES = "Catalyst Charges",
     CURRENCIES = "Currencies",
     CONQUEST = "Conquest |TInterface\\Icons\\achievement_legionpvp2tier3:12:12:0:0|t",
     FORGED_WEAPONS = "Forged Weapons |TInterface\\Icons\\inv_misc_token_pvp02:12:12:0:0|t",
     HONOR = "Honor |TInterface\\Icons\\achievement_legionpvptier4:12:12:0:0|t",
     BLOODY_TOKENS = "Bloody Tokens |TInterface\\Icons\\inv_10_dungeonjewelry_titan_trinket_2_color2:12:12:0:0|t",
-    LFR_CRESTS = "Weathered |TInterface\\Icons\\inv_crestupgrade_ethereal_weathered:12:12:0:0|t",
-    NORMAL_CRESTS = "Carved |TInterface\\Icons\\inv_crestupgrade_ethereal_carved:12:12:0:0|t",
-    HEROIC_CRESTS = "Runed |TInterface\\Icons\\inv_crestupgrade_ethereal_runed:12:12:0:0|t",
-    MYTHIC_CRESTS = "Gilded |TInterface\\Icons\\inv_crestupgrade_ethereal_gilded_enchanted:12:12:0:0|t",
-    VALORSTONES = "Valorstones |TInterface\\Icons\\inv_valorstone_base:12:12:0:0|t",
-    FLAME_BLESSED_IRON = "Flame-Blessed |TInterface\\Icons\\inv_siren_isle_flameblessed_iron:12:12:0:0|t",
+    ADVENTURER_CRESTS = "Adventurer Crests |TInterface\\Icons\\inv_120_crest_adventurer:12:12:0:0|t",
+    VETERAN_CRESTS = "Veteran Crests |TInterface\\Icons\\inv_120_crest_veteran:12:12:0:0|t",
+    CHAMPION_CRESTS = "Champion Crests |TInterface\\Icons\\inv_120_crest_champion:12:12:0:0|t",
+    HERO_CRESTS = "Hero Crests |TInterface\\Icons\\inv_120_crest_hero:12:12:0:0|t",
+    MYTH_CRESTS = "Myth Crests |TInterface\\Icons\\inv_120_crest_myth:12:12:0:0|t",
     UNDERCOIN = "Undercoin |TInterface\\Icons\\inv_misc_elvencoins:12:12:0:0|t",
-    STARLIGHT_SPARKS = "Starlight Sparks |TInterface\\Icons\\inv_10_enchanting_dust_color4:12:12:0:0|t",
+    ANGLER_PEARLS = "Angler Pearls |T348545:12:12:0:0|t",
+    RADIANT_SPARKS = "Radiant Sparks |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
     HIDDEN_TROVE = "Hidden Trove (Delves)",
     RESTORED_COFFER_KEY = "Bountiful Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
-    RESONANCE_CRYSTALS = "Resonance Crystals",
-    KHAZ_ALGAR_EMISSARY = "Khaz Algar Emissary",
-    PHASE_DIVING = "Phase Diving",
-    ECOLOGICAL_SUCCESSION = "Ecological Succession",
-    URGE_TO_SURGE = "Urge to Surge",
-    SPREADING_THE_LIGHT = "Spreading the Light",
+    COFFER_KEY_SHARDS = "Coffer Key Shards |TInterface\\Icons\\inv_gizmo_hardenedadamantitetube:12:12:0:0|t",
+    VOIDLIGHT_MARL = "Voidlight Marl |TInterface\\Icons\\inv_112_raidtrinkets_voidprism:12:12:0:0|t",
+    WEEKLY_META_QUEST = "Weekly Meta Quest",
+    SATHTHERIL_SOIREE = "Sath'theril Soiree",
     SPECIAL_ASSIGNMENT = "Special Assignment",
-    AZJ_KAHET_PACT = "Azj-Kahet Pacts",
-    EARTHEN_THEATER = "Earthen Theater",
-    COLLECTING_WAX = "Collecting Wax",
-    AWAKENING_THE_MACHINE = "Awakening the Machine",
+    ABUNDANT_OFFERINGS = "Abundant Offerings",
+    LEGENDS_OF_THE_HARANIR = "Legends of the Haranir",
+    STORMARIAN_ASSAULT = "Stormarian Assault",
+    NIGHTMARISH_TASK = "A Nightmarish Task",
     GREAT_VAULT_REWARDS = "Great Vault",
     WORLD_BOSS = "World Boss",
     PVP = "PVP",
-    UNTAINTED_MANA_CRYSTALS = "Untainted Mana |TInterface\\Icons\\inv_elemental_primal_mana:12:12:0:0|t",
+    SHARD_OF_DUNDUN = "Shard of Dundun |TInterface\\Icons\\inv_ore_feliron:12:12:0:0|t",
+    REMNANT_OF_ANGUISH = "Remnant of Anguish |TInterface\\Icons\\inv_10_elementalcombinedfoozles_blood:12:12:0:0|t",
+    UNALLOYED_ABUNDANCE = "Unalloyed Abundance |TInterface\\Icons\\inv_10_gathering_bioluminescentspores_large:12:12:0:0|t",
+    NEBULOUS_VOIDCORE = "Nebulous Cores",
+    UNTAINTED_MANA_CRYSTAL = "Untainted Mana-Crystal |T5931199:12:12:0:0|t",
+    FIELD_ACCOLADE = "Field Accolade |TInterface\\Icons\\inv_belt_armor_bloodelf_d_01:12:12:0:0|t",
+    LUMINOUS_DUST = "Luminous Dust |TInterface\\Icons\\inv_misc_dust_05:12:12:0:0|t",
+    BRIMMING_ARCANA = "Brimming Arcana |TInterface\\Icons\\inv_elemental_primal_mana:12:12:0:0|t",
 }
+
+constants.sections = {
+    { key = "mythic_plus",    label = "Mythic+",              keys = { "mythic_title", "mythic_rating", "current_keystone", "weekly_highest" } },
+    { key = "great_vault",    label = "Great Vault",          keys = { "great_vault_rewards", "weekly_raid_rewards", "weekly_key_rewards", "weekly_delve_rewards" } },
+    {
+        key = "pvp", label = "PVP",
+        keys = { "pvp_data", "pvp_honor", "pvp_conquest", "pvp_conquest_earned", "pvp_bloody_tokens" },
+        children = {
+            { key = "pvp_honor",           label = "Honor",          icon = constants.labels.HONOR:match("|T[^|]-|t") },
+            { key = "pvp_conquest",         label = "Conquest",       icon = constants.labels.CONQUEST:match("|T[^|]-|t") },
+            { key = "pvp_conquest_earned",  label = "Forged Weapons", icon = constants.labels.FORGED_WEAPONS:match("|T[^|]-|t") },
+            { key = "pvp_bloody_tokens",    label = "Bloody Tokens",  icon = constants.labels.BLOODY_TOKENS:match("|T[^|]-|t") },
+        },
+    },
+    {
+        key = "weekly_quests", label = "Weekly Quests",
+        keys = { "weekly_quests", "weekly_meta_quest", "special_assignment", "saththeril_soiree", "abundant_offerings", "legends_of_the_haranir", "stormarian_assault", "hidden_trove", "nightmarish_task", "world_boss" },
+        children = {
+            { key = "weekly_meta_quest",       label = "Weekly Meta Quest" },
+            { key = "special_assignment",      label = "Special Assignment" },
+            { key = "saththeril_soiree",       label = "Sath'theril Soiree" },
+            { key = "abundant_offerings",      label = "Abundant Offerings" },
+            { key = "legends_of_the_haranir",  label = "Legends of the Haranir" },
+            { key = "stormarian_assault",      label = "Stormarian Assault" },
+            { key = "hidden_trove",            label = "Hidden Trove" },
+            { key = "nightmarish_task",        label = "A Nightmarish Task" },
+            { key = "world_boss",              label = "World Boss" },
+        },
+    },
+    {
+        key = "currencies", label = "Currencies",
+        keys = { "currencies", "radiantSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
+        children = {
+            { key = "radiantSparks",       label = "Radiant Sparks",      icon = constants.labels.RADIANT_SPARKS:match("|T[^|]-|t") },
+            { key = "adventurer_crests",   label = "Adventurer Crests",   icon = constants.labels.ADVENTURER_CRESTS:match("|T[^|]-|t") },
+            { key = "veteran_crests",      label = "Veteran Crests",      icon = constants.labels.VETERAN_CRESTS:match("|T[^|]-|t") },
+            { key = "champion_crests",     label = "Champion Crests",     icon = constants.labels.CHAMPION_CRESTS:match("|T[^|]-|t") },
+            { key = "hero_crests",         label = "Hero Crests",         icon = constants.labels.HERO_CRESTS:match("|T[^|]-|t") },
+            { key = "myth_crests",         label = "Myth Crests",         icon = constants.labels.MYTH_CRESTS:match("|T[^|]-|t") },
+            { key = "restored_coffer_keys", label = "Bountiful Keys",     icon = constants.labels.RESTORED_COFFER_KEY:match("|T[^|]-|t") },
+            { key = "coffer_key_shards",   label = "Coffer Key Shards",   icon = constants.labels.COFFER_KEY_SHARDS:match("|T[^|]-|t") },
+            { key = "undercoin",           label = "Undercoin",           icon = constants.labels.UNDERCOIN:match("|T[^|]-|t") },
+            { key = "anglerPearls",        label = "Angler Pearls",       icon = constants.labels.ANGLER_PEARLS:match("|T[^|]-|t") },
+            { key = "voidlightMarl",       label = "Voidlight Marl",      icon = constants.labels.VOIDLIGHT_MARL:match("|T[^|]-|t") },
+            { key = "shardOfDundun",       label = "Shard of Dundun",     icon = constants.labels.SHARD_OF_DUNDUN:match("|T[^|]-|t") },
+            { key = "remnantOfAnguish",    label = "Remnant of Anguish",  icon = constants.labels.REMNANT_OF_ANGUISH:match("|T[^|]-|t") },
+            { key = "unalloyedAbundance",  label = "Unalloyed Abundance", icon = constants.labels.UNALLOYED_ABUNDANCE:match("|T[^|]-|t") },
+            { key = "untaintedManaCrystal", label = "Untainted Mana-Crystal", icon = constants.labels.UNTAINTED_MANA_CRYSTAL:match("|T[^|]-|t") },
+            { key = "fieldAccolade",       label = "Field Accolade",      icon = constants.labels.FIELD_ACCOLADE:match("|T[^|]-|t") },
+            { key = "luminousDust",        label = "Luminous Dust",       icon = constants.labels.LUMINOUS_DUST:match("|T[^|]-|t") },
+            { key = "brimmingArcana",      label = "Brimming Arcana",     icon = constants.labels.BRIMMING_ARCANA:match("|T[^|]-|t") },
+        },
+    },
+}
+
+constants.section_lookup = {}
+constants.child_lookup = {}
+for _, section in ipairs(constants.sections) do
+    for _, k in ipairs(section.keys) do
+        constants.section_lookup[k] = section.key
+    end
+    if section.children then
+        for _, child in ipairs(section.children) do
+            constants.child_lookup[child.key] = section.key
+        end
+    end
+end
 
 constants.DUNGEONS = {
     [2] = "Serpent",
@@ -149,13 +222,11 @@ constants.DUNGEONS = {
     [525] = "Floodgate",
     [541] = "Stonecore",
     [542] = "Eco-Dome",
-
-    -- New dungeons (Midnight / 12.0)
-    [556] = "Saron",      -- Pit of Saron
-    [557] = "Windrunner", -- Windrunner Spire
-    [558] = "Magisters",  -- Magisters' Terrace
-    [559] = "Xenas",      -- Nexus-Point Xenas
-    [560] = "Maisara",    -- Maisara Caverns
+    [556] = "Saron",
+    [557] = "Windrunner",
+    [558] = "Magisters",
+    [559] = "Xenas",
+    [560] = "Maisara",
 }
 
 constants.RAID_ILVL = {
@@ -165,38 +236,38 @@ constants.RAID_ILVL = {
     [4] = "R:25N",
     [5] = "R:10H",
     [6] = "R:25H",
-    [7] = "671", -- LFR
+    [7] = "233", -- LFR
     [8] = "D:CM",
     [9] = "R:40",
-    [14] = "684", -- Normal
-    [15] = "697", -- Heroic
-    [16] = "710", -- Mythic
-    [17] = "671", -- LFR
+    [14] = "246", -- Normal
+    [15] = "259", -- Heroic
+    [16] = "272", -- Mythic
+    [17] = "233", -- LFR
     [23] = "D:M",
     [24] = "D:TW",
     [33] = "R:TW",
     [202] = "Story",
 }
 
--- Delves derived from new Dungeon +8 (269) and Dungeon +2 (259)
 constants.DELVE_ILVL = {
-    [1]  = "230", -- 269 - 39
-    [2]  = "243", -- 269 - 26
-    [3]  = "246", -- 269 - 23
-    [4]  = "256", -- 269 - 13
-    [5]  = "263", -- 269 - 6
-    [6]  = "266", -- 269 - 3
-    [7]  = "266", -- 269 - 3
-    [8]  = "259", -- same as Dungeon +2
+    [1]  = "233", -- Prey: Normal
+    [2]  = "237",
+    [3]  = "240",
+    [4]  = "243",
+    [5]  = "246", -- Prey: Heroic
+    [6]  = "253",
+    [7]  = "256",
+    [8]  = "259", -- Prey: Nightmare
     [9]  = "259",
     [10] = "259",
     [11] = "259",
+    [12] = "263",
+    [13] = "269",
 }
 
--- Great Vault rewards (Keystones)
 constants.DUNGEON_ILVL = {
-    [0]  = "246",
-    [1]  = "259",
+    [0]  = "256",
+    [1]  = "256",
     [2]  = "259",
     [3]  = "259",
     [4]  = "263",
@@ -212,37 +283,29 @@ constants.currencies = {
     conquest = "1602",
     honor = "1792",
     bloodyTokens = "2123",
-    catalyst = "3269",
-    valorstones = "3008",
+    catalyst = "3378",
     undercoin = "2803",
-    resonance_crystals = "2815",
+    anglerPearls = "3373",
+    voidlightMarl = "3316",
     restored_coffer_keys = "3028",
-    lfr_crests = "3284",
-    normal_crests = "3286",
-    heroic_crests = "3288",
-    mythic_crests = "3290",
-    flameBlessedIron = "3090",
-    starlightSparks = "3141",
-    untaintedManaCrystals = "3356",
+    cofferKeyShards = "3310",
+    adventurer_crests = "3383",
+    veteran_crests = "3341",
+    champion_crests = "3343",
+    hero_crests = "3345",
+    myth_crests = "3347",
+    radiantSparks = "3212",
+    shardOfDundun = "3376",
+    remnantOfAnguish = "3392",
+    unalloyedAbundance = "3377",
+    nebulousVoidcore = "3418",
+    untaintedManaCrystal = "3356",
+    fieldAccolade = "3405",
+    luminousDust = "3385",
+    brimmingArcana = "3379",
 }
 
 constants.TIER_SETS = {
-    -- Existing
-    [1919] = true,
-    [1920] = true,
-    [1921] = true,
-    [1922] = true,
-    [1923] = true,
-    [1924] = true,
-    [1925] = true,
-    [1926] = true,
-    [1927] = true,
-    [1928] = true,
-    [1929] = true,
-    [1930] = true,
-    [1931] = true,
-
-    -- New (Midnight / 12.0)
     [1978] = true, -- Death Knight
     [1979] = true, -- Demon Hunter
     [1980] = true, -- Druid
@@ -266,7 +329,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "12.0.0.1"
+constants.VERSION = "12.0.5.0"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -384,6 +447,9 @@ function AltManager:CanCollectNow()
     if InCombatLockdown() or UnitAffectingCombat("player") then
         return false
     end
+    if C_ChallengeMode.IsChallengeModeActive() then
+        return false
+    end
     if not IsLoggedIn() then
         return false
     end
@@ -428,12 +494,122 @@ end
 function AltManager:LoadConfigFromDB()
     local db = MyAltManagerDB
     db.config = db.config or {}
+    db.visibility = db.visibility or {}
 
     if db.config.MIN_ITEM_LEVEL == nil then
         db.config.MIN_ITEM_LEVEL = 0
     end
+    if db.config.MIN_LEVEL == nil then
+        db.config.MIN_LEVEL = 80
+    end
+    if db.config.show_icons == nil then
+        db.config.show_icons = true
+    end
 
     constants.config.MIN_ITEM_LEVEL = tonumber(db.config.MIN_ITEM_LEVEL) or 0
+    constants.config.MIN_LEVEL = tonumber(db.config.MIN_LEVEL) or 80
+end
+
+function AltManager:RegisterSettings()
+    local category, layout = Settings.RegisterVerticalLayoutCategory("MyAltManager")
+    self.settingsCategory = category
+
+    local function RebuildIfNeeded()
+        if AltManager.columns_table then
+            AltManager:RebuildUI()
+        end
+    end
+
+    -- Minimum Level slider (80-90, step 1, default 80)
+    do
+        local minLevelSetting = Settings.RegisterAddOnSetting(
+            category, "MyAltManager_MinLevel", "MIN_LEVEL",
+            MyAltManagerDB.config, Settings.VarType.Number,
+            "Minimum Level", 80
+        )
+        local sliderOptions = Settings.CreateSliderOptions(80, 90, 1)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Min, function() return "80" end)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Max, function() return "90" end)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value) return tostring(math.floor(value)) end)
+        Settings.CreateSlider(category, minLevelSetting, sliderOptions, "Only track characters at or above this level.")
+        Settings.SetOnValueChangedCallback("MyAltManager_MinLevel", function(_, _, value)
+            local v = math.floor(value)
+            MyAltManagerDB.config.MIN_LEVEL = v
+            constants.config.MIN_LEVEL = v
+        end)
+    end
+
+    -- Minimum Item Level slider (0-500, step 2, default 0)
+    do
+        local minIlvlSetting = Settings.RegisterAddOnSetting(
+            category, "MyAltManager_MinItemLevel", "MIN_ITEM_LEVEL",
+            MyAltManagerDB.config, Settings.VarType.Number,
+            "Minimum Item Level", 0
+        )
+        local sliderOptions = Settings.CreateSliderOptions(0, 500, 2)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Min, function() return "0" end)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Max, function() return "500" end)
+        sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value) return tostring(math.floor(value)) end)
+        Settings.CreateSlider(category, minIlvlSetting, sliderOptions, "Only track characters at or above this item level.")
+        Settings.SetOnValueChangedCallback("MyAltManager_MinItemLevel", function(_, _, value)
+            local v = math.floor(value)
+            MyAltManagerDB.config.MIN_ITEM_LEVEL = v
+            constants.config.MIN_ITEM_LEVEL = v
+        end)
+    end
+
+    -- Toggle Icons checkbox
+    do
+        local iconSetting = Settings.RegisterAddOnSetting(
+            category, "MyAltManager_ShowIcons", "show_icons",
+            MyAltManagerDB.config, Settings.VarType.Boolean,
+            "Show Icons", true
+        )
+        Settings.CreateCheckbox(category, iconSetting, "Show or hide icon textures in labels.")
+        Settings.SetOnValueChangedCallback("MyAltManager_ShowIcons", function(_, _, value)
+            MyAltManagerDB.config.show_icons = value
+            RebuildIfNeeded()
+        end)
+    end
+
+    -- Section toggles with child sub-toggles
+    for _, section in ipairs(constants.sections) do
+        local parentVarName = "MyAltManager_Show_" .. section.key
+        local parentSetting = Settings.RegisterAddOnSetting(
+            category, parentVarName, section.key,
+            MyAltManagerDB.visibility, Settings.VarType.Boolean,
+            "Show " .. section.label, true
+        )
+        local parentInitializer = Settings.CreateCheckbox(category, parentSetting, "Toggle visibility of the " .. section.label .. " section.")
+        Settings.SetOnValueChangedCallback(parentVarName, function(_, _, value)
+            MyAltManagerDB.visibility[section.key] = value
+            RebuildIfNeeded()
+        end)
+
+        -- Child toggles
+        if section.children then
+            for _, child in ipairs(section.children) do
+                local childVarName = "MyAltManager_Show_" .. child.key
+                local settingsIcon = child.icon and child.icon:gsub(":12:12:", ":20:20:") or nil
+                local displayLabel = settingsIcon and (settingsIcon .. " " .. child.label) or child.label
+                local childSetting = Settings.RegisterAddOnSetting(
+                    category, childVarName, child.key,
+                    MyAltManagerDB.visibility, Settings.VarType.Boolean,
+                    displayLabel, true
+                )
+                local childInitializer = Settings.CreateCheckbox(category, childSetting, "Toggle visibility of " .. child.label .. ".")
+                childInitializer:SetParentInitializer(parentInitializer, function()
+                    return MyAltManagerDB.visibility[section.key] ~= false
+                end)
+                Settings.SetOnValueChangedCallback(childVarName, function(_, _, value)
+                    MyAltManagerDB.visibility[child.key] = value
+                    RebuildIfNeeded()
+                end)
+            end
+        end
+    end
+
+    Settings.RegisterAddOnCategory(category)
 end
 
 function SlashCmdList.ALTMANAGER(cmd, editbox)
@@ -442,6 +618,7 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
     if rqst == "help" then
         print("MyAltManager help:")
         print("   \"/alts\" to open the UI.")
+        print("   \"/alts settings\" to open the settings panel.")
         print("   \"/alts min <ilevel>\" to set minimum item level to store data (default 0).")
         print("   \"/alts purge\" to remove all stored data.")
         print("   \"/alts remove <name>\" to remove characters by name.")
@@ -452,6 +629,10 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
         AltManager:RemoveCharactersByName(arg)
     elseif rqst == "min" then
         AltManager:SetMinItemLevel(arg)
+    elseif rqst == "settings" then
+        if AltManager.settingsCategory then
+            Settings.OpenToCategory(AltManager.settingsCategory:GetID())
+        end
     else
         AltManager:ShowInterface()
     end
@@ -476,14 +657,13 @@ do
 
     main_frame:RegisterEvent("ADDON_LOADED")
     main_frame:RegisterEvent("PLAYER_LOGIN")
-    main_frame:RegisterEvent("PLAYER_LOGOUT")
     main_frame:RegisterEvent("QUEST_TURNED_IN")
     main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
-    main_frame:RegisterEvent("ARTIFACT_XP_UPDATE")
-    main_frame:RegisterEvent("CHAT_MSG_CURRENCY")
     main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
     main_frame:RegisterEvent("PLAYER_LEAVING_WORLD")
-    main_frame:RegisterEvent("UNIT_SPELLCAST_SENT")
+    main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+    main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
 
     main_frame:SetScript("OnEvent", function(self, ...)
         local event, loadedOrType = ...
@@ -502,7 +682,6 @@ do
         if event == "PLAYER_LOGIN" then
             AltManager:OnLogin()
             AltManager:ScheduleCollect("login")
-            LeaveChannelByName("Services")
             return
         end
 
@@ -513,8 +692,14 @@ do
 
         if event == "BAG_UPDATE_DELAYED"
             or event == "QUEST_TURNED_IN"
-            or event == "CHAT_MSG_CURRENCY"
             or event == "CURRENCY_DISPLAY_UPDATE" then
+            AltManager:ScheduleCollect(event)
+            return
+        end
+
+        if event == "PLAYER_REGEN_ENABLED"
+            or event == "CHALLENGE_MODE_COMPLETED"
+            or event == "CHALLENGE_MODE_RESET" then
             AltManager:ScheduleCollect(event)
             return
         end
@@ -545,9 +730,43 @@ function AltManager:InitDB()
     local t = {}
     t.alts = 0
     t.data = {}
-    t.config = { MIN_ITEM_LEVEL = 0 }
+    t.config = { MIN_ITEM_LEVEL = 0, MIN_LEVEL = 80, show_icons = true }
     t.meta = {}
+    t.visibility = {}
     return t
+end
+
+function AltManager:IsRowVisible(key)
+    local vis = MyAltManagerDB and MyAltManagerDB.visibility
+    if not vis then return true end
+
+    -- Check if this key belongs to a section
+    local section_key = constants.section_lookup[key]
+    if section_key then
+        -- If the parent section is toggled off, hide the row
+        if vis[section_key] == false then return false end
+        -- If this key also has an individual child toggle, check it
+        if constants.child_lookup[key] and vis[key] == false then return false end
+        return true
+    end
+
+    return true
+end
+
+function AltManager:CalculateYSize()
+    if self.columns_table then
+        local count = 0
+        for key, row in pairs(self.columns_table) do
+            if self:IsRowVisible(key) then
+                count = count + 1
+                if row.topSpacing then
+                    count = count + 1
+                end
+            end
+        end
+        return (count * font_height) + 15
+    end
+    return sizey
 end
 
 function AltManager:CalculateXSizeNoGuidCheck()
@@ -563,10 +782,11 @@ function AltManager:OnLogin()
     self:ValidateReset()
     self:StoreData(self:CollectData())
 
-    self.main_frame:SetSize(self:CalculateXSize(), sizey)
+    AltManager:CreateContent()
+
+    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
     self.main_frame.background:SetAllPoints()
 
-    AltManager:CreateContent()
     AltManager:MakeTopBottomTextures(self.main_frame)
     AltManager:MakeBorder(self.main_frame, 5)
 end
@@ -595,6 +815,7 @@ function AltManager:OnLoad()
     -- One-time per-expansion migration (pre-expansion cleanup wipe)
     if self:RunExpansionMigrationIfNeeded() then
         self:LoadConfigFromDB()
+        self:RegisterSettings()
         self.addon_loaded = true
         return
     end
@@ -606,6 +827,7 @@ function AltManager:OnLoad()
         MyAltManagerDB.alts = true_numel(MyAltManagerDB.data)
     end
 
+    self:RegisterSettings()
     self.addon_loaded = true
 
     -- Requests are safe; still keep them off combat-heavy loops.
@@ -625,13 +847,16 @@ function AltManager:CreateFontFrame(parent, x_size, height, relative_to, y_offse
     local f = CreateFrame("Button", nil, parent)
     f:SetSize(x_size, height)
     f:SetNormalFontObject(GameFontHighlightMedium)
-    f:SetText(label)
+    f:SetText(label or " ")
     f:SetPoint("TOPLEFT", relative_to, "TOPLEFT", 0, y_offset)
-    f:GetFontString():SetJustifyH(justify)
-    f:GetFontString():SetJustifyV("MIDDLE")
-    f:SetPushedTextOffset(0, 0)
-    f:GetFontString():SetWidth(150)
-    f:GetFontString():SetHeight(14)
+    local fs = f:GetFontString()
+    if fs then
+        fs:SetJustifyH(justify)
+        fs:SetJustifyV("MIDDLE")
+        f:SetPushedTextOffset(0, 0)
+        fs:SetWidth(150)
+        fs:SetHeight(14)
+    end
     return f
 end
 
@@ -669,17 +894,14 @@ function AltManager:ValidateReset()
                 char_table.weeklyDelveRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
                 char_table.weeklyRaidRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r"
                 char_table.expires = self:GetNextWeeklyResetTime()
-                char_table.khazAlgarEmissary = false
-                char_table.azjKahetPacts = false
-                char_table.spreadingTheLight = false
+                char_table.weeklyMetaQuest = false
                 char_table.specialAssignment = false
-                char_table.collectingWax = false
+                char_table.stormarianAssault = false
                 char_table.worldBoss = false
-                char_table.earthenTheater = false
-                char_table.awakeningTheMachine = false
-                char_table.phaseDiving = false
-                char_table.ecologicalSuccession = false
-                char_table.urgeToSurge = false
+                char_table.nightmarishTask = false
+                char_table.abundantOfferings = false
+                char_table.legendsOfTheHaranir = false
+                char_table.saththerilSoiree = false
                 char_table.hiddenTrove = false
                 char_table.weeklyCofferKeysCollected = 0
             end
@@ -719,7 +941,7 @@ function AltManager:RemoveCharacterByGuid(index)
         if db.data[index] == nil then return end
         db.alts = db.alts - 1
         db.data[index] = nil
-        self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), sizey)
+        self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
 
         if self.main_frame.alt_columns ~= nil then
             local count = #self.main_frame.alt_columns
@@ -810,12 +1032,12 @@ function AltManager:CollectData()
         C_MythicPlus.RequestMapInfo(k)
     end
 
-    local maps = C_ChallengeMode.GetMapTable()
+    local maps = C_ChallengeMode.GetMapTable() or {}
     for idx = 1, #maps do
         C_ChallengeMode.RequestLeaders(maps[idx])
     end
 
-    local runHistory = C_MythicPlus.GetRunHistory(false, true)
+    local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
 
     local function extractKeystoneInfo(slotItem)
         if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
@@ -832,39 +1054,35 @@ function AltManager:CollectData()
         end
     end
 
-    local function checkKhazAlgarEmissaryStatus()
-        local khazAlgarEmissaryText = false
+    local function checkWeeklyMetaQuestStatus()
+        local statusText = false
         local questIDs = {
-            82449, 82452, 82453, 82458, 82482, 82483, 82485, 82486, 82487, 82488,
-            82489, 82490, 82491, 82492, 82493, 82494, 82495, 82496, 82497, 82498,
-            82499, 82500, 82501, 82502, 82503, 82504, 82505, 82506, 82507, 82508,
-            82509, 82510, 82511, 82512, 82659, 82678, 82679, 82706, 82707, 82709,
-            82711, 82712, 82746, 87417, 87419, 87422, 87423, 87424, 89514, 91052,
-            91855
+            93912, 93769, 93913, 93910, 94457, 93766, 93911, 93909, 93767, 93892,
+            93891, 93889, 93890
         }
 
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsOnQuest(QUEST_ID) then
-                khazAlgarEmissaryText = "|cFFFBD910In Progress|r"
-                return khazAlgarEmissaryText
+                statusText = "|cFFFBD910In Progress|r"
+                return statusText
             end
         end
 
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                khazAlgarEmissaryText = "|cFF00CF20Complete|r"
-                return khazAlgarEmissaryText
+                statusText = "|cFF00CF20Complete|r"
+                return statusText
             else
-                khazAlgarEmissaryText = "|cFFFF0000Not Started|r"
+                statusText = "|cFFFF0000Not Started|r"
             end
         end
 
-        return khazAlgarEmissaryText
+        return statusText
     end
 
     local function checkSpecialAssignmentStatus()
         local specialAssignmentsText = false
-        local questIDs = { 82355, 82852, 82787, 83229, 81691, 82414, 82531, 81650, 85488, 85487 }
+        local questIDs = { 92848, 93244, 93013, 94391, 91390, 94795, 94743, 94865, 93438, 94390, 94866, 91700 }
 
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
@@ -878,20 +1096,14 @@ function AltManager:CollectData()
         return specialAssignmentsText
     end
 
-    local function checkAzjKahetPactStatus()
-        local azjKahetPactText = false
-        local questIDs = { 80670, 80671, 80672 }
-
+    local function checkSaththerilSoireeStatus()
+        local questIDs = { 90575, 90576, 90574, 90573 }
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                azjKahetPactText = "|cFF00CF20Complete|r"
-                break
-            else
-                azjKahetPactText = "|cFFFF0000Incomplete|r"
+                return "|cFF00CF20Complete|r"
             end
         end
-
-        return azjKahetPactText
+        return "|cFFFF0000Incomplete|r"
     end
 
     local function checkWorldBossStatus()
@@ -906,7 +1118,7 @@ function AltManager:CollectData()
             end
         end
 
-        local questIDs = { 87354 }
+        local questIDs = { 92034, 92636, 92560, 92123 }
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
                 for _, charData in pairs(db2.data) do
@@ -960,18 +1172,15 @@ function AltManager:CollectData()
         keystone_details = "None"
     end
 
-    local khazAlgarEmissary = checkKhazAlgarEmissaryStatus()
-    local azjKahetPacts = checkAzjKahetPactStatus()
+    local weeklyMetaQuest = checkWeeklyMetaQuestStatus()
     local worldBoss = checkWorldBossStatus()
 
-    local earthenTheater = C_QuestLog.IsQuestFlaggedCompleted(83240) and true or false
-    local collectingWax = C_QuestLog.IsQuestFlaggedCompleted(82946) and true or false
-    local awakeningTheMachine = C_QuestLog.IsQuestFlaggedCompleted(83333) and true or false
-    local spreadingTheLight = C_QuestLog.IsQuestFlaggedCompleted(76586) and true or false
-    local urgeToSurge = C_QuestLog.IsQuestFlaggedCompleted(86775) and true or false
-    local ecologicalSuccession = C_QuestLog.IsQuestFlaggedCompleted(85460) and true or false
-    local phaseDiving = C_QuestLog.IsQuestFlaggedCompleted(91093) and true or false
+    local abundantOfferings = C_QuestLog.IsQuestFlaggedCompleted(89507) and true or false
+    local stormarianAssault = C_QuestLog.IsQuestFlaggedCompleted(94581) and true or false
+    local legendsOfTheHaranir = C_QuestLog.IsQuestFlaggedCompleted(89268) and true or false
+    local saththerilSoiree = checkSaththerilSoireeStatus()
     local hiddenTrove = C_QuestLog.IsQuestFlaggedCompleted(86371) and true or false
+    local nightmarishTask = C_QuestLog.IsQuestFlaggedCompleted(94446) and true or false
 
     local specialAssignment = checkSpecialAssignmentStatus()
     local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
@@ -992,19 +1201,27 @@ function AltManager:CollectData()
         forged_weapons = "|cFFFFCD44" .. total_conquest_earned .. "/2500|r"
     end
 
-    local lfr_crests = GetRollingCurrencyProgress(constants.currencies.lfr_crests)
-    local normal_crests = GetRollingCurrencyProgress(constants.currencies.normal_crests)
-    local heroic_crests = GetRollingCurrencyProgress(constants.currencies.heroic_crests)
-    local heroic_crests_current = GetCurrencyAmount(constants.currencies.heroic_crests)
-    local mythic_crests = GetRollingCurrencyProgress(constants.currencies.mythic_crests)
-    local mythic_crests_current = GetCurrencyAmount(constants.currencies.mythic_crests)
-    local valorstones = GetCurrencyAmount(constants.currencies.valorstones) or 0
-    local starlightSparks = GetRollingCurrencyProgress(constants.currencies.starlightSparks)
+    local adventurer_crests = GetRollingCurrencyProgress(constants.currencies.adventurer_crests)
+    local veteran_crests = GetRollingCurrencyProgress(constants.currencies.veteran_crests)
+    local champion_crests = GetRollingCurrencyProgress(constants.currencies.champion_crests)
+    local hero_crests = GetRollingCurrencyProgress(constants.currencies.hero_crests)
+    local hero_crests_current = GetCurrencyAmount(constants.currencies.hero_crests)
+    local myth_crests = GetRollingCurrencyProgress(constants.currencies.myth_crests)
+    local myth_crests_current = GetCurrencyAmount(constants.currencies.myth_crests)
+    local radiantSparks = GetRollingCurrencyProgress(constants.currencies.radiantSparks)
     local undercoin = GetCurrencyAmount(constants.currencies.undercoin) or 0
-    local resonance_crystals = GetCurrencyAmount(constants.currencies.resonance_crystals) or 0
+    local anglerPearls = GetCurrencyAmount(constants.currencies.anglerPearls) or 0
+    local voidlightMarl = GetCurrencyAmount(constants.currencies.voidlightMarl) or 0
     local restored_coffer_keys = GetCurrencyAmount(constants.currencies.restored_coffer_keys) or 0
-    local flame_blessed_iron = GetCurrencyAmount(constants.currencies.flameBlessedIron) or 0
-    local untaintedManaCrystals = GetCurrencyAmount(constants.currencies.untaintedManaCrystals) or 0
+    local cofferKeyShards = GetCurrencyAmount(constants.currencies.cofferKeyShards) or 0
+    local shardOfDundun = GetCurrencyAmount(constants.currencies.shardOfDundun) or 0
+    local remnantOfAnguish = GetCurrencyAmount(constants.currencies.remnantOfAnguish) or 0
+    local unalloyedAbundance = GetCurrencyAmount(constants.currencies.unalloyedAbundance) or 0
+    local nebulousVoidcore = GetRollingCurrencyProgress(constants.currencies.nebulousVoidcore)
+    local untaintedManaCrystal = GetCurrencyAmount(constants.currencies.untaintedManaCrystal) or 0
+    local fieldAccolade = GetCurrencyAmount(constants.currencies.fieldAccolade) or 0
+    local luminousDust = GetCurrencyAmount(constants.currencies.luminousDust) or 0
+    local brimmingArcana = GetCurrencyAmount(constants.currencies.brimmingArcana) or 0
 
     local catalystCharges = GetCurrencyAmount(constants.currencies.catalyst) or 0
     local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(constants.currencies.catalyst) or {}).maxQuantity or 0
@@ -1027,37 +1244,42 @@ function AltManager:CollectData()
     char_table.weeklyRaidRewards = self:GetWeeklyRaidRewards()
     char_table.tierBonuses = self:GetTierBonuses()
     char_table.overallDungeonScore = self:GetOverallDungeonScore()
-    char_table.khazAlgarEmissary = khazAlgarEmissary
-    char_table.phaseDiving = phaseDiving
-    char_table.ecologicalSuccession = ecologicalSuccession
-    char_table.urgeToSurge = urgeToSurge
+    char_table.weeklyMetaQuest = weeklyMetaQuest
     char_table.hiddenTrove = hiddenTrove
-    char_table.azjKahetPacts = azjKahetPacts
     char_table.specialAssignment = specialAssignment
-    char_table.spreadingTheLight = spreadingTheLight
-    char_table.awakeningTheMachine = awakeningTheMachine
-    char_table.earthenTheater = earthenTheater
-    char_table.collectingWax = collectingWax
+    char_table.saththerilSoiree = saththerilSoiree
+    char_table.abundantOfferings = abundantOfferings
+    char_table.legendsOfTheHaranir = legendsOfTheHaranir
+    char_table.stormarianAssault = stormarianAssault
+    char_table.nightmarishTask = nightmarishTask
     char_table.worldBoss = worldBoss
     char_table.conquest = conquest
     char_table.forged_weapons = forged_weapons
     char_table.honor = honor
     char_table.bloody_tokens = bloody_tokens
-    char_table.lfr_crests = lfr_crests
-    char_table.normal_crests = normal_crests
-    char_table.heroic_crests = heroic_crests
-    char_table.heroic_crests_current = heroic_crests_current
-    char_table.mythic_crests = mythic_crests
-    char_table.mythic_crests_current = mythic_crests_current
-    char_table.valorstones = valorstones
-    char_table.starlightSparks = starlightSparks
+    char_table.adventurer_crests = adventurer_crests
+    char_table.veteran_crests = veteran_crests
+    char_table.champion_crests = champion_crests
+    char_table.hero_crests = hero_crests
+    char_table.hero_crests_current = hero_crests_current
+    char_table.myth_crests = myth_crests
+    char_table.myth_crests_current = myth_crests_current
+    char_table.radiantSparks = radiantSparks
     char_table.undercoin = undercoin
-    char_table.resonance_crystals = resonance_crystals
+    char_table.anglerPearls = anglerPearls
+    char_table.voidlightMarl = voidlightMarl
     char_table.restored_coffer_keys = restored_coffer_keys
-    char_table.untaintedManaCrystals = untaintedManaCrystals
-    char_table.flame_blessed_iron = flame_blessed_iron
+    char_table.cofferKeyShards = cofferKeyShards
+    char_table.shardOfDundun = shardOfDundun
+    char_table.remnantOfAnguish = remnantOfAnguish
+    char_table.unalloyedAbundance = unalloyedAbundance
+    char_table.nebulousVoidcore = nebulousVoidcore
+    char_table.untaintedManaCrystal = untaintedManaCrystal
+    char_table.fieldAccolade = fieldAccolade
+    char_table.luminousDust = luminousDust
+    char_table.brimmingArcana = brimmingArcana
     char_table.weeklyCofferKeysCollected = weeklyCofferKeysCollected
-    char_table.catalystCharges = string.format("%s / %s", catalystCharges, catalystChargesMax)
+    char_table.catalystCharges = string.format("%s/%s", catalystCharges, catalystChargesMax)
     char_table.version = constants.VERSION
     char_table.expires = self:GetNextWeeklyResetTime()
     char_table.dataObtained = time()
@@ -1123,7 +1345,7 @@ function AltManager:GetOverallDungeonScore()
 end
 
 function AltManager:GetWeeklyDelvesRewards()
-    local completedDelves = C_WeeklyRewards.GetActivities(6)
+    local completedDelves = C_WeeklyRewards.GetActivities(6) or {}
     local delveRewards = {}
 
     for i = 1, 3 do
@@ -1141,7 +1363,7 @@ function AltManager:GetWeeklyDelvesRewards()
 end
 
 function AltManager:GetWeeklyRaidRewards()
-    local completedRaids = C_WeeklyRewards.GetActivities(3)
+    local completedRaids = C_WeeklyRewards.GetActivities(3) or {}
     local raidRewards = {}
 
     for i = 1, 3 do
@@ -1159,7 +1381,7 @@ function AltManager:GetWeeklyRaidRewards()
 end
 
 function AltManager:GetWeeklyDungeonRewards()
-    local completedDungeons = C_WeeklyRewards.GetActivities(1)
+    local completedDungeons = C_WeeklyRewards.GetActivities(1) or {}
     local dungeonRewards = {}
 
     for i = 1, 3 do
@@ -1178,7 +1400,7 @@ function AltManager:GetWeeklyDungeonRewards()
 end
 
 function AltManager:GetHighestCompletedWeeklyKeystone()
-    local info = C_MythicPlus.GetRunHistory(false, true)
+    local info = C_MythicPlus.GetRunHistory(false, true) or {}
 
     table.sort(info, function(a, b)
         return (a.level or 0) > (b.level or 0)
@@ -1208,7 +1430,7 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
 end
 
 function AltManager:GetLowestLevelInTopRuns(numRuns)
-    local runHistory = C_MythicPlus.GetRunHistory(false, true)
+    local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
     table.sort(runHistory, function(left, right) return (left.level or 0) > (right.level or 0) end)
 
     local lowestLevel
@@ -1238,222 +1460,293 @@ function AltManager:CreateContent()
     self.main_frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
 
     local column_table = {
-        spacer_1 = {
-            order = 1,
-            label = "",
-            data = function(_) return " " end,
-        },
         name = {
-            order = 1.1,
+            order = 1,
+            topSpacing = true,
             label = constants.labels.NAME,
             data = function(alt_data) return alt_data.name .. " (" .. (alt_data.ilevel or 0) .. ")" end,
             color = function(alt_data) return RAID_CLASS_COLORS[alt_data.class] end,
         },
         realm = {
-            order = 1.2,
+            order = 2,
             data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
             remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end,
         },
         tier = {
-            order = 1.3,
+            order = 3,
             label = constants.labels.TIER_SET,
             data = function(alt_data) return (tostring(alt_data.tierBonuses) or "No Set") end,
         },
         catalyst_charges = {
-            order = 1.4,
+            order = 4,
             label = constants.labels.CATALYST_CHARGES,
-            data = function(alt_data) return (alt_data.catalystCharges and tostring(alt_data.catalystCharges) or "0") end,
+            data = function(alt_data) return (alt_data.catalystCharges and tostring(alt_data.catalystCharges) or "0/0") end,
         },
-        spacer_2 = {
-            order = 2.0,
-            label = "",
-            data = function(_) return " " end,
+        nebulousVoidcore = {
+            order = 4.5,
+            label = constants.labels.NEBULOUS_VOIDCORE,
+            data = function(alt_data) return (alt_data.nebulousVoidcore and tostring(alt_data.nebulousVoidcore) or "0/0") end,
         },
         mythic_title = {
-            order = 2.1,
+            order = 5,
+            topSpacing = true,
             label = constants.labels.KEYSTONE,
             title = true,
             data = function(_) return " " end,
         },
         mythic_rating = {
-            order = 2.2,
+            order = 6,
             label = constants.labels.MYTHIC_RATING,
             data = function(alt_data) return tostring(alt_data.overallDungeonScore) or 0 end,
         },
         current_keystone = {
-            order = 2.3,
+            order = 7,
             label = constants.labels.CURRENT_KEYSTONE,
             data = function(alt_data) return tostring(alt_data.keystone_details) or "None" end,
         },
         weekly_highest = {
-            order = 2.4,
+            order = 8,
             label = constants.labels.WEEKLY_HIGHEST,
             data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or " " end,
         },
-        spacer_2_5 = {
-            order = 2.5,
-            label = "",
-            data = function(_) return " " end,
-        },
         great_vault_rewards = {
-            order = 2.6,
+            order = 9,
+            topSpacing = true,
             label = constants.labels.GREAT_VAULT_REWARDS,
             title = true,
-            data = function(alt_data)
-                return "|TInterface\\Icons\\inv_crestupgrade_ethereal_runed:12:12:0:0|t " .. tostring(alt_data.heroic_crests_current or 0)
-                    .. " | |TInterface\\Icons\\inv_crestupgrade_ethereal_gilded:12:12:0:0|t " .. tostring(alt_data.mythic_crests_current or 0)
-            end,
+            data = function(_) return " " end,
         },
         weekly_raid_rewards = {
-            order = 2.7,
+            order = 10,
             label = constants.labels.WEEKLY_RAID_REWARDS,
             data = function(alt_data) return tostring(alt_data.weeklyRaidRewards) or "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r" end,
         },
         weekly_key_rewards = {
-            order = 2.8,
+            order = 11,
             label = constants.labels.WEEKLY_DUNGEON_REWARDS,
             data = function(alt_data) return tostring(alt_data.weeklyDungeonRewards) or "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r" end,
         },
         weekly_delve_rewards = {
-            order = 2.9,
+            order = 12,
             label = constants.labels.WEEKLY_DELVE_REWARDS,
             data = function(alt_data) return tostring(alt_data.weeklyDelveRewards) or "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r" end,
         },
-        spacer_2_9_1 = {
-            order = 2.91,
-            label = "",
-            data = function(_) return " " end,
-        },
         pvp_data = {
-            order = 2.92,
+            order = 13,
+            topSpacing = true,
             label = constants.labels.PVP,
             title = true,
             data = function(_) return " " end,
         },
         pvp_honor = {
-            order = 2.93,
+            order = 14,
             label = constants.labels.HONOR,
             data = function(alt_data) return (alt_data.honor and tostring(alt_data.honor) or "0") end,
         },
         pvp_conquest = {
-            order = 2.94,
+            order = 15,
             label = constants.labels.CONQUEST,
             data = function(alt_data) return (alt_data.conquest and tostring(alt_data.conquest) or "0") end,
         },
         pvp_conquest_earned = {
-            order = 2.95,
+            order = 16,
             label = constants.labels.FORGED_WEAPONS,
             data = function(alt_data) return (alt_data.forged_weapons and tostring(alt_data.forged_weapons) or "|cFFFF0000Incomplete|r") end,
         },
         pvp_bloody_tokens = {
-            order = 2.96,
+            order = 17,
             label = constants.labels.BLOODY_TOKENS,
             data = function(alt_data) return (alt_data.bloody_tokens and tostring(alt_data.bloody_tokens) or "0") end,
         },
-        spacer_3 = {
-            order = 3.0,
-            label = "",
-            data = function(_) return " " end,
-        },
         weekly_quests = {
-            order = 3.1,
+            order = 18,
+            topSpacing = true,
             label = constants.labels.WEEKLY_QUESTS,
             title = true,
             data = function(_) return " " end,
         },
-        khaz_algar_emissary = {
-            order = 3.2,
-            label = constants.labels.KHAZ_ALGAR_EMISSARY,
-            data = function(alt_data) return (alt_data.khazAlgarEmissary and tostring(alt_data.khazAlgarEmissary) or "|cFFFF0000Not Started|r") end,
+        weekly_meta_quest = {
+            order = 19,
+            label = constants.labels.WEEKLY_META_QUEST,
+            data = function(alt_data) return (alt_data.weeklyMetaQuest and tostring(alt_data.weeklyMetaQuest) or "|cFFFF0000Not Started|r") end,
         },
-        ecological_succession = {
-            order = 3.22,
-            label = constants.labels.ECOLOGICAL_SUCCESSION,
-            data = function(alt_data) return alt_data.ecologicalSuccession and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+        special_assignment = {
+            order = 20,
+            label = constants.labels.SPECIAL_ASSIGNMENT,
+            data = function(alt_data) return (alt_data.specialAssignment and tostring(alt_data.specialAssignment) or "|cFFFF0000Incomplete|r") end,
         },
-        urge_to_surge = {
-            order = 3.23,
-            label = constants.labels.URGE_TO_SURGE,
-            data = function(alt_data) return alt_data.urgeToSurge and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+        saththeril_soiree = {
+            order = 21,
+            label = constants.labels.SATHTHERIL_SOIREE,
+            data = function(alt_data) return (alt_data.saththerilSoiree and tostring(alt_data.saththerilSoiree) or "|cFFFF0000Incomplete|r") end,
+        },
+        abundant_offerings = {
+            order = 22,
+            label = constants.labels.ABUNDANT_OFFERINGS,
+            data = function(alt_data) return alt_data.abundantOfferings and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+        },
+        legends_of_the_haranir = {
+            order = 23,
+            label = constants.labels.LEGENDS_OF_THE_HARANIR,
+            data = function(alt_data) return alt_data.legendsOfTheHaranir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+        },
+        stormarian_assault = {
+            order = 24,
+            label = constants.labels.STORMARIAN_ASSAULT,
+            data = function(alt_data) return alt_data.stormarianAssault and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
         },
         hidden_trove = {
-            order = 3.24,
+            order = 25,
             label = constants.labels.HIDDEN_TROVE,
             data = function(alt_data) return alt_data.hiddenTrove and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
         },
+        nightmarish_task = {
+            order = 25.5,
+            label = constants.labels.NIGHTMARISH_TASK,
+            data = function(alt_data) return alt_data.nightmarishTask and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
+        },
         world_boss = {
-            order = 3.3,
+            order = 26,
             label = constants.labels.WORLD_BOSS,
             data = function(alt_data) return (alt_data.worldBoss and tostring(alt_data.worldBoss) or "|cFFFF0000Incomplete|r") end,
         },
-        spacer_4 = {
-            order = 4.0,
-            label = "",
-            data = function(_) return " " end,
-        },
         currencies = {
-            order = 5.1,
+            order = 27,
+            topSpacing = true,
             label = constants.labels.CURRENCIES,
             title = true,
             data = function(_) return " " end,
         },
-        starlightSparks = {
-            order = 5.2,
-            label = constants.labels.STARLIGHT_SPARKS,
-            data = function(alt_data) return (alt_data.starlightSparks and tostring(alt_data.starlightSparks) or "0") end,
+        radiantSparks = {
+            order = 28,
+            label = constants.labels.RADIANT_SPARKS,
+            data = function(alt_data) return (alt_data.radiantSparks and tostring(alt_data.radiantSparks) or "0") end,
         },
-        valorstones = {
-            order = 5.21,
-            label = constants.labels.VALORSTONES,
-            data = function(alt_data) return (alt_data.valorstones and tostring(alt_data.valorstones) or "0") end,
+        adventurer_crests = {
+            order = 29,
+            label = constants.labels.ADVENTURER_CRESTS,
+            data = function(alt_data) return (alt_data.adventurer_crests and tostring(alt_data.adventurer_crests) or "0") end,
         },
-        runed_crests = {
-            order = 5.22,
-            label = constants.labels.HEROIC_CRESTS,
-            data = function(alt_data) return (alt_data.heroic_crests and tostring(alt_data.heroic_crests) or "0") end,
+        veteran_crests = {
+            order = 30,
+            label = constants.labels.VETERAN_CRESTS,
+            data = function(alt_data) return (alt_data.veteran_crests and tostring(alt_data.veteran_crests) or "0") end,
         },
-        gilded_crests = {
-            order = 5.23,
-            label = constants.labels.MYTHIC_CRESTS,
-            data = function(alt_data) return (alt_data.mythic_crests and tostring(alt_data.mythic_crests) or "0") end,
+        champion_crests = {
+            order = 31,
+            label = constants.labels.CHAMPION_CRESTS,
+            data = function(alt_data) return (alt_data.champion_crests and tostring(alt_data.champion_crests) or "0") end,
+        },
+        hero_crests = {
+            order = 32,
+            label = constants.labels.HERO_CRESTS,
+            data = function(alt_data) return (alt_data.hero_crests and tostring(alt_data.hero_crests) or "0") end,
+        },
+        myth_crests = {
+            order = 33,
+            label = constants.labels.MYTH_CRESTS,
+            data = function(alt_data) return (alt_data.myth_crests and tostring(alt_data.myth_crests) or "0") end,
         },
         restored_coffer_keys = {
-            order = 5.3,
+            order = 34,
             label = constants.labels.RESTORED_COFFER_KEY,
             data = function(alt_data) return (alt_data.restored_coffer_keys and tostring(alt_data.restored_coffer_keys) or "0") end,
         },
+        coffer_key_shards = {
+            order = 35,
+            label = constants.labels.COFFER_KEY_SHARDS,
+            data = function(alt_data) return (alt_data.cofferKeyShards and tostring(alt_data.cofferKeyShards) or "0") end,
+        },
         undercoin = {
-            order = 5.31,
+            order = 36,
             label = constants.labels.UNDERCOIN,
             data = function(alt_data) return (alt_data.undercoin and tostring(alt_data.undercoin) or "0") end,
         },
-        untaintedManaCrystals = {
-            order = 5.32,
-            label = constants.labels.UNTAINTED_MANA_CRYSTALS,
-            data = function(alt_data) return (alt_data.untaintedManaCrystals and tostring(alt_data.untaintedManaCrystals) or "0") end,
+        anglerPearls = {
+            order = 36.5,
+            label = constants.labels.ANGLER_PEARLS,
+            data = function(alt_data) return (alt_data.anglerPearls and tostring(alt_data.anglerPearls) or "0") end,
+        },
+        voidlightMarl = {
+            order = 37,
+            label = constants.labels.VOIDLIGHT_MARL,
+            data = function(alt_data) return (alt_data.voidlightMarl and tostring(alt_data.voidlightMarl) or "0") end,
+        },
+        shardOfDundun = {
+            order = 38,
+            label = constants.labels.SHARD_OF_DUNDUN,
+            data = function(alt_data) return (alt_data.shardOfDundun and tostring(alt_data.shardOfDundun) or "0") end,
+        },
+        remnantOfAnguish = {
+            order = 39,
+            label = constants.labels.REMNANT_OF_ANGUISH,
+            data = function(alt_data) return (alt_data.remnantOfAnguish and tostring(alt_data.remnantOfAnguish) or "0") end,
+        },
+        unalloyedAbundance = {
+            order = 40,
+            label = constants.labels.UNALLOYED_ABUNDANCE,
+            data = function(alt_data) return (alt_data.unalloyedAbundance and tostring(alt_data.unalloyedAbundance) or "0") end,
+        },
+        untaintedManaCrystal = {
+            order = 42,
+            label = constants.labels.UNTAINTED_MANA_CRYSTAL,
+            data = function(alt_data) return (alt_data.untaintedManaCrystal and tostring(alt_data.untaintedManaCrystal) or "0") end,
+        },
+        fieldAccolade = {
+            order = 43,
+            label = constants.labels.FIELD_ACCOLADE,
+            data = function(alt_data) return (alt_data.fieldAccolade and tostring(alt_data.fieldAccolade) or "0") end,
+        },
+        luminousDust = {
+            order = 44,
+            label = constants.labels.LUMINOUS_DUST,
+            data = function(alt_data) return (alt_data.luminousDust and tostring(alt_data.luminousDust) or "0") end,
+        },
+        brimmingArcana = {
+            order = 45,
+            label = constants.labels.BRIMMING_ARCANA,
+            data = function(alt_data) return (alt_data.brimmingArcana and tostring(alt_data.brimmingArcana) or "0") end,
         },
     }
 
     self.columns_table = column_table
 
-    local font_height = 14
+    local calcY = self:CalculateYSize()
     local label_column = self.main_frame.label_column or CreateFrame("Button", nil, self.main_frame)
     if not self.main_frame.label_column then self.main_frame.label_column = label_column end
-    label_column:SetSize(per_alt_x, sizey)
+    label_column:SetSize(per_alt_x, calcY)
     label_column:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", 4, -1)
 
+    self.main_frame.label_frames = self.main_frame.label_frames or {}
+
+    local show_icons = MyAltManagerDB and MyAltManagerDB.config and MyAltManagerDB.config.show_icons
+    if show_icons == nil then show_icons = true end
+
     local i = 1
-    for _, row in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
-        if row.label then
-            if row.label ~= "" and not row.title then
-                row.label = row.label .. ":"
-            elseif row.label == "" then
-                row.label = " "
+    for key, row in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
+        if self:IsRowVisible(key) then
+            if row.topSpacing then
+                i = i + 1
             end
-            self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i - 1) * font_height, row.label, "RIGHT")
-            self.main_frame.lowest_point = -(i - 1) * font_height
+            if row.label then
+                local display_label = row.label
+                if display_label ~= "" and not row.title then
+                    display_label = display_label .. ":"
+                elseif display_label == "" then
+                    display_label = " "
+                end
+                if not show_icons then
+                    display_label = display_label:gsub("|T[^|]-|t", "")
+                    display_label = display_label:gsub("%s+:", ":")
+                    display_label = display_label:match("^%s*(.-)%s*$")
+                    if display_label == "" then display_label = " " end
+                end
+                local frame = self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i - 1) * font_height, display_label, "RIGHT")
+                table.insert(self.main_frame.label_frames, frame)
+                self.main_frame.lowest_point = -(i - 1) * font_height
+            end
+            i = i + 1
         end
-        i = i + 1
     end
 end
 
@@ -1473,48 +1766,97 @@ function AltManager:UpdateStrings()
             anchor_frame:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", per_alt_x * alt, -1)
         end
 
-        anchor_frame:SetSize(per_alt_x, sizey)
+        anchor_frame:SetSize(per_alt_x, self:CalculateYSize())
         self.main_frame.alt_columns[alt].label_columns = self.main_frame.alt_columns[alt].label_columns or {}
         local label_columns = self.main_frame.alt_columns[alt].label_columns
 
         local i = 1
-        for _, column in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
-            if type(column.data) == "function" then
-                local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, column.data(alt_data), "CENTER")
-                if not self.main_frame.alt_columns[alt].label_columns[i] then
-                    self.main_frame.alt_columns[alt].label_columns[i] = current_row
+        for key, column in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
+            if self:IsRowVisible(key) then
+                if column.topSpacing then
+                    i = i + 1
                 end
-
-                if column.color then
-                    local color = column.color(alt_data)
-                    current_row:GetFontString():SetTextColor(color.r, color.g, color.b, 1)
-                end
-
-                current_row:SetText(column.data(alt_data))
-
-                if column.font then
-                    current_row:GetFontString():SetFont(column.font, ilvl_text_size)
-                end
-
-                if column.justify then
-                    current_row:GetFontString():SetJustifyV(column.justify)
-                end
-
-                if column.remove_button ~= nil then
-                    self.main_frame.remove_buttons = self.main_frame.remove_buttons or {}
-                    local extra = self.main_frame.remove_buttons[alt_data.guid] or column.remove_button(alt_data)
-                    if self.main_frame.remove_buttons[alt_data.guid] == nil then
-                        self.main_frame.remove_buttons[alt_data.guid] = extra
+                if type(column.data) == "function" then
+                    local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, column.data(alt_data), "CENTER")
+                    if not self.main_frame.alt_columns[alt].label_columns[i] then
+                        self.main_frame.alt_columns[alt].label_columns[i] = current_row
                     end
-                    extra:SetParent(current_row)
-                    extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -20, 0)
-                    extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size + 4)
-                    extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
-                    extra:Show()
+
+                    if column.color then
+                        local color = column.color(alt_data)
+                        current_row:GetFontString():SetTextColor(color.r, color.g, color.b, 1)
+                    end
+
+                    current_row:SetText(column.data(alt_data))
+
+                    if column.font then
+                        current_row:GetFontString():SetFont(column.font, ilvl_text_size)
+                    end
+
+                    if column.justify then
+                        current_row:GetFontString():SetJustifyV(column.justify)
+                    end
+
+                    if column.remove_button ~= nil then
+                        self.main_frame.remove_buttons = self.main_frame.remove_buttons or {}
+                        local extra = self.main_frame.remove_buttons[alt_data.guid] or column.remove_button(alt_data)
+                        if self.main_frame.remove_buttons[alt_data.guid] == nil then
+                            self.main_frame.remove_buttons[alt_data.guid] = extra
+                        end
+                        extra:SetParent(current_row)
+                        extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -20, 0)
+                        extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size + 4)
+                        extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
+                        extra:Show()
+                    end
                 end
+                i = i + 1
             end
-            i = i + 1
         end
+    end
+end
+
+function AltManager:RebuildUI()
+    if not self.main_frame then return end
+
+    -- Hide old label frames
+    if self.main_frame.label_frames then
+        for _, frame in ipairs(self.main_frame.label_frames) do
+            frame:Hide()
+        end
+        self.main_frame.label_frames = nil
+    end
+
+    -- Hide old label column
+    if self.main_frame.label_column then
+        self.main_frame.label_column:Hide()
+        self.main_frame.label_column = nil
+    end
+
+    -- Hide old alt data columns
+    if self.main_frame.alt_columns then
+        for _, col in pairs(self.main_frame.alt_columns) do
+            col:Hide()
+        end
+        self.main_frame.alt_columns = nil
+    end
+
+    -- Hide old remove buttons
+    if self.main_frame.remove_buttons then
+        for _, btn in pairs(self.main_frame.remove_buttons) do
+            btn:Hide()
+        end
+        self.main_frame.remove_buttons = nil
+    end
+
+    self:CreateContent()
+    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
+    self.main_frame.background:SetAllPoints()
+    self:MakeTopBottomTextures(self.main_frame)
+    self:MakeBorder(self.main_frame, 5)
+
+    if MyAltManagerDB and MyAltManagerDB.data then
+        self:UpdateStrings()
     end
 end
 
@@ -1527,6 +1869,10 @@ function AltManager:ShowInterface()
     if self:CanCollectNow() then
         self:StoreData(self:CollectData())
     end
+    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
+    self.main_frame.background:SetAllPoints()
+    self:MakeTopBottomTextures(self.main_frame)
+    self:MakeBorder(self.main_frame, 5)
     self:UpdateStrings()
 end
 
@@ -1640,83 +1986,15 @@ end
 -- ------------------------------------------------------------
 
 function AltManager:GetNextWeeklyResetTime()
-    if not self.resetDays then
-        local region = self:GetRegion()
-        if not region then return nil end
-        self.resetDays = {}
-        self.resetDays.DLHoffset = 0
-        if region == "US" then
-            self.resetDays["2"] = true
-            self.resetDays.DLHoffset = -3
-        elseif region == "EU" then
-            self.resetDays["3"] = true
-        elseif region == "CN" or region == "KR" or region == "TW" then
-            self.resetDays["4"] = true
-        else
-            self.resetDays["2"] = true
-        end
-    end
-    local offset = (self:GetServerOffset() + self.resetDays.DLHoffset) * 3600
-    local nightlyReset = self:GetNextDailyResetTime()
-    if not nightlyReset then return nil end
-    while not self.resetDays[date("%w", nightlyReset + offset)] do
-        nightlyReset = nightlyReset + 24 * 3600
-    end
-    return nightlyReset
+    local seconds = C_DateAndTime.GetSecondsUntilWeeklyReset()
+    if not seconds or seconds <= 0 then return nil end
+    return time() + seconds
 end
 
 function AltManager:GetNextDailyResetTime()
-    local resettime = GetQuestResetTime()
-    if not resettime or resettime <= 0 or resettime > 24 * 3600 + 30 then
-        return nil
-    end
-    return time() + resettime
-end
-
-function AltManager:GetServerOffset()
-    local serverDay = C_DateAndTime.GetCurrentCalendarTime().weekday - 1
-    local localDay = tonumber(date("%w"))
-    local serverHour, serverMinute = GetGameTime()
-    local localHour, localMinute = tonumber(date("%H")), tonumber(date("%M"))
-    if serverDay == (localDay + 1) % 7 then
-        serverHour = serverHour + 24
-    elseif localDay == (serverDay + 1) % 7 then
-        localHour = localHour + 24
-    end
-    local server = serverHour + serverMinute / 60
-    local localT = localHour + localMinute / 60
-    local offset = floor((server - localT) * 2 + 0.5) / 2
-    return offset
-end
-
-function AltManager:GetRegion()
-    if not self.region then
-        local reg = GetCVar("portal")
-        if reg == "public-test" then
-            reg = "US"
-        end
-        if not reg or #reg ~= 2 then
-            local gcr = GetCurrentRegion()
-            reg = gcr and ({ "US", "KR", "EU", "TW", "CN" })[gcr]
-        end
-        if not reg or #reg ~= 2 then
-            reg = (GetCVar("realmList") or ""):match("^(%a+)%.")
-        end
-        if not reg or #reg ~= 2 then
-            reg = (GetRealmName() or ""):match("%((%a%a)%)")
-        end
-        reg = reg and reg:upper()
-        if reg and #reg == 2 then
-            self.region = reg
-        end
-    end
-    return self.region
-end
-
-function AltManager:GetWoWDate()
-    local hour = tonumber(date("%H"))
-    local day = C_DateAndTime.GetCurrentCalendarTime().weekday
-    return day, hour
+    local seconds = C_DateAndTime.GetSecondsUntilDailyReset()
+    if not seconds or seconds <= 0 then return nil end
+    return time() + seconds
 end
 
 function AltManager:TimeString(length)
