@@ -1,5 +1,5 @@
 # MyAltManager
-
+ 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact, sortable panel.
 
 Current addon version: 12.0.5.0 (TOC interface 120005).
