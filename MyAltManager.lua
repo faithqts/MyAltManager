@@ -26,6 +26,8 @@ local constants = {}
 constants.config = {}
 constants.config.MIN_LEVEL = 80
 constants.config.MIN_ITEM_LEVEL = 0 -- controlled via settings panel
+constants.config.COLLECT_MIN_INTERVAL_SECONDS = 1.5
+constants.config.MYTHICPLUS_METADATA_MIN_INTERVAL_SECONDS = 20
 
 constants.labels = {
     NAME = "",
@@ -280,29 +282,29 @@ constants.DUNGEON_ILVL = {
 }
 
 constants.currencies = {
-    conquest = "1602",
-    honor = "1792",
-    bloodyTokens = "2123",
-    catalyst = "3378",
-    undercoin = "2803",
-    anglerPearls = "3373",
-    voidlightMarl = "3316",
-    restored_coffer_keys = "3028",
-    cofferKeyShards = "3310",
-    adventurer_crests = "3383",
-    veteran_crests = "3341",
-    champion_crests = "3343",
-    hero_crests = "3345",
-    myth_crests = "3347",
-    radiantSparks = "3212",
-    shardOfDundun = "3376",
-    remnantOfAnguish = "3392",
-    unalloyedAbundance = "3377",
-    nebulousVoidcore = "3418",
-    untaintedManaCrystal = "3356",
-    fieldAccolade = "3405",
-    luminousDust = "3385",
-    brimmingArcana = "3379",
+    conquest = 1602,
+    honor = 1792,
+    bloodyTokens = 2123,
+    catalyst = 3378,
+    undercoin = 2803,
+    anglerPearls = 3373,
+    voidlightMarl = 3316,
+    restored_coffer_keys = 3028,
+    cofferKeyShards = 3310,
+    adventurer_crests = 3383,
+    veteran_crests = 3341,
+    champion_crests = 3343,
+    hero_crests = 3345,
+    myth_crests = 3347,
+    radiantSparks = 3212,
+    shardOfDundun = 3376,
+    remnantOfAnguish = 3392,
+    unalloyedAbundance = 3377,
+    nebulousVoidcore = 3418,
+    untaintedManaCrystal = 3356,
+    fieldAccolade = 3405,
+    luminousDust = 3385,
+    brimmingArcana = 3379,
 }
 
 constants.TIER_SETS = {
@@ -364,6 +366,33 @@ end
 local function GetCurrencyAmount(id)
     local info = C_CurrencyInfo.GetCurrencyInfo(id)
     return info and info.quantity or 0
+end
+
+local function GetMonotonicTime()
+    if GetTimePreciseSec then
+        return GetTimePreciseSec()
+    end
+    return GetTime()
+end
+
+local stripped_label_cache = {}
+local function StripInlineIconMarkup(label)
+    if not label then return " " end
+
+    local cached = stripped_label_cache[label]
+    if cached then
+        return cached
+    end
+
+    local stripped = label:gsub("|T[^|]-|t", "")
+    stripped = stripped:gsub("%s+:", ":")
+    stripped = stripped:match("^%s*(.-)%s*$")
+    if stripped == "" then
+        stripped = " "
+    end
+
+    stripped_label_cache[label] = stripped
+    return stripped
 end
 
 -- ------------------------------------------------------------
@@ -464,12 +493,54 @@ function AltManager:ScheduleCollect(reason)
         return
     end
 
-    self._collectTimer = C_Timer.After(0.5, function()
+    local minInterval = constants.config.COLLECT_MIN_INTERVAL_SECONDS or 0
+    local now = GetMonotonicTime()
+    local delay = 0.5
+    if self._lastCollectAt and minInterval > 0 then
+        local elapsed = now - self._lastCollectAt
+        if elapsed < minInterval then
+            delay = math.max(delay, minInterval - elapsed)
+        end
+    end
+
+    self._collectTimer = C_Timer.NewTimer(delay, function()
         self._collectTimer = nil
-        if not AltManager:CanCollectNow() then return end
-        local data = AltManager:CollectData(false)
-        AltManager:StoreData(data)
+        if not self:CanCollectNow() then return end
+        local data = self:CollectData()
+        self:StoreData(data)
+        self._lastCollectAt = GetMonotonicTime()
     end)
+end
+
+function AltManager:RequestMythicPlusMetadata(force)
+    if not IsLoggedIn() then
+        return false
+    end
+
+    local minInterval = constants.config.MYTHICPLUS_METADATA_MIN_INTERVAL_SECONDS or 0
+    local now = GetMonotonicTime()
+    if not force and self._lastMPlusMetadataRequestAt and minInterval > 0 then
+        local elapsed = now - self._lastMPlusMetadataRequestAt
+        if elapsed < minInterval then
+            return false
+        end
+    end
+
+    self._lastMPlusMetadataRequestAt = now
+
+    C_MythicPlus.RequestRewards()
+    C_MythicPlus.RequestCurrentAffixes()
+    C_MythicPlus.RequestMapInfo()
+    for k in pairs(constants.DUNGEONS) do
+        C_MythicPlus.RequestMapInfo(k)
+    end
+
+    local maps = C_ChallengeMode.GetMapTable() or {}
+    for idx = 1, #maps do
+        C_ChallengeMode.RequestLeaders(maps[idx])
+    end
+
+    return true
 end
 
 -- ------------------------------------------------------------
@@ -660,7 +731,6 @@ do
     main_frame:RegisterEvent("QUEST_TURNED_IN")
     main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
     main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-    main_frame:RegisterEvent("PLAYER_LEAVING_WORLD")
     main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
     main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
@@ -681,12 +751,6 @@ do
 
         if event == "PLAYER_LOGIN" then
             AltManager:OnLogin()
-            AltManager:ScheduleCollect("login")
-            return
-        end
-
-        if event == "PLAYER_LEAVING_WORLD" then
-            AltManager:ScheduleCollect("leaving_world")
             return
         end
 
@@ -697,9 +761,14 @@ do
             return
         end
 
-        if event == "PLAYER_REGEN_ENABLED"
-            or event == "CHALLENGE_MODE_COMPLETED"
+        if event == "CHALLENGE_MODE_COMPLETED"
             or event == "CHALLENGE_MODE_RESET" then
+            AltManager:RequestMythicPlusMetadata()
+            AltManager:ScheduleCollect(event)
+            return
+        end
+
+        if event == "PLAYER_REGEN_ENABLED" then
             AltManager:ScheduleCollect(event)
             return
         end
@@ -780,7 +849,9 @@ end
 
 function AltManager:OnLogin()
     self:ValidateReset()
+    self:RequestMythicPlusMetadata()
     self:StoreData(self:CollectData())
+    self._lastCollectAt = GetMonotonicTime()
 
     AltManager:CreateContent()
 
@@ -830,13 +901,8 @@ function AltManager:OnLoad()
     self:RegisterSettings()
     self.addon_loaded = true
 
-    -- Requests are safe; still keep them off combat-heavy loops.
-    C_MythicPlus.RequestRewards()
-    C_MythicPlus.RequestCurrentAffixes()
-    C_MythicPlus.RequestMapInfo()
-    for k in pairs(constants.DUNGEONS) do
-        C_MythicPlus.RequestMapInfo(k)
-    end
+    -- Request M+ metadata at load-time, not in CollectData.
+    self:RequestMythicPlusMetadata()
 end
 
 -- ------------------------------------------------------------
@@ -1021,79 +1087,44 @@ function AltManager:CollectData()
     local name = UnitName("player")
     local _, class = UnitClass("player")
     local dungeon = nil
-    local expire = nil
     local level = nil
 
     local guid = UnitGUID("player")
 
-    C_MythicPlus.RequestCurrentAffixes()
-    C_MythicPlus.RequestMapInfo()
-    for k in pairs(constants.DUNGEONS) do
-        C_MythicPlus.RequestMapInfo(k)
-    end
-
-    local maps = C_ChallengeMode.GetMapTable() or {}
-    for idx = 1, #maps do
-        C_ChallengeMode.RequestLeaders(maps[idx])
-    end
-
     local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
 
-    local function extractKeystoneInfo(slotItem)
-        if slotItem.itemID == 180653 or slotItem.slotID == 151086 then
-            local itemString = slotItem.hyperlink and slotItem.hyperlink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
-            if itemString then
-                local info = { strsplit(":", itemString) }
-                local d = tonumber(info[2]) or nil
-                local l = tonumber(info[3])
-                local e = tonumber(info[4]) or nil
-                if d and l then
-                    return d, "+" .. l, e
-                end
-            end
-        end
-    end
-
     local function checkWeeklyMetaQuestStatus()
-        local statusText = false
+        local inProgress = false
         local questIDs = {
             93912, 93769, 93913, 93910, 94457, 93766, 93911, 93909, 93767, 93892,
             93891, 93889, 93890
         }
 
         for _, QUEST_ID in ipairs(questIDs) do
-            if C_QuestLog.IsOnQuest(QUEST_ID) then
-                statusText = "|cFFFBD910In Progress|r"
-                return statusText
-            end
-        end
-
-        for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                statusText = "|cFF00CF20Complete|r"
-                return statusText
-            else
-                statusText = "|cFFFF0000Not Started|r"
+                return "|cFF00CF20Complete|r"
+            elseif C_QuestLog.IsOnQuest(QUEST_ID) then
+                inProgress = true
             end
         end
 
-        return statusText
+        if inProgress then
+            return "|cFFFBD910In Progress|r"
+        end
+
+        return "|cFFFF0000Not Started|r"
     end
 
     local function checkSpecialAssignmentStatus()
-        local specialAssignmentsText = false
         local questIDs = { 92848, 93244, 93013, 94391, 91390, 94795, 94743, 94865, 93438, 94390, 94866, 91700 }
 
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                specialAssignmentsText = "|cFF00CF20Complete|r"
-                break
-            else
-                specialAssignmentsText = "|cFFFF0000Incomplete|r"
+                return "|cFF00CF20Complete|r"
             end
         end
 
-        return specialAssignmentsText
+        return "|cFFFF0000Incomplete|r"
     end
 
     local function checkSaththerilSoireeStatus()
@@ -1107,23 +1138,14 @@ function AltManager:CollectData()
     end
 
     local function checkWorldBossStatus()
-        local db2 = MyAltManagerDB
-        if not db2 or not db2.data then
-            return "|cFFFF0000Incomplete|r"
-        end
-
-        for _, charData in pairs(db2.data) do
-            if charData.worldBoss == "|cFF00CF20Complete|r" then
-                return "|cFF00CF20Complete|r"
-            end
+        local db2 = MyAltManagerDB and MyAltManagerDB.data
+        if db2 and guid and db2[guid] and db2[guid].worldBoss == "|cFF00CF20Complete|r" then
+            return "|cFF00CF20Complete|r"
         end
 
         local questIDs = { 92034, 92636, 92560, 92123 }
         for _, QUEST_ID in ipairs(questIDs) do
             if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                for _, charData in pairs(db2.data) do
-                    charData.worldBoss = "|cFF00CF20Complete|r"
-                end
                 return "|cFF00CF20Complete|r"
             end
         end
@@ -1146,30 +1168,24 @@ function AltManager:CollectData()
         local info = C_CurrencyInfo.GetCurrencyInfo(currencyID)
         if not info then return "0/0" end
 
-        local spent = info.totalEarned - info.quantity
-        local rollingMax = math.max(info.quantity, info.maxQuantity - spent)
+        local totalEarned = info.totalEarned or info.quantity
+        local spent = math.max(0, totalEarned - info.quantity)
+        local maxQuantity = info.maxQuantity
+        if type(maxQuantity) ~= "number" or maxQuantity <= 0 then
+            maxQuantity = info.quantity
+        end
+
+        local rollingMax = math.max(info.quantity, maxQuantity - spent)
         return ("%d/%d"):format(info.quantity, rollingMax)
     end
 
-    local keystone_found = false
     local keystone_details = "None"
-    for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        local slots = C_Container.GetContainerNumSlots(container)
-        for slot = 1, slots do
-            local slotItem = C_Container.GetContainerItemInfo(container, slot)
-            if slotItem then
-                local d, l, e = extractKeystoneInfo(slotItem)
-                if d then
-                    keystone_found = true
-                    dungeon, level, expire = d, l, e
-                    keystone_details = level .. " " .. (constants.DUNGEONS[dungeon] or tostring(dungeon))
-                end
-            end
-        end
-    end
-
-    if not keystone_found then
-        keystone_details = "None"
+    local ownedKeystoneChallengeMapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+    local ownedKeystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
+    if ownedKeystoneChallengeMapID and ownedKeystoneLevel then
+        dungeon = ownedKeystoneChallengeMapID
+        level = "+" .. ownedKeystoneLevel
+        keystone_details = level .. " " .. (constants.DUNGEONS[dungeon] or tostring(dungeon))
     end
 
     local weeklyMetaQuest = checkWeeklyMetaQuestStatus()
@@ -1223,8 +1239,9 @@ function AltManager:CollectData()
     local luminousDust = GetCurrencyAmount(constants.currencies.luminousDust) or 0
     local brimmingArcana = GetCurrencyAmount(constants.currencies.brimmingArcana) or 0
 
-    local catalystCharges = GetCurrencyAmount(constants.currencies.catalyst) or 0
-    local catalystChargesMax = (C_CurrencyInfo.GetCurrencyInfo(constants.currencies.catalyst) or {}).maxQuantity or 0
+    local catalystInfo = C_CurrencyInfo.GetCurrencyInfo(constants.currencies.catalyst)
+    local catalystCharges = catalystInfo and catalystInfo.quantity or 0
+    local catalystChargesMax = catalystInfo and catalystInfo.maxQuantity or 0
 
     local char_table = {}
 
@@ -1279,7 +1296,7 @@ function AltManager:CollectData()
     char_table.luminousDust = luminousDust
     char_table.brimmingArcana = brimmingArcana
     char_table.weeklyCofferKeysCollected = weeklyCofferKeysCollected
-    char_table.catalystCharges = string.format("%s/%s", catalystCharges, catalystChargesMax)
+    char_table.catalystCharges = string.format("%d/%d", catalystCharges, catalystChargesMax)
     char_table.version = constants.VERSION
     char_table.expires = self:GetNextWeeklyResetTime()
     char_table.dataObtained = time()
@@ -1300,9 +1317,9 @@ function AltManager:GetTierBonuses()
     for slotId in pairs(constants.TIER_SLOTS) do
         local invItem = GetInventoryItemID("player", slotId)
         if invItem then
-            local _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, setId = GetItemInfo(invItem)
+            local setId = select(16, C_Item.GetItemInfo(invItem))
             if setId and constants.TIER_SETS[setId] then
-                tierItems[slotId] = 1
+                tierItems["equip:" .. slotId] = 1
             end
         end
     end
@@ -1312,9 +1329,9 @@ function AltManager:GetTierBonuses()
         for slot = 1, slots do
             local slotItem = C_Container.GetContainerItemInfo(container, slot)
             if slotItem ~= nil then
-                local _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, setId = GetItemInfo(slotItem.itemID)
+                local setId = select(16, C_Item.GetItemInfo(slotItem.itemID))
                 if setId and constants.TIER_SETS[setId] then
-                    tierItems[slot] = 1
+                    tierItems[("bag:%d:%d"):format(container, slot)] = 1
                 end
             end
         end
@@ -1447,6 +1464,24 @@ function AltManager:GetLowestLevelInTopRuns(numRuns)
         end
     end
     return lowestLevel
+end
+
+function AltManager:GetSortedColumnKeys()
+    if self._sortedColumnKeys then
+        return self._sortedColumnKeys
+    end
+
+    local keys = {}
+    for key in pairs(self.columns_table or {}) do
+        keys[#keys + 1] = key
+    end
+
+    table.sort(keys, function(a, b)
+        return self.columns_table[a].order < self.columns_table[b].order
+    end)
+
+    self._sortedColumnKeys = keys
+    return keys
 end
 
 -- ------------------------------------------------------------
@@ -1710,6 +1745,7 @@ function AltManager:CreateContent()
     }
 
     self.columns_table = column_table
+    self._sortedColumnKeys = nil
 
     local calcY = self:CalculateYSize()
     local label_column = self.main_frame.label_column or CreateFrame("Button", nil, self.main_frame)
@@ -1723,7 +1759,8 @@ function AltManager:CreateContent()
     if show_icons == nil then show_icons = true end
 
     local i = 1
-    for key, row in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
+    for _, key in ipairs(self:GetSortedColumnKeys()) do
+        local row = self.columns_table[key]
         if self:IsRowVisible(key) then
             if row.topSpacing then
                 i = i + 1
@@ -1736,10 +1773,7 @@ function AltManager:CreateContent()
                     display_label = " "
                 end
                 if not show_icons then
-                    display_label = display_label:gsub("|T[^|]-|t", "")
-                    display_label = display_label:gsub("%s+:", ":")
-                    display_label = display_label:match("^%s*(.-)%s*$")
-                    if display_label == "" then display_label = " " end
+                    display_label = StripInlineIconMarkup(display_label)
                 end
                 local frame = self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i - 1) * font_height, display_label, "RIGHT")
                 table.insert(self.main_frame.label_frames, frame)
@@ -1771,13 +1805,15 @@ function AltManager:UpdateStrings()
         local label_columns = self.main_frame.alt_columns[alt].label_columns
 
         local i = 1
-        for key, column in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
+        for _, key in ipairs(self:GetSortedColumnKeys()) do
+            local column = self.columns_table[key]
             if self:IsRowVisible(key) then
                 if column.topSpacing then
                     i = i + 1
                 end
                 if type(column.data) == "function" then
-                    local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, column.data(alt_data), "CENTER")
+                    local cellText = column.data(alt_data)
+                    local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, cellText, "CENTER")
                     if not self.main_frame.alt_columns[alt].label_columns[i] then
                         self.main_frame.alt_columns[alt].label_columns[i] = current_row
                     end
@@ -1787,7 +1823,7 @@ function AltManager:UpdateStrings()
                         current_row:GetFontString():SetTextColor(color.r, color.g, color.b, 1)
                     end
 
-                    current_row:SetText(column.data(alt_data))
+                    current_row:SetText(cellText)
 
                     if column.font then
                         current_row:GetFontString():SetFont(column.font, ilvl_text_size)

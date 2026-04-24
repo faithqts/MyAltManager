@@ -1,0 +1,123 @@
+name: Create Zip and Push Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Metadata from TOC
+        id: meta
+        run: |
+          FILE=$(ls *.toc | head -n1)
+
+          VERSION=$(grep -i "^## Version:" "$FILE" | awk -F': ' '{print $2}' | tr -d '\r')
+          TITLE=$(grep -i "^## Title:" "$FILE" | awk -F': ' '{print $2}' | tr -d '\r')
+          PROJECT_NAME=$(basename "$FILE" .toc)
+
+          SAFE_NAME=$(echo "$TITLE" | tr -d ' ')
+          DATE=$(date +%F)
+          PACKAGE_DIR="$RUNNER_TEMP/package"
+          ARCHIVE_PATH="$PACKAGE_DIR/${SAFE_NAME}-${VERSION}.zip"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "package_dir=$PACKAGE_DIR" >> $GITHUB_OUTPUT
+          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+
+      - name: Prepare Package Contents
+        run: |
+          PACKAGE_DIR="${{ steps.meta.outputs.package_dir }}"
+          PROJECT_NAME="${{ steps.meta.outputs.project_name }}"
+
+          rm -rf "$PACKAGE_DIR"
+          mkdir -p "$PACKAGE_DIR/$PROJECT_NAME"
+
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.vscode/' \
+            --exclude 'references/' \
+            --exclude 'node_modules/' \
+            --exclude '.gitignore' \
+            --exclude '.editorconfig' \
+            --exclude 'README.md' \
+            . "$PACKAGE_DIR/$PROJECT_NAME/"
+
+      - name: Create Zip
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          type: zip
+          directory: "${{ steps.meta.outputs.package_dir }}"
+          path: "${{ steps.meta.outputs.project_name }}"
+          filename: "${{ steps.meta.outputs.safe_name }}-${{ steps.meta.outputs.version }}.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ steps.meta.outputs.title }} (${{ steps.meta.outputs.version }}) - ${{ steps.meta.outputs.date }}"
+          tag_name: v${{ steps.meta.outputs.version }}
+          files: "${{ steps.meta.outputs.archive_path }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send Discord Webhook
+        run: |
+          PROJECT_NAME="${{ steps.meta.outputs.project_name }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${{ steps.meta.outputs.safe_name }}-${VERSION}.zip"
+          UNIX_TIMESTAMP=$(date +%s)
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "content": null,
+            "embeds": [
+              {
+                "description": "A new release for ${PROJECT_NAME} has been pushed to GitHub.",
+                "color": 19387,
+                "fields": [
+                  {
+                    "name": "Release Date",
+                    "value": "<t:${UNIX_TIMESTAMP}:f>",
+                    "inline": true
+                  },
+                  {
+                    "name": "Version",
+                    "value": "${VERSION}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Download",
+                    "value": "[Here](${DOWNLOAD_URL})",
+                    "inline": true
+                  }
+                ],
+                "author": {
+                  "name": "${PROJECT_NAME}"
+                },
+                "thumbnail": {
+                  "url": "https://images-ext-1.discordapp.net/external/dNfKZzz14vEYMPJJ639InbANT6KXuygF3N_MzNvSo7k/https/cscdn.support.blizzard.com/maintenance-icons/WoWMidnight.png?format=webp&quality=lossless&width=150&height=150"
+                }
+              }
+            ],
+            "username": "GitHub",
+            "avatar_url": "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
+            "attachments": []
+          }
+          EOF
+          )
+
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "$PAYLOAD" \
+          ${{ secrets.DISCORD_WEBHOOK_URL }}
