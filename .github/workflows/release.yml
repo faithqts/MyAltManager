@@ -1,9 +1,15 @@
-name: Create Zip and Push Release
+name: Tag and Release from TOC
 
 on:
   push:
+    branches:
+      - main
+      - master
     tags:
-      - '*'
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,10 +18,13 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract Metadata from TOC
         id: meta
         run: |
+          set -euo pipefail
           FILE=$(ls *.toc | head -n1)
 
           VERSION=$(grep -i "^## Version:" "$FILE" | awk -F': ' '{print $2}' | tr -d '\r')
@@ -35,8 +44,50 @@ jobs:
           echo "package_dir=$PACKAGE_DIR" >> $GITHUB_OUTPUT
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
-      - name: Prepare Package Contents
+      - name: Ensure Tag and Determine Release Mode
+        id: release_gate
         run: |
+          set -euo pipefail
+          TAG="v${{ steps.meta.outputs.version }}"
+          SHOULD_RELEASE="false"
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            if [[ "${GITHUB_REF_NAME}" != "$TAG" ]]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match TOC version ${TAG}."
+              exit 1
+            fi
+            SHOULD_RELEASE="true"
+          else
+            git fetch --tags
+            if git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "Tag $TAG already exists; skipping release creation."
+            else
+              git config user.name "github-actions"
+              git config user.email "actions@github.com"
+              git tag "$TAG"
+              git push origin "$TAG"
+              SHOULD_RELEASE="true"
+            fi
+          fi
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Exit Early (No New Release)
+        if: steps.release_gate.outputs.should_release != 'true'
+        run: echo "No new release required for this push."
+
+      - name: Checkout Tagged Commit
+        if: steps.release_gate.outputs.should_release == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release_gate.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Prepare Package Contents
+        if: steps.release_gate.outputs.should_release == 'true'
+        run: |
+          set -euo pipefail
           PACKAGE_DIR="${{ steps.meta.outputs.package_dir }}"
           PROJECT_NAME="${{ steps.meta.outputs.project_name }}"
 
@@ -55,6 +106,7 @@ jobs:
             . "$PACKAGE_DIR/$PROJECT_NAME/"
 
       - name: Create Zip
+        if: steps.release_gate.outputs.should_release == 'true'
         uses: thedoctor0/zip-release@0.7.5
         with:
           type: zip
@@ -63,19 +115,21 @@ jobs:
           filename: "${{ steps.meta.outputs.safe_name }}-${{ steps.meta.outputs.version }}.zip"
 
       - name: Create GitHub Release
+        if: steps.release_gate.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           name: "${{ steps.meta.outputs.title }} (${{ steps.meta.outputs.version }}) - ${{ steps.meta.outputs.date }}"
-          tag_name: v${{ steps.meta.outputs.version }}
+          tag_name: ${{ steps.release_gate.outputs.tag }}
           files: "${{ steps.meta.outputs.archive_path }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Send Discord Webhook
+        if: steps.release_gate.outputs.should_release == 'true'
         run: |
           PROJECT_NAME="${{ steps.meta.outputs.project_name }}"
           VERSION="${{ steps.meta.outputs.version }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${{ steps.meta.outputs.safe_name }}-${VERSION}.zip"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ steps.release_gate.outputs.tag }}/${{ steps.meta.outputs.safe_name }}-${VERSION}.zip"
           UNIX_TIMESTAMP=$(date +%s)
 
           PAYLOAD=$(cat <<EOF
