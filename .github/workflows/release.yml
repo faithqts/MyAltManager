@@ -3,7 +3,7 @@ name: Create Zip and Push Release
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
 
 jobs:
   build:
