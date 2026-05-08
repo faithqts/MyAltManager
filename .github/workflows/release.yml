@@ -114,6 +114,67 @@ jobs:
           path: "${{ steps.meta.outputs.project_name }}"
           filename: "${{ steps.meta.outputs.safe_name }}-${{ steps.meta.outputs.version }}.zip"
 
+      - name: Generate Release Notes
+        if: steps.release_gate.outputs.should_release == 'true'
+        id: notes
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release_gate.outputs.tag }}"
+          EVENT_BEFORE="${{ github.event.before }}"
+          EVENT_SHA="${{ github.sha }}"
+          RANGE=""
+          NOTES=""
+
+          if [[ -n "$EVENT_BEFORE" ]] && [[ "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]] && git rev-parse "$EVENT_BEFORE" >/dev/null 2>&1; then
+            RANGE="$EVENT_BEFORE..$EVENT_SHA"
+          fi
+
+          if [[ -z "$RANGE" ]]; then
+            PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -Fxv "$TAG" | head -n1 || true)
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              RANGE="$PREVIOUS_TAG..$TAG"
+            else
+              RANGE="$TAG"
+            fi
+          fi
+
+          # Prefer explicit Release Notes bullets in commit bodies:
+          # Release Notes:
+          # - Updated X
+          # - Updated Y
+          NOTES=$(git log --no-merges --format=%B "$RANGE" | awk '
+            /^Release Notes:[[:space:]]*$/ { in_notes=1; next }
+            in_notes && /^- / { print; next }
+            in_notes && /^$/ { in_notes=0; next }
+            in_notes && !/^- / { in_notes=0 }
+          ' || true)
+
+          if [[ -z "$NOTES" ]]; then
+            if [[ "$RANGE" == "$TAG" ]]; then
+              NOTES=$(git log --no-merges --pretty=format:'- %s' "$TAG" -n 20 || true)
+            else
+              NOTES=$(git log --no-merges --pretty=format:'- %s' "$RANGE" || true)
+            fi
+          fi
+
+          if [[ -z "$NOTES" ]]; then
+            NOTES="- Maintenance release."
+          fi
+
+          DISCORD_NOTES="$NOTES"
+          if (( ${#DISCORD_NOTES} > 950 )); then
+            DISCORD_NOTES="${DISCORD_NOTES:0:947}..."
+          fi
+
+          {
+            echo "release_notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+            echo "discord_notes<<EOF"
+            echo "$DISCORD_NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         if: steps.release_gate.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
@@ -121,57 +182,69 @@ jobs:
           name: "${{ steps.meta.outputs.title }} (${{ steps.meta.outputs.version }}) - ${{ steps.meta.outputs.date }}"
           tag_name: ${{ steps.release_gate.outputs.tag }}
           files: "${{ steps.meta.outputs.archive_path }}"
+          body: "${{ steps.notes.outputs.release_notes }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Send Discord Webhook
         if: steps.release_gate.outputs.should_release == 'true'
         run: |
+          set -euo pipefail
           PROJECT_NAME="${{ steps.meta.outputs.project_name }}"
           VERSION="${{ steps.meta.outputs.version }}"
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ steps.release_gate.outputs.tag }}/${{ steps.meta.outputs.safe_name }}-${VERSION}.zip"
+          RELEASE_NOTES="${{ steps.notes.outputs.discord_notes }}"
           UNIX_TIMESTAMP=$(date +%s)
 
-          PAYLOAD=$(cat <<EOF
-          {
-            "content": null,
-            "embeds": [
-              {
-                "description": "A new release for ${PROJECT_NAME} has been pushed to GitHub.",
-                "color": 19387,
-                "fields": [
-                  {
-                    "name": "Release Date",
-                    "value": "<t:${UNIX_TIMESTAMP}:f>",
-                    "inline": true
+          PAYLOAD=$(jq -n \
+            --arg project_name "$PROJECT_NAME" \
+            --arg release_date "<t:${UNIX_TIMESTAMP}:f>" \
+            --arg version "$VERSION" \
+            --arg download_url "$DOWNLOAD_URL" \
+            --arg release_notes "$RELEASE_NOTES" \
+            --arg thumbnail_url "https://images-ext-1.discordapp.net/external/dNfKZzz14vEYMPJJ639InbANT6KXuygF3N_MzNvSo7k/https/cscdn.support.blizzard.com/maintenance-icons/WoWMidnight.png?format=webp&quality=lossless&width=150&height=150" \
+            '{
+              content: null,
+              embeds: [
+                {
+                  description: ("A new release for " + $project_name + " has been pushed to GitHub."),
+                  color: 19387,
+                  fields: [
+                    {
+                      name: "Release Date",
+                      value: $release_date,
+                      inline: true
+                    },
+                    {
+                      name: "Version",
+                      value: $version,
+                      inline: true
+                    },
+                    {
+                      name: "Download",
+                      value: ("[Here](" + $download_url + ")"),
+                      inline: true
+                    },
+                    {
+                      name: "Release Notes",
+                      value: $release_notes,
+                      inline: false
+                    }
+                  ],
+                  author: {
+                    name: $project_name
                   },
-                  {
-                    "name": "Version",
-                    "value": "${VERSION}",
-                    "inline": true
-                  },
-                  {
-                    "name": "Download",
-                    "value": "[Here](${DOWNLOAD_URL})",
-                    "inline": true
+                  thumbnail: {
+                    url: $thumbnail_url
                   }
-                ],
-                "author": {
-                  "name": "${PROJECT_NAME}"
-                },
-                "thumbnail": {
-                  "url": "https://images-ext-1.discordapp.net/external/dNfKZzz14vEYMPJJ639InbANT6KXuygF3N_MzNvSo7k/https/cscdn.support.blizzard.com/maintenance-icons/WoWMidnight.png?format=webp&quality=lossless&width=150&height=150"
                 }
-              }
-            ],
-            "username": "GitHub",
-            "avatar_url": "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
-            "attachments": []
-          }
-          EOF
-          )
+              ],
+              username: "GitHub",
+              avatar_url: "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
+              attachments: []
+            }')
 
           curl -H "Content-Type: application/json" \
           -X POST \
           -d "$PAYLOAD" \
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+          "${{ secrets.DISCORD_WEBHOOK_URL }}"
