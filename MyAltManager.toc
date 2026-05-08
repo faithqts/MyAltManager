@@ -1,7 +1,7 @@
 ## Interface: 120005
-## Title: My Alt Manager
+## Title: MyAltManager
 ## Author: Qoning, Updated by Faith
-## Version: 12.0.5.0
+## Version: 12.0.5.1
 ## Notes: An overview of your alts and relevant information.
 ## IconTexture: Interface\AddOns\MyAltManager\media\icon.tga
 ## SavedVariables: MyAltManagerDB

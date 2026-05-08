@@ -331,7 +331,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "12.0.5.0"
+constants.VERSION = "12.0.5.1"
 
 -- ------------------------------------------------------------
 -- Utility helpers

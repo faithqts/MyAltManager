@@ -1,6 +1,7 @@
 .github/*
 !.github/workflows/
 !.github/workflows/**
+!.github/copilot-instructions.md
 .vscode/
 references/
 .git/*
