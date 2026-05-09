@@ -331,7 +331,7 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "12.0.5.1"
+constants.VERSION = "12.0.5.2"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -774,19 +774,9 @@ do
         end
     end)
 
-    main_frame:EnableKeyboard(true)
-    main_frame:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" then
-            main_frame:SetPropagateKeyboardInput(false)
-        else
-            main_frame:SetPropagateKeyboardInput(true)
-        end
-    end)
-    main_frame:SetScript("OnKeyUp", function(self, key)
-        if key == "ESCAPE" then
-            AltManager:HideInterface()
-        end
-    end)
+    if type(UISpecialFrames) == "table" then
+        tinsert(UISpecialFrames, "AltManagerFrame")
+    end
 
     main_frame:Hide()
 end
