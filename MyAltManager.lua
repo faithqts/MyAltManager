@@ -22,6 +22,23 @@ local remove_button_size = 16
 local min_x_size = 300
 
 local constants = {}
+AltManager.constants = constants
+
+local function CopyKeyValues(source)
+    local copy = {}
+    for key, value in pairs(source or {}) do
+        copy[key] = value
+    end
+    return copy
+end
+
+local function MergeKeyValues(base, overrides)
+    local merged = CopyKeyValues(base)
+    for key, value in pairs(overrides or {}) do
+        merged[key] = value
+    end
+    return merged
+end
 
 constants.config = {}
 constants.config.MIN_LEVEL = 80
@@ -110,7 +127,7 @@ constants.sections = {
     },
     {
         key = "currencies", label = "Currencies",
-        keys = { "currencies", "radiantSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
+        keys = { "currencies", "radiantSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "nebulousVoidcore", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
         children = {
             { key = "radiantSparks",       label = "Radiant Sparks",      icon = constants.labels.RADIANT_SPARKS:match("|T[^|]-|t") },
             { key = "adventurer_crests",   label = "Adventurer Crests",   icon = constants.labels.ADVENTURER_CRESTS:match("|T[^|]-|t") },
@@ -126,6 +143,7 @@ constants.sections = {
             { key = "shardOfDundun",       label = "Shard of Dundun",     icon = constants.labels.SHARD_OF_DUNDUN:match("|T[^|]-|t") },
             { key = "remnantOfAnguish",    label = "Remnant of Anguish",  icon = constants.labels.REMNANT_OF_ANGUISH:match("|T[^|]-|t") },
             { key = "unalloyedAbundance",  label = "Unalloyed Abundance", icon = constants.labels.UNALLOYED_ABUNDANCE:match("|T[^|]-|t") },
+            { key = "nebulousVoidcore",    label = "Nebulous Cores" },
             { key = "untaintedManaCrystal", label = "Untainted Mana-Crystal", icon = constants.labels.UNTAINTED_MANA_CRYSTAL:match("|T[^|]-|t") },
             { key = "fieldAccolade",       label = "Field Accolade",      icon = constants.labels.FIELD_ACCOLADE:match("|T[^|]-|t") },
             { key = "luminousDust",        label = "Luminous Dust",       icon = constants.labels.LUMINOUS_DUST:match("|T[^|]-|t") },
@@ -231,71 +249,15 @@ constants.DUNGEONS = {
     [560] = "Maisara",
 }
 
-constants.RAID_ILVL = {
-    [1] = "D:N",
-    [2] = "D:H",
-    [3] = "R:10N",
-    [4] = "R:25N",
-    [5] = "R:10H",
-    [6] = "R:25H",
-    [7] = "233", -- LFR
-    [8] = "D:CM",
-    [9] = "R:40",
-    [14] = "246", -- Normal
-    [15] = "259", -- Heroic
-    [16] = "272", -- Mythic
-    [17] = "233", -- LFR
-    [23] = "D:M",
-    [24] = "D:TW",
-    [33] = "R:TW",
-    [202] = "Story",
-}
-
-constants.DELVE_ILVL = {
-    [1]  = "233", -- Prey: Normal
-    [2]  = "237",
-    [3]  = "240",
-    [4]  = "243",
-    [5]  = "246", -- Prey: Heroic
-    [6]  = "253",
-    [7]  = "256",
-    [8]  = "259", -- Prey: Nightmare
-    [9]  = "259",
-    [10] = "259",
-    [11] = "259",
-    [12] = "263",
-    [13] = "269",
-}
-
-constants.DUNGEON_ILVL = {
-    [0]  = "256",
-    [1]  = "256",
-    [2]  = "259",
-    [3]  = "259",
-    [4]  = "263",
-    [5]  = "263",
-    [6]  = "266",
-    [7]  = "269",
-    [8]  = "269",
-    [9]  = "269",
-    [10] = "272",
-}
-
-constants.currencies = {
+local BASE_CURRENCIES = {
     conquest = 1602,
     honor = 1792,
     bloodyTokens = 2123,
-    catalyst = 3378,
     undercoin = 2803,
     anglerPearls = 3373,
     voidlightMarl = 3316,
     restored_coffer_keys = 3028,
     cofferKeyShards = 3310,
-    adventurer_crests = 3383,
-    veteran_crests = 3341,
-    champion_crests = 3343,
-    hero_crests = 3345,
-    myth_crests = 3347,
     radiantSparks = 3212,
     shardOfDundun = 3376,
     remnantOfAnguish = 3392,
@@ -307,7 +269,25 @@ constants.currencies = {
     brimmingArcana = 3379,
 }
 
-constants.TIER_SETS = {
+local SEASON1_CURRENCIES = {
+    catalyst = 3378,
+    adventurer_crests = 3383,
+    veteran_crests = 3341,
+    champion_crests = 3343,
+    hero_crests = 3345,
+    myth_crests = 3347,
+}
+
+local SEASON2_CURRENCIES = {
+    catalyst = 3465,
+    adventurer_crests = 3442,
+    veteran_crests = 3443,
+    champion_crests = 3444,
+    hero_crests = 3445,
+    myth_crests = 3446,
+}
+
+local SEASON1_TIER_SETS = {
     [1978] = true, -- Death Knight
     [1979] = true, -- Demon Hunter
     [1980] = true, -- Druid
@@ -323,6 +303,22 @@ constants.TIER_SETS = {
     [1990] = true, -- Warrior
 }
 
+local SEASON2_TIER_SETS = {
+    [2055] = true, -- Death Knight
+    [2056] = true, -- Demon Hunter
+    [2057] = true, -- Druid
+    [2058] = true, -- Evoker
+    [2059] = true, -- Hunter
+    [2060] = true, -- Mage
+    [2061] = true, -- Monk
+    [2062] = true, -- Paladin
+    [2063] = true, -- Priest
+    [2064] = true, -- Rogue
+    [2065] = true, -- Shaman
+    [2066] = true, -- Warlock
+    [2067] = true, -- Warrior
+}
+
 constants.TIER_SLOTS = {
     [1] = "Helm",
     [3] = "Shoulders",
@@ -331,7 +327,52 @@ constants.TIER_SLOTS = {
     [10] = "Gloves",
 }
 
-constants.VERSION = "12.0.5.2"
+local SEASON1_MAPS = {
+    [525] = "Floodgate",
+    [541] = "Stonecore",
+    [542] = "Eco-Dome",
+    [556] = "Saron",
+    [557] = "Windrunner",
+    [558] = "Magisters",
+    [559] = "Xenas",
+    [560] = "Maisara",
+}
+
+local SEASON2_MAPS = {
+    [584] = "Vale",
+    [585] = "Voidscar",
+    [586] = "Nalorakk",
+    [587] = "Row",
+    [588] = "Fangs",
+}
+
+constants.SEASON_DATA = {
+    [1] = {
+        tierLabel = "Tier (S1)",
+        TIER_SETS = SEASON1_TIER_SETS,
+        MAPS = SEASON1_MAPS,
+        currencies = SEASON1_CURRENCIES,
+    },
+    [2] = {
+        tierLabel = "Tier (S2)",
+        TIER_SETS = SEASON2_TIER_SETS,
+        MAPS = SEASON2_MAPS,
+        currencies = SEASON2_CURRENCIES,
+    },
+}
+
+local function ApplyActiveSeasonData()
+    local activeSeason = (C_MythicPlus and C_MythicPlus.GetCurrentSeason and C_MythicPlus.GetCurrentSeason()) or 1
+    constants.SEASON_ID = activeSeason
+    constants.SEASON = constants.SEASON_DATA[activeSeason] or constants.SEASON_DATA[1]
+    constants.currencies = MergeKeyValues(BASE_CURRENCIES, constants.SEASON.currencies)
+    constants.TIER_SETS = constants.SEASON.TIER_SETS
+    constants.labels.TIER_SET = constants.SEASON.tierLabel
+end
+
+ApplyActiveSeasonData()
+
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.0.5.2"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -393,6 +434,11 @@ local function StripInlineIconMarkup(label)
 
     stripped_label_cache[label] = stripped
     return stripped
+end
+
+local function GetDungeonShortName(mapID)
+    local seasonMaps = constants.SEASON and constants.SEASON.MAPS
+    return (seasonMaps and seasonMaps[mapID]) or constants.DUNGEONS[mapID] or tostring(mapID)
 end
 
 -- ------------------------------------------------------------
@@ -485,6 +531,29 @@ function AltManager:CanCollectNow()
     return true
 end
 
+function AltManager:LogCollectError(err)
+    local message = tostring(err)
+    if self._lastCollectError == message then
+        return
+    end
+
+    self._lastCollectError = message
+    print("MyAltManager: data collection failed: " .. message)
+end
+
+function AltManager:CollectAndStore()
+    local ok, err = pcall(function()
+        local data = self:CollectData()
+        self:StoreData(data)
+    end)
+
+    if not ok then
+        self:LogCollectError(err)
+    end
+
+    return ok
+end
+
 function AltManager:ScheduleCollect(reason)
     if not self.addon_loaded then return end
     if not self:CanCollectNow() then return end
@@ -506,9 +575,9 @@ function AltManager:ScheduleCollect(reason)
     self._collectTimer = C_Timer.NewTimer(delay, function()
         self._collectTimer = nil
         if not self:CanCollectNow() then return end
-        local data = self:CollectData()
-        self:StoreData(data)
-        self._lastCollectAt = GetMonotonicTime()
+        if self:CollectAndStore() then
+            self._lastCollectAt = GetMonotonicTime()
+        end
     end)
 end
 
@@ -531,14 +600,6 @@ function AltManager:RequestMythicPlusMetadata(force)
     C_MythicPlus.RequestRewards()
     C_MythicPlus.RequestCurrentAffixes()
     C_MythicPlus.RequestMapInfo()
-    for k in pairs(constants.DUNGEONS) do
-        C_MythicPlus.RequestMapInfo(k)
-    end
-
-    local maps = C_ChallengeMode.GetMapTable() or {}
-    for idx = 1, #maps do
-        C_ChallengeMode.RequestLeaders(maps[idx])
-    end
 
     return true
 end
@@ -560,6 +621,10 @@ function AltManager:SetMinItemLevel(level)
     constants.config.MIN_ITEM_LEVEL = level
 
     print(("MyAltManager: MIN_ITEM_LEVEL set to %d"):format(level))
+end
+
+function MyAltManager_OnCompartmentClick()
+    AltManager:ShowInterface()
 end
 
 function AltManager:LoadConfigFromDB()
@@ -718,9 +783,8 @@ do
     AltManager.main_frame = main_frame
 
     main_frame:SetFrameStrata("HIGH")
-    main_frame.background = main_frame:CreateTexture(nil, "BACKGROUND")
+    main_frame.background = main_frame:CreateTexture(nil, "ARTWORK", nil, 1)
     main_frame.background:SetAllPoints()
-    main_frame.background:SetDrawLayer("ARTWORK", 1)
     main_frame.background:SetColorTexture(0, 0, 0, 0.7)
 
     main_frame:ClearAllPoints()
@@ -734,6 +798,10 @@ do
     main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
     main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
+    main_frame:RegisterEvent("WEEKLY_REWARDS_UPDATE")
+    main_frame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
+    main_frame:RegisterEvent("MYTHIC_PLUS_CURRENT_AFFIX_UPDATE")
+    main_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 
     main_frame:SetScript("OnEvent", function(self, ...)
         local event, loadedOrType = ...
@@ -756,7 +824,11 @@ do
 
         if event == "BAG_UPDATE_DELAYED"
             or event == "QUEST_TURNED_IN"
-            or event == "CURRENCY_DISPLAY_UPDATE" then
+            or event == "CURRENCY_DISPLAY_UPDATE"
+            or event == "WEEKLY_REWARDS_UPDATE"
+            or event == "CHALLENGE_MODE_MAPS_UPDATE"
+            or event == "MYTHIC_PLUS_CURRENT_AFFIX_UPDATE"
+            or event == "PLAYER_EQUIPMENT_CHANGED" then
             AltManager:ScheduleCollect(event)
             return
         end
@@ -833,45 +905,27 @@ function AltManager:CalculateXSizeNoGuidCheck()
     return max((alts + 1) * per_alt_x, min_x_size)
 end
 
-function AltManager:CalculateXSize()
-    return self:CalculateXSizeNoGuidCheck()
-end
-
 function AltManager:OnLogin()
     self:ValidateReset()
     self:RequestMythicPlusMetadata()
-    self:StoreData(self:CollectData())
-    self._lastCollectAt = GetMonotonicTime()
+    if self:CollectAndStore() then
+        self._lastCollectAt = GetMonotonicTime()
+    end
 
     AltManager:CreateContent()
 
-    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
+    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
     self.main_frame.background:SetAllPoints()
 
     AltManager:MakeTopBottomTextures(self.main_frame)
     AltManager:MakeBorder(self.main_frame, 5)
 end
 
-function AltManager:PurgeOldVersions()
-    if MyAltManagerDB == nil or MyAltManagerDB.data == nil then return end
-    local remove = {}
-
-    for alt_guid, alt_data in spairs(MyAltManagerDB.data, function(t, a, b) return (t[a].ilevel or 0) > (t[b].ilevel or 0) end) do
-        if alt_data.version == nil or alt_data.version < constants.VERSION then
-            table.insert(remove, alt_guid)
-        end
-    end
-
-    for _, guid in pairs(remove) do
-        MyAltManagerDB.alts = MyAltManagerDB.alts - 1
-        MyAltManagerDB.data[guid] = nil
-    end
-end
-
 function AltManager:OnLoad()
     self.main_frame:UnregisterEvent("ADDON_LOADED")
 
     MyAltManagerDB = MyAltManagerDB or self:InitDB()
+    ApplyActiveSeasonData()
 
     -- One-time per-expansion migration (pre-expansion cleanup wipe)
     if self:RunExpansionMigrationIfNeeded() then
@@ -882,7 +936,6 @@ function AltManager:OnLoad()
     end
 
     self:LoadConfigFromDB()
-    self:PurgeOldVersions()
 
     if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
         MyAltManagerDB.alts = true_numel(MyAltManagerDB.data)
@@ -910,57 +963,38 @@ function AltManager:CreateFontFrame(parent, x_size, height, relative_to, y_offse
         fs:SetJustifyH(justify)
         fs:SetJustifyV("MIDDLE")
         f:SetPushedTextOffset(0, 0)
-        fs:SetWidth(150)
+        fs:SetWidth(x_size)
         fs:SetHeight(14)
     end
     return f
-end
-
-function AltManager:Keyset()
-    local keyset = {}
-    if MyAltManagerDB and MyAltManagerDB.data then
-        for k in pairs(MyAltManagerDB.data) do
-            table.insert(keyset, k)
-        end
-    end
-    return keyset
 end
 
 function AltManager:ValidateReset()
     local db = MyAltManagerDB
     if not db or not db.data then return end
 
-    local keyset = {}
-    for k in pairs(db.data) do
-        table.insert(keyset, k)
-    end
-
-    for alt = 1, db.alts do
-        local guid = keyset[alt]
-        if guid and db.data[guid] then
-            local expiry = db.data[guid].expires or 0
-            local char_table = db.data[guid]
-            if time() > expiry then
-                char_table.dungeon = " "
-                char_table.level = " "
-                char_table.runHistory = nil
-                char_table.highestCompletedWeeklyKeystone = " "
-                char_table.completedWeeklyKeystoneRewards = nil
-                char_table.weeklyDungeonRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
-                char_table.weeklyDelveRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
-                char_table.weeklyRaidRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r"
-                char_table.expires = self:GetNextWeeklyResetTime()
-                char_table.weeklyMetaQuest = false
-                char_table.specialAssignment = false
-                char_table.stormarianAssault = false
-                char_table.worldBoss = false
-                char_table.nightmarishTask = false
-                char_table.abundantOfferings = false
-                char_table.legendsOfTheHaranir = false
-                char_table.saththerilSoiree = false
-                char_table.hiddenTrove = false
-                char_table.weeklyCofferKeysCollected = 0
-            end
+    for _, char_table in pairs(db.data) do
+        local expiry = char_table.expires or 0
+        if time() > expiry then
+            char_table.dungeon = " "
+            char_table.level = " "
+            char_table.runHistory = nil
+            char_table.highestCompletedWeeklyKeystone = " "
+            char_table.completedWeeklyKeystoneRewards = nil
+            char_table.weeklyDungeonRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
+            char_table.weeklyDelveRewards = "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
+            char_table.weeklyRaidRewards = "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r"
+            char_table.expires = self:GetNextWeeklyResetTime()
+            char_table.weeklyMetaQuest = false
+            char_table.specialAssignment = false
+            char_table.stormarianAssault = false
+            char_table.worldBoss = false
+            char_table.nightmarishTask = false
+            char_table.abundantOfferings = false
+            char_table.legendsOfTheHaranir = false
+            char_table.saththerilSoiree = false
+            char_table.hiddenTrove = false
+            char_table.weeklyCofferKeysCollected = 0
         end
     end
 end
@@ -1018,17 +1052,6 @@ function AltManager:RemoveCharacterByGuid(index)
     delete()
 end
 
-function AltManager:CommaValues(amount)
-    local formatted = amount
-    while true do
-        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
-        if (k == 0) then
-            break
-        end
-    end
-    return formatted
-end
-
 -- ------------------------------------------------------------
 -- Store/Collect (unchanged tracking logic; gated by StoreData + ScheduleCollect)
 -- ------------------------------------------------------------
@@ -1052,7 +1075,11 @@ function AltManager:StoreData(data)
     end
     constants.config.MIN_ITEM_LEVEL = minIlvl
 
-    local _, i = GetAverageItemLevel()
+    local i = data.ilevel
+    if not i then
+        local _, currentItemLevel = GetAverageItemLevel()
+        i = currentItemLevel
+    end
     if not i or i == 0 then return end
     if i < minIlvl then return end
 
@@ -1129,6 +1156,7 @@ function AltManager:CollectData()
 
     local function checkWorldBossStatus()
         local db2 = MyAltManagerDB and MyAltManagerDB.data
+        -- Weekly world-boss completion can fall out of quest flags after login, so preserve a stored complete state until reset.
         if db2 and guid and db2[guid] and db2[guid].worldBoss == "|cFF00CF20Complete|r" then
             return "|cFF00CF20Complete|r"
         end
@@ -1159,8 +1187,15 @@ function AltManager:CollectData()
         if not info then return "0/0" end
 
         local totalEarned = info.totalEarned or info.quantity
-        local spent = math.max(0, totalEarned - info.quantity)
         local maxQuantity = info.maxQuantity
+        if info.useTotalEarnedForMaxQty then
+            if type(maxQuantity) ~= "number" or maxQuantity <= 0 then
+                maxQuantity = totalEarned
+            end
+            return ("%d/%d"):format(totalEarned, maxQuantity)
+        end
+
+        local spent = math.max(0, totalEarned - info.quantity)
         if type(maxQuantity) ~= "number" or maxQuantity <= 0 then
             maxQuantity = info.quantity
         end
@@ -1175,7 +1210,7 @@ function AltManager:CollectData()
     if ownedKeystoneChallengeMapID and ownedKeystoneLevel then
         dungeon = ownedKeystoneChallengeMapID
         level = "+" .. ownedKeystoneLevel
-        keystone_details = level .. " " .. (constants.DUNGEONS[dungeon] or tostring(dungeon))
+        keystone_details = level .. " " .. GetDungeonShortName(dungeon)
     end
 
     local weeklyMetaQuest = checkWeeklyMetaQuestStatus()
@@ -1191,7 +1226,7 @@ function AltManager:CollectData()
     local specialAssignment = checkSpecialAssignmentStatus()
     local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
 
-    local _, ilevel = GetAverageItemLevel()
+    local ilevel = i
 
     local conquestInfo = C_CurrencyInfo.GetCurrencyInfo(constants.currencies.conquest)
     local total_conquest_earned = conquestInfo and conquestInfo.totalEarned or 0
@@ -1200,7 +1235,7 @@ function AltManager:CollectData()
     local honor = GetCurrencyAmount(constants.currencies.honor)
     local bloody_tokens = GetCurrencyAmount(constants.currencies.bloodyTokens)
 
-    local forged_weapons = "PH"
+    local forged_weapons
     if total_conquest_earned > 2500 then
         forged_weapons = "|cFF00CF20Complete|r"
     else
@@ -1290,7 +1325,6 @@ function AltManager:CollectData()
     char_table.version = constants.VERSION
     char_table.expires = self:GetNextWeeklyResetTime()
     char_table.dataObtained = time()
-    char_table.timeUntilReset = C_DateAndTime.GetSecondsUntilDailyReset()
 
     return char_table
 end
@@ -1298,6 +1332,23 @@ end
 -- ------------------------------------------------------------
 -- Tier, score, weekly rewards
 -- ------------------------------------------------------------
+
+function AltManager:RequestTierItemRescan(itemID)
+    if not itemID or not Item or not Item.CreateFromItemID then
+        return
+    end
+
+    self._pendingTierItemLoads = self._pendingTierItemLoads or {}
+    if self._pendingTierItemLoads[itemID] then
+        return
+    end
+
+    self._pendingTierItemLoads[itemID] = true
+    Item:CreateFromItemID(itemID):ContinueOnItemLoad(function()
+        self._pendingTierItemLoads[itemID] = nil
+        self:ScheduleCollect("TIER_ITEM_LOADED")
+    end)
+end
 
 function AltManager:GetTierBonuses()
     local tierText = ""
@@ -1310,6 +1361,8 @@ function AltManager:GetTierBonuses()
             local setId = select(16, C_Item.GetItemInfo(invItem))
             if setId and constants.TIER_SETS[setId] then
                 tierItems["equip:" .. slotId] = 1
+            elseif not setId then
+                self:RequestTierItemRescan(invItem)
             end
         end
     end
@@ -1322,6 +1375,8 @@ function AltManager:GetTierBonuses()
                 local setId = select(16, C_Item.GetItemInfo(slotItem.itemID))
                 if setId and constants.TIER_SETS[setId] then
                     tierItems[("bag:%d:%d"):format(container, slot)] = 1
+                elseif not setId then
+                    self:RequestTierItemRescan(slotItem.itemID)
                 end
             end
         end
@@ -1344,66 +1399,60 @@ function AltManager:GetTierBonuses()
 end
 
 function AltManager:GetOverallDungeonScore()
-    local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore()
-    local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore)
+    local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore() or 0
+    local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore) or HIGHLIGHT_FONT_COLOR
     local r, g, b = color.r * 255, color.g * 255, color.b * 255
     local colorString = string.format("|cff%02x%02x%02x", r, g, b)
     return colorString .. overallDungeonScore .. "|r"
 end
 
-function AltManager:GetWeeklyDelvesRewards()
-    local completedDelves = C_WeeklyRewards.GetActivities(6) or {}
-    local delveRewards = {}
-
-    for i = 1, 3 do
-        local status = completedDelves[i] or { level = 0, progress = 0 }
-        if status.level > 0 then
-            delveRewards[i] = "|cFF00CF20" .. (constants.DELVE_ILVL[status.level] or "?") .. "|r"
-        else
-            local progress = status and status.progress or 0
-            local total = (i == 1 and 2) or (i == 2 and 4) or (i == 3 and 8)
-            delveRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
-        end
+local function GetWeeklyRewardItemLevel(activity)
+    if not activity or not activity.id then
+        return nil
     end
 
-    return table.concat(delveRewards, " | ")
+    local itemLink = C_WeeklyRewards.GetExampleRewardItemHyperlinks(activity.id)
+    return itemLink and C_Item.GetDetailedItemLevelInfo(itemLink) or nil
+end
+
+local function FormatWeeklyRewardActivity(activity, fallbackThreshold, useRaidStringFallback)
+    local progress = (activity and activity.progress) or 0
+    local threshold = activity and activity.threshold or fallbackThreshold
+    if type(threshold) ~= "number" or threshold <= 0 then
+        threshold = fallbackThreshold or 0
+    end
+
+    if activity and progress >= threshold then
+        local rewardLabel = GetWeeklyRewardItemLevel(activity)
+            or (useRaidStringFallback and activity.raidString)
+            or "?"
+        return "|cFF00CF20" .. rewardLabel .. "|r"
+    end
+
+    return "|cFFFFCD44" .. progress .. "/" .. threshold .. "|r"
+end
+
+local function FormatWeeklyRewardRow(activityType, fallbackThresholds, useRaidStringFallback)
+    local activities = C_WeeklyRewards.GetActivities(activityType) or {}
+    local rewards = {}
+
+    for i = 1, 3 do
+        rewards[i] = FormatWeeklyRewardActivity(activities[i], fallbackThresholds[i], useRaidStringFallback)
+    end
+
+    return table.concat(rewards, " | ")
+end
+
+function AltManager:GetWeeklyDelvesRewards()
+    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.World, { 2, 4, 8 }, false)
 end
 
 function AltManager:GetWeeklyRaidRewards()
-    local completedRaids = C_WeeklyRewards.GetActivities(3) or {}
-    local raidRewards = {}
-
-    for i = 1, 3 do
-        local status = completedRaids[i] or { level = 0, progress = 0 }
-        if status.level > 0 then
-            raidRewards[i] = "|cFF00CF20" .. (constants.RAID_ILVL[status.level] or "?") .. "|r"
-        else
-            local progress = status and status.progress or 0
-            local total = (i == 1 and 2) or (i == 2 and 4) or (i == 3 and 6)
-            raidRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
-        end
-    end
-
-    return table.concat(raidRewards, " | ")
+    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.Raid, { 2, 4, 6 }, true)
 end
 
 function AltManager:GetWeeklyDungeonRewards()
-    local completedDungeons = C_WeeklyRewards.GetActivities(1) or {}
-    local dungeonRewards = {}
-
-    for i = 1, 3 do
-        local status = completedDungeons[i] or nil
-        if status and status.level ~= nil and status.progress ~= nil and status.threshold ~= nil and status.level >= 0 and status.progress >= status.threshold then
-            local levelToUse = status.level > 10 and 10 or status.level
-            dungeonRewards[i] = "|cFF00CF20" .. (constants.DUNGEON_ILVL[levelToUse] or "?") .. "|r"
-        else
-            local progress = status and status.progress or 0
-            local total = (i == 1 and 1) or (i == 2 and 4) or (i == 3 and 8)
-            dungeonRewards[i] = "|cFFFFCD44" .. progress .. "/" .. total .. "|r"
-        end
-    end
-
-    return table.concat(dungeonRewards, " | ")
+    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.Activities, { 1, 4, 8 }, false)
 end
 
 function AltManager:GetHighestCompletedWeeklyKeystone()
@@ -1420,40 +1469,18 @@ function AltManager:GetHighestCompletedWeeklyKeystone()
     if level == 0 then
         return " "
     elseif level and level > 0 then
-        local color
+        local color = "|cFF1EFF00"
         if level >= 10 then
             color = "|cFFFF8000"
         elseif level >= 7 then
             color = "|cFFA335EE"
         elseif level >= 5 then
             color = "|cFF0070DD"
-        elseif level >= 2 then
-            color = "|cFF1EFF00"
         end
-        return color .. "+" .. level .. " " .. (constants.DUNGEONS[dungeon] or tostring(dungeon)) .. "|r"
+        return color .. "+" .. level .. " " .. GetDungeonShortName(dungeon) .. "|r"
     else
         return " "
     end
-end
-
-function AltManager:GetLowestLevelInTopRuns(numRuns)
-    local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
-    table.sort(runHistory, function(left, right) return (left.level or 0) > (right.level or 0) end)
-
-    local lowestLevel
-    local lowestCount = 0
-    for i = math.min(numRuns, #runHistory), 1, -1 do
-        local run = runHistory[i]
-        if not lowestLevel then
-            lowestLevel = run.level
-        end
-        if lowestLevel == run.level then
-            lowestCount = lowestCount + 1
-        else
-            break
-        end
-    end
-    return lowestLevel
 end
 
 function AltManager:GetSortedColumnKeys()
@@ -1479,10 +1506,11 @@ end
 -- ------------------------------------------------------------
 
 function AltManager:CreateContent()
-    self.main_frame.closeButton = CreateFrame("Button", "CloseButton", self.main_frame, "UIPanelCloseButton")
+    self.main_frame.closeButton = self.main_frame.closeButton or CreateFrame("Button", nil, self.main_frame, "UIPanelCloseButton")
     self.main_frame.closeButton:ClearAllPoints()
     self.main_frame.closeButton:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPRIGHT", -3, 2)
     self.main_frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
+    self.main_frame.closeButton:Show()
 
     local column_table = {
         name = {
@@ -1508,7 +1536,7 @@ function AltManager:CreateContent()
             data = function(alt_data) return (alt_data.catalystCharges and tostring(alt_data.catalystCharges) or "0/0") end,
         },
         nebulousVoidcore = {
-            order = 4.5,
+            order = 41,
             label = constants.labels.NEBULOUS_VOIDCORE,
             data = function(alt_data) return (alt_data.nebulousVoidcore and tostring(alt_data.nebulousVoidcore) or "0/0") end,
         },
@@ -1775,8 +1803,8 @@ function AltManager:CreateContent()
 end
 
 function AltManager:UpdateStrings()
-    local font_height = 14
     local db = MyAltManagerDB
+    local calcY = self:CalculateYSize()
 
     self.main_frame.alt_columns = self.main_frame.alt_columns or {}
 
@@ -1790,7 +1818,7 @@ function AltManager:UpdateStrings()
             anchor_frame:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", per_alt_x * alt, -1)
         end
 
-        anchor_frame:SetSize(per_alt_x, self:CalculateYSize())
+        anchor_frame:SetSize(per_alt_x, calcY)
         self.main_frame.alt_columns[alt].label_columns = self.main_frame.alt_columns[alt].label_columns or {}
         local label_columns = self.main_frame.alt_columns[alt].label_columns
 
@@ -1876,7 +1904,7 @@ function AltManager:RebuildUI()
     end
 
     self:CreateContent()
-    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
+    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
     self.main_frame.background:SetAllPoints()
     self:MakeTopBottomTextures(self.main_frame)
     self:MakeBorder(self.main_frame, 5)
@@ -1893,9 +1921,9 @@ end
 function AltManager:ShowInterface()
     self.main_frame:Show()
     if self:CanCollectNow() then
-        self:StoreData(self:CollectData())
+        self:CollectAndStore()
     end
-    self.main_frame:SetSize(self:CalculateXSize(), self:CalculateYSize())
+    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
     self.main_frame.background:SetAllPoints()
     self:MakeTopBottomTextures(self.main_frame)
     self:MakeBorder(self.main_frame, 5)
@@ -1933,7 +1961,7 @@ function AltManager:MakeTopBottomTextures(frame)
         frame.topPanelTex:SetColorTexture(0, 0, 0, 1)
 
         frame.topPanelString = frame.topPanel:CreateFontString("AddonName")
-        frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 16)
+        frame.topPanelString:SetFont(STANDARD_TEXT_FONT, 16)
         frame.topPanelString:SetTextColor(1, 1, 1, 1)
         frame.topPanelString:SetJustifyH("CENTER")
         frame.topPanelString:SetJustifyV("MIDDLE")
@@ -1954,7 +1982,7 @@ function AltManager:MakeTopBottomTextures(frame)
 
     if frame.bottomPanelString == nil then
         frame.bottomPanelString = frame:CreateFontString(nil, "OVERLAY")
-        frame.bottomPanelString:SetFont("Fonts\\FRIZQT__.TTF", 12)
+        frame.bottomPanelString:SetFont(STANDARD_TEXT_FONT, 12)
         frame.bottomPanelString:SetTextColor(1, 1, 1, 1)
         frame.bottomPanelString:SetJustifyH("CENTER")
         frame.bottomPanelString:SetJustifyV("MIDDLE")
@@ -1989,7 +2017,7 @@ function AltManager:MakeBorderPart(frame, x, y, xoff, yoff, part)
     if part == nil then
         part = frame:CreateTexture(nil)
     end
-    part:SetTexture(0, 0, 0, 1)
+    part:SetColorTexture(0, 0, 0, 1)
     part:ClearAllPoints()
     part:SetPoint("TOPLEFT", frame, "TOPLEFT", xoff, yoff)
     part:SetSize(x, y)
@@ -2015,23 +2043,4 @@ function AltManager:GetNextWeeklyResetTime()
     local seconds = C_DateAndTime.GetSecondsUntilWeeklyReset()
     if not seconds or seconds <= 0 then return nil end
     return time() + seconds
-end
-
-function AltManager:GetNextDailyResetTime()
-    local seconds = C_DateAndTime.GetSecondsUntilDailyReset()
-    if not seconds or seconds <= 0 then return nil end
-    return time() + seconds
-end
-
-function AltManager:TimeString(length)
-    if length == 0 then
-        return "Now"
-    end
-    if length < 3600 then
-        return string.format("%d mins", length / 60)
-    end
-    if length < 86400 then
-        return string.format("%d hrs %d mins", length / 3600, (length % 3600) / 60)
-    end
-    return string.format("%d days %d hrs", length / 86400, (length % 86400) / 3600)
 end
