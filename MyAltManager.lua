@@ -437,7 +437,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.15"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.17"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -663,9 +663,14 @@ function AltManager:SetMinItemLevel(level)
 
     level = tonumber(level or 0) or 0
     if level < 0 then level = 0 end
+    level = math.floor(level)
 
     db.config.MIN_ITEM_LEVEL = level
     constants.config.MIN_ITEM_LEVEL = level
+
+    if self.addon_loaded and self.main_frame then
+        self:RebuildUI()
+    end
 
     print(("MyAltManager: MIN_ITEM_LEVEL set to %d"):format(level))
 end
@@ -692,15 +697,8 @@ function AltManager:LoadConfigFromDB()
     elseif db.config.enable_drawer == nil then
         db.config.enable_drawer = true
     end
-    local savedOpenRows = db.config.openRows or {}
-    local savedOpenGuid
-    for guid, isOpen in pairs(savedOpenRows) do
-        if isOpen then
-            savedOpenGuid = guid
-            break
-        end
-    end
-    db.config.openRows = savedOpenGuid and { [savedOpenGuid] = true } or {}
+    -- Drawer expansion is temporary UI state and should not persist between openings.
+    db.config.openRows = {}
     if db.config.sort == nil then
         db.config.sort = "ilevel"
     end
@@ -742,6 +740,7 @@ function AltManager:RegisterSettings()
             local v = math.floor(value)
             MyAltManagerDB.config.MIN_LEVEL = v
             constants.config.MIN_LEVEL = v
+            RebuildIfNeeded()
         end)
     end
 
@@ -761,6 +760,7 @@ function AltManager:RegisterSettings()
             local v = math.floor(value)
             MyAltManagerDB.config.MIN_ITEM_LEVEL = v
             constants.config.MIN_ITEM_LEVEL = v
+            RebuildIfNeeded()
         end)
     end
 
@@ -2356,8 +2356,18 @@ end
 
 function AltManager:GetSortedCharacters()
     local characters = {}
+    local config = (MyAltManagerDB and MyAltManagerDB.config) or constants.config
+    local minLevel = tonumber(config.MIN_LEVEL) or tonumber(constants.config.MIN_LEVEL) or 0
+    local minItemLevel = tonumber(config.MIN_ITEM_LEVEL) or tonumber(constants.config.MIN_ITEM_LEVEL) or 0
+
     for guid, data in pairs((MyAltManagerDB and MyAltManagerDB.data) or {}) do
-        if data and (tonumber(data.schema) or 0) >= constants.DATA_SCHEMA then
+        local characterLevel = data and (tonumber(data.charLevel) or 0) or 0
+        local itemLevel = data and (tonumber(data.ilevel) or 0) or 0
+        if data
+            and (tonumber(data.schema) or 0) >= constants.DATA_SCHEMA
+            and characterLevel >= minLevel
+            and itemLevel >= minItemLevel
+        then
             characters[#characters + 1] = { guid = guid, data = data }
         end
     end
@@ -2452,6 +2462,7 @@ function AltManager:ShowInterface()
     if self:CanCollectNow() then
         self:CollectAndStore()
     end
+    MyAltManagerDB.config.openRows = {}
     self:RebuildUI()
     self.main_frame:Show()
     self:StartFooterTicker()
