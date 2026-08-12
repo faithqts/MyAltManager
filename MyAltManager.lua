@@ -9,20 +9,64 @@ _G["AltManager"] = AltManager
 -- updates for Dragonflight, and The War Within by: Faith - Frostmourne, 2021-2024
 -- Last edit: 2023-11-12
 -- updates for Midnight pre-patch 12.0 by: Faith - Frostmourne, 2026-01-21
+-- updates for Midnight season 2 patch 12.1 by: Faith - Frostmourne, 2026-08-12
 
-local sizey = 535 -- initial default, recalculated after CreateContent
-local font_height = 14
-local xoffset = 0
-local yoffset = 50
 local addon = "MyAltManager"
-
-local per_alt_x = 150
-local ilvl_text_size = 12
 local remove_button_size = 16
-local min_x_size = 300
 
 local constants = {}
 AltManager.constants = constants
+
+constants.DATA_SCHEMA = 2
+constants.layout = {
+    FRAME_WIDTH = 870,
+    PAD_X = 14,
+    COL_GAP = 10,
+    COL_CHARACTER = 222,
+    COL_MPLUS = 90,
+    COL_VAULT = 260,
+    COL_CURRENCY = 240,
+    ROW_HEIGHT = 58,
+    HEADER_HEIGHT = 26,
+    TITLE_HEIGHT = 32,
+    FOOTER_HEIGHT = 18,
+    STRIPE_W = 4,
+    STRIPE_H = 46,
+    BAR_H = 12,
+    BAR_GAP = 3,
+    VAULT_LABEL_W = 58,
+    ICON_SIZE = 14,
+}
+
+constants.colors = {
+    frameTop = { 0x1D / 255, 0x19 / 255, 0x25 / 255, 1 },
+    frameBottom = { 0x17 / 255, 0x13 / 255, 0x1E / 255, 1 },
+    frameBorder = { 0x44 / 255, 0x3C / 255, 0x53 / 255, 1 },
+    titleTop = { 0x25 / 255, 0x20 / 255, 0x30 / 255, 1 },
+    titleBottom = { 0x1D / 255, 0x19 / 255, 0x27 / 255, 1 },
+    titleText = { 0xD8 / 255, 0xC9 / 255, 0x9C / 255, 1 },
+    rowSeparator = { 0x2B / 255, 0x25 / 255, 0x35 / 255, 1 },
+    body = { 0xC5 / 255, 0xC0 / 255, 0xCD / 255, 1 },
+    brightText = { 1, 1, 1, 1 },
+    muted = { 0x90 / 255, 0x89 / 255, 0x9A / 255, 1 },
+    header = { 0xAA / 255, 0xA3 / 255, 0xB5 / 255, 1 },
+    gold = { 0xD8 / 255, 0xB8 / 255, 0x5A / 255, 1 },
+    goldDark = { 0xAD / 255, 0x87 / 255, 0x36 / 255, 1 },
+    barEmpty = { 0x24 / 255, 0x20 / 255, 0x2D / 255, 1 },
+    barBorder = { 0x3A / 255, 0x34 / 255, 0x45 / 255, 1 },
+    vaultComplete = { 0x2F / 255, 0x7D / 255, 0x4A / 255, 1 },
+    vaultProgress = { 0xA6 / 255, 0x5A / 255, 0x2E / 255, 1 },
+    vaultNotStarted = { 0x6E / 255, 0x2D / 255, 0x35 / 255, 1 },
+    vaultText = { 1, 1, 1, 1 },
+    currencyFill = { 0x82 / 255, 0x68 / 255, 0x34 / 255, 1 },
+    currencyText = { 0xF3 / 255, 0xF0 / 255, 0xF5 / 255, 1 },
+    success = { 0x8B / 255, 0xC9 / 255, 0x82 / 255, 1 },
+    danger = { 0xE4 / 255, 0x7A / 255, 0x74 / 255, 1 },
+    warning = { 0xDD / 255, 0xA0 / 255, 0x6E / 255, 1 },
+    inProgress = { 0xD8 / 255, 0xB8 / 255, 0x5A / 255, 1 },
+    drawerHeading = { 0xB7 / 255, 0xB0 / 255, 0xC1 / 255, 1 },
+    drawerDivider = { 0x32 / 255, 0x2C / 255, 0x3C / 255, 1 },
+}
 
 local function CopyKeyValues(source)
     local copy = {}
@@ -45,6 +89,17 @@ constants.config.MIN_LEVEL = 80
 constants.config.MIN_ITEM_LEVEL = 0 -- controlled via settings panel
 constants.config.COLLECT_MIN_INTERVAL_SECONDS = 1.5
 constants.config.MYTHICPLUS_METADATA_MIN_INTERVAL_SECONDS = 20
+constants.config.UI_SCALE = 1.10
+-- Default before SavedVariables are loaded; LoadConfigFromDB applies the saved setting.
+constants.config.ENABLE_DRAWER = false
+
+constants.ACTIVE_SEASON_ID = 2
+constants.CURSE_SURGE = {
+    INTERVAL_SECONDS = 45 * 60,
+    ACTIVE_SECONDS = 5 * 60,
+    -- 2026-08-12 17:00 GMT+8 (09:00 UTC), supplied launch-day observation.
+    ANCHOR_EPOCH = 1786525200,
+}
 
 constants.labels = {
     NAME = "",
@@ -58,7 +113,7 @@ constants.labels = {
     WEEKLY_RAID_REWARDS = "Weekly Raids",
     WEEKLY_DUNGEON_REWARDS = "Weekly Dungeons",
     WEEKLY_DELVE_REWARDS = "Weekly Activities",
-    TIER_SET = "Tier (S1)",
+    TIER_SET = "Tier (S2)",
     CATALYST_CHARGES = "Catalyst Charges",
     CURRENCIES = "Currencies",
     CONQUEST = "Conquest |TInterface\\Icons\\achievement_legionpvp2tier3:12:12:0:0|t",
@@ -72,12 +127,13 @@ constants.labels = {
     MYTH_CRESTS = "Myth Crests |TInterface\\Icons\\inv_120_crest_myth:12:12:0:0|t",
     UNDERCOIN = "Undercoin |TInterface\\Icons\\inv_misc_elvencoins:12:12:0:0|t",
     ANGLER_PEARLS = "Angler Pearls |T348545:12:12:0:0|t",
-    RADIANT_SPARKS = "Radiant Sparks |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
+    TIDAL_SPARKS = "Tidal Sparks |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
     HIDDEN_TROVE = "Hidden Trove (Delves)",
     RESTORED_COFFER_KEY = "Bountiful Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
     COFFER_KEY_SHARDS = "Coffer Key Shards |TInterface\\Icons\\inv_gizmo_hardenedadamantitetube:12:12:0:0|t",
     VOIDLIGHT_MARL = "Voidlight Marl |TInterface\\Icons\\inv_112_raidtrinkets_voidprism:12:12:0:0|t",
     WEEKLY_META_QUEST = "Weekly Meta Quest",
+    CURSE_SURGES = "Curse Surges",
     SATHTHERIL_SOIREE = "Sath'theril Soiree",
     SPECIAL_ASSIGNMENT = "Special Assignment",
     ABUNDANT_OFFERINGS = "Abundant Offerings",
@@ -111,39 +167,45 @@ constants.sections = {
         },
     },
     {
-        key = "weekly_quests", label = "Weekly Quests",
-        keys = { "weekly_quests", "weekly_meta_quest", "special_assignment", "saththeril_soiree", "abundant_offerings", "legends_of_the_haranir", "stormarian_assault", "hidden_trove", "nightmarish_task", "world_boss" },
+        key = "world_events", label = constants.labels.WEEKLY_EVENTS,
+        keys = { "world_events", "saththeril_soiree", "stormarian_assault", "legends_of_the_haranir", "abundant_offerings" },
         children = {
-            { key = "weekly_meta_quest",       label = "Weekly Meta Quest" },
-            { key = "special_assignment",      label = "Special Assignment" },
-            { key = "saththeril_soiree",       label = "Sath'theril Soiree" },
-            { key = "abundant_offerings",      label = "Abundant Offerings" },
-            { key = "legends_of_the_haranir",  label = "Legends of the Haranir" },
-            { key = "stormarian_assault",      label = "Stormarian Assault" },
-            { key = "hidden_trove",            label = "Hidden Trove" },
-            { key = "nightmarish_task",        label = "A Nightmarish Task" },
-            { key = "world_boss",              label = "World Boss" },
+            { key = "saththeril_soiree",      dataKey = "saththerilSoiree",     label = "Sath'theril Soiree" },
+            { key = "stormarian_assault",     dataKey = "stormarianAssault",   label = "Stormarian Assault" },
+            { key = "legends_of_the_haranir", dataKey = "legendsOfTheHaranir", label = "Legends of the Haranir" },
+            { key = "abundant_offerings",     dataKey = "abundantOfferings",    label = "Abundant Offerings" },
+        },
+    },
+    {
+        key = "weekly_quests", label = "Weekly Quests",
+        keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "special_assignment", "hidden_trove", "nightmarish_task", "world_boss" },
+        children = {
+            { key = "weekly_meta_quest",       dataKey = "weeklyMetaQuest",      label = "Weekly Meta Quest" },
+            { key = "curse_surges",            dataKey = "curseSurges",          label = "Curse Surges" },
+            { key = "special_assignment",      dataKey = "specialAssignment",    label = "Special Assignment" },
+            { key = "hidden_trove",            dataKey = "hiddenTrove",          label = "Hidden Trove" },
+            { key = "nightmarish_task",        dataKey = "nightmarishTask",       label = "A Nightmarish Task" },
+            { key = "world_boss",              dataKey = "worldBoss",            label = "World Boss" },
         },
     },
     {
         key = "currencies", label = "Currencies",
-        keys = { "currencies", "radiantSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "nebulousVoidcore", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
+        keys = { "currencies", "tidalSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
         children = {
-            { key = "radiantSparks",       label = "Radiant Sparks",      icon = constants.labels.RADIANT_SPARKS:match("|T[^|]-|t") },
+            { key = "tidalSparks",         label = "Tidal Sparks",        icon = constants.labels.TIDAL_SPARKS:match("|T[^|]-|t") },
             { key = "adventurer_crests",   label = "Adventurer Crests",   icon = constants.labels.ADVENTURER_CRESTS:match("|T[^|]-|t") },
             { key = "veteran_crests",      label = "Veteran Crests",      icon = constants.labels.VETERAN_CRESTS:match("|T[^|]-|t") },
             { key = "champion_crests",     label = "Champion Crests",     icon = constants.labels.CHAMPION_CRESTS:match("|T[^|]-|t") },
             { key = "hero_crests",         label = "Hero Crests",         icon = constants.labels.HERO_CRESTS:match("|T[^|]-|t") },
             { key = "myth_crests",         label = "Myth Crests",         icon = constants.labels.MYTH_CRESTS:match("|T[^|]-|t") },
             { key = "restored_coffer_keys", label = "Bountiful Keys",     icon = constants.labels.RESTORED_COFFER_KEY:match("|T[^|]-|t") },
-            { key = "coffer_key_shards",   label = "Coffer Key Shards",   icon = constants.labels.COFFER_KEY_SHARDS:match("|T[^|]-|t") },
+            { key = "coffer_key_shards",   dataKey = "cofferKeyShards", label = "Coffer Key Shards", icon = constants.labels.COFFER_KEY_SHARDS:match("|T[^|]-|t") },
             { key = "undercoin",           label = "Undercoin",           icon = constants.labels.UNDERCOIN:match("|T[^|]-|t") },
             { key = "anglerPearls",        label = "Angler Pearls",       icon = constants.labels.ANGLER_PEARLS:match("|T[^|]-|t") },
             { key = "voidlightMarl",       label = "Voidlight Marl",      icon = constants.labels.VOIDLIGHT_MARL:match("|T[^|]-|t") },
             { key = "shardOfDundun",       label = "Shard of Dundun",     icon = constants.labels.SHARD_OF_DUNDUN:match("|T[^|]-|t") },
             { key = "remnantOfAnguish",    label = "Remnant of Anguish",  icon = constants.labels.REMNANT_OF_ANGUISH:match("|T[^|]-|t") },
             { key = "unalloyedAbundance",  label = "Unalloyed Abundance", icon = constants.labels.UNALLOYED_ABUNDANCE:match("|T[^|]-|t") },
-            { key = "nebulousVoidcore",    label = "Nebulous Cores" },
             { key = "untaintedManaCrystal", label = "Untainted Mana-Crystal", icon = constants.labels.UNTAINTED_MANA_CRYSTAL:match("|T[^|]-|t") },
             { key = "fieldAccolade",       label = "Field Accolade",      icon = constants.labels.FIELD_ACCOLADE:match("|T[^|]-|t") },
             { key = "luminousDust",        label = "Luminous Dust",       icon = constants.labels.LUMINOUS_DUST:match("|T[^|]-|t") },
@@ -154,7 +216,9 @@ constants.sections = {
 
 constants.section_lookup = {}
 constants.child_lookup = {}
+constants.section_keys = {}
 for _, section in ipairs(constants.sections) do
+    constants.section_keys[section.key] = true
     for _, k in ipairs(section.keys) do
         constants.section_lookup[k] = section.key
     end
@@ -258,7 +322,6 @@ local BASE_CURRENCIES = {
     voidlightMarl = 3316,
     restored_coffer_keys = 3028,
     cofferKeyShards = 3310,
-    radiantSparks = 3212,
     shardOfDundun = 3376,
     remnantOfAnguish = 3392,
     unalloyedAbundance = 3377,
@@ -271,6 +334,7 @@ local BASE_CURRENCIES = {
 
 local SEASON1_CURRENCIES = {
     catalyst = 3378,
+    radiantSparks = 3212,
     adventurer_crests = 3383,
     veteran_crests = 3341,
     champion_crests = 3343,
@@ -280,6 +344,7 @@ local SEASON1_CURRENCIES = {
 
 local SEASON2_CURRENCIES = {
     catalyst = 3465,
+    tidalSparks = 3509,
     adventurer_crests = 3442,
     veteran_crests = 3443,
     champion_crests = 3444,
@@ -341,8 +406,8 @@ local SEASON1_MAPS = {
 local SEASON2_MAPS = {
     [584] = "Vale",
     [585] = "Voidscar",
-    [586] = "Nalorakk",
-    [587] = "Row",
+    [586] = "Den",
+    [587] = "Murder",
     [588] = "Fangs",
 }
 
@@ -362,9 +427,9 @@ constants.SEASON_DATA = {
 }
 
 local function ApplyActiveSeasonData()
-    local activeSeason = (C_MythicPlus and C_MythicPlus.GetCurrentSeason and C_MythicPlus.GetCurrentSeason()) or 1
+    local activeSeason = constants.ACTIVE_SEASON_ID
     constants.SEASON_ID = activeSeason
-    constants.SEASON = constants.SEASON_DATA[activeSeason] or constants.SEASON_DATA[1]
+    constants.SEASON = assert(constants.SEASON_DATA[activeSeason], "Missing active season data")
     constants.currencies = MergeKeyValues(BASE_CURRENCIES, constants.SEASON.currencies)
     constants.TIER_SETS = constants.SEASON.TIER_SETS
     constants.labels.TIER_SET = constants.SEASON.tierLabel
@@ -372,31 +437,11 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.0.5.2"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.15"
 
 -- ------------------------------------------------------------
 -- Utility helpers
 -- ------------------------------------------------------------
-
-local function spairs(t, order)
-    if not t then return end
-    local keys = {}
-    for k in pairs(t) do keys[#keys + 1] = k end
-
-    if order then
-        table.sort(keys, function(a, b) return order(t, a, b) end)
-    else
-        table.sort(keys)
-    end
-
-    local i = 0
-    return function()
-        i = i + 1
-        if keys[i] then
-            return keys[i], t[keys[i]]
-        end
-    end
-end
 
 local function true_numel(t)
     local c = 0
@@ -414,26 +459,6 @@ local function GetMonotonicTime()
         return GetTimePreciseSec()
     end
     return GetTime()
-end
-
-local stripped_label_cache = {}
-local function StripInlineIconMarkup(label)
-    if not label then return " " end
-
-    local cached = stripped_label_cache[label]
-    if cached then
-        return cached
-    end
-
-    local stripped = label:gsub("|T[^|]-|t", "")
-    stripped = stripped:gsub("%s+:", ":")
-    stripped = stripped:match("^%s*(.-)%s*$")
-    if stripped == "" then
-        stripped = " "
-    end
-
-    stripped_label_cache[label] = stripped
-    return stripped
 end
 
 local function GetDungeonShortName(mapID)
@@ -482,6 +507,28 @@ function AltManager:EnsureMeta()
     end
 
     return db.meta
+end
+
+function AltManager:MigrateDataSchema()
+    local db = MyAltManagerDB
+    if not db or not db.data then return 0 end
+
+    local removed = 0
+    for guid, charData in pairs(db.data) do
+        local schema = tonumber(charData and charData.schema) or 0
+        if schema < constants.DATA_SCHEMA then
+            db.data[guid] = nil
+            if db.config and db.config.openRows then
+                db.config.openRows[guid] = nil
+            end
+            removed = removed + 1
+        end
+    end
+
+    db.alts = true_numel(db.data)
+    db.meta = db.meta or {}
+    db.meta.dataSchema = constants.DATA_SCHEMA
+    return removed
 end
 
 function AltManager:RunExpansionMigrationIfNeeded()
@@ -638,12 +685,35 @@ function AltManager:LoadConfigFromDB()
     if db.config.MIN_LEVEL == nil then
         db.config.MIN_LEVEL = 80
     end
-    if db.config.show_icons == nil then
-        db.config.show_icons = true
+    -- Older builds force-saved this as false. Re-enable once, then respect later changes.
+    if db.config.drawer_config_version == nil then
+        db.config.enable_drawer = true
+        db.config.drawer_config_version = 1
+    elseif db.config.enable_drawer == nil then
+        db.config.enable_drawer = true
+    end
+    local savedOpenRows = db.config.openRows or {}
+    local savedOpenGuid
+    for guid, isOpen in pairs(savedOpenRows) do
+        if isOpen then
+            savedOpenGuid = guid
+            break
+        end
+    end
+    db.config.openRows = savedOpenGuid and { [savedOpenGuid] = true } or {}
+    if db.config.sort == nil then
+        db.config.sort = "ilevel"
+    end
+    if db.visibility.drawer_currencies == nil then
+        db.visibility.drawer_currencies = false
+    end
+    if db.visibility.pvp == nil then
+        db.visibility.pvp = false
     end
 
     constants.config.MIN_ITEM_LEVEL = tonumber(db.config.MIN_ITEM_LEVEL) or 0
     constants.config.MIN_LEVEL = tonumber(db.config.MIN_LEVEL) or 80
+    constants.config.ENABLE_DRAWER = db.config.enable_drawer and true or false
 end
 
 function AltManager:RegisterSettings()
@@ -651,7 +721,7 @@ function AltManager:RegisterSettings()
     self.settingsCategory = category
 
     local function RebuildIfNeeded()
-        if AltManager.columns_table then
+        if AltManager.addon_loaded and AltManager.main_frame then
             AltManager:RebuildUI()
         end
     end
@@ -694,51 +764,41 @@ function AltManager:RegisterSettings()
         end)
     end
 
-    -- Toggle Icons checkbox
-    do
-        local iconSetting = Settings.RegisterAddOnSetting(
-            category, "MyAltManager_ShowIcons", "show_icons",
-            MyAltManagerDB.config, Settings.VarType.Boolean,
-            "Show Icons", true
-        )
-        Settings.CreateCheckbox(category, iconSetting, "Show or hide icon textures in labels.")
-        Settings.SetOnValueChangedCallback("MyAltManager_ShowIcons", function(_, _, value)
-            MyAltManagerDB.config.show_icons = value
-            RebuildIfNeeded()
-        end)
-    end
-
     -- Section toggles with child sub-toggles
     for _, section in ipairs(constants.sections) do
-        local parentVarName = "MyAltManager_Show_" .. section.key
+        local sectionKey = section.key
+        local sectionLabel = section.label
+        local parentVarName = "MyAltManager_Show_" .. sectionKey
         local parentSetting = Settings.RegisterAddOnSetting(
-            category, parentVarName, section.key,
+            category, parentVarName, sectionKey,
             MyAltManagerDB.visibility, Settings.VarType.Boolean,
-            "Show " .. section.label, true
+            "Show " .. sectionLabel, true
         )
-        local parentInitializer = Settings.CreateCheckbox(category, parentSetting, "Toggle visibility of the " .. section.label .. " section.")
+        local parentInitializer = Settings.CreateCheckbox(category, parentSetting, "Toggle visibility of the " .. sectionLabel .. " section.")
         Settings.SetOnValueChangedCallback(parentVarName, function(_, _, value)
-            MyAltManagerDB.visibility[section.key] = value
+            MyAltManagerDB.visibility[sectionKey] = value
             RebuildIfNeeded()
         end)
 
         -- Child toggles
         if section.children then
             for _, child in ipairs(section.children) do
-                local childVarName = "MyAltManager_Show_" .. child.key
+                local childKey = child.key
+                local childLabel = child.label
+                local childVarName = "MyAltManager_Show_" .. childKey
                 local settingsIcon = child.icon and child.icon:gsub(":12:12:", ":20:20:") or nil
-                local displayLabel = settingsIcon and (settingsIcon .. " " .. child.label) or child.label
+                local displayLabel = settingsIcon and (settingsIcon .. " " .. childLabel) or childLabel
                 local childSetting = Settings.RegisterAddOnSetting(
-                    category, childVarName, child.key,
+                    category, childVarName, childKey,
                     MyAltManagerDB.visibility, Settings.VarType.Boolean,
                     displayLabel, true
                 )
-                local childInitializer = Settings.CreateCheckbox(category, childSetting, "Toggle visibility of " .. child.label .. ".")
+                local childInitializer = Settings.CreateCheckbox(category, childSetting, "Toggle visibility of " .. childLabel .. ".")
                 childInitializer:SetParentInitializer(parentInitializer, function()
-                    return MyAltManagerDB.visibility[section.key] ~= false
+                    return MyAltManagerDB.visibility[sectionKey] ~= false
                 end)
                 Settings.SetOnValueChangedCallback(childVarName, function(_, _, value)
-                    MyAltManagerDB.visibility[child.key] = value
+                    MyAltManagerDB.visibility[childKey] = value
                     RebuildIfNeeded()
                 end)
             end
@@ -779,16 +839,14 @@ end
 -- ------------------------------------------------------------
 
 do
-    local main_frame = CreateFrame("frame", "AltManagerFrame", UIParent)
+    local main_frame = CreateFrame("Frame", "AltManagerFrame", UIParent)
     AltManager.main_frame = main_frame
 
     main_frame:SetFrameStrata("HIGH")
-    main_frame.background = main_frame:CreateTexture(nil, "ARTWORK", nil, 1)
-    main_frame.background:SetAllPoints()
-    main_frame.background:SetColorTexture(0, 0, 0, 0.7)
-
+    main_frame:SetScale(constants.config.UI_SCALE)
     main_frame:ClearAllPoints()
-    main_frame:SetPoint("CENTER", UIParent, "CENTER", xoffset, yoffset)
+    main_frame:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
+    main_frame:SetSize(constants.layout.FRAME_WIDTH, constants.layout.TITLE_HEIGHT + constants.layout.HEADER_HEIGHT + constants.layout.FOOTER_HEIGHT + 1)
 
     main_frame:RegisterEvent("ADDON_LOADED")
     main_frame:RegisterEvent("PLAYER_LOGIN")
@@ -861,9 +919,19 @@ function AltManager:InitDB()
     local t = {}
     t.alts = 0
     t.data = {}
-    t.config = { MIN_ITEM_LEVEL = 0, MIN_LEVEL = 80, show_icons = true }
+    t.config = {
+        MIN_ITEM_LEVEL = 0,
+        MIN_LEVEL = 80,
+        enable_drawer = true,
+        drawer_config_version = 1,
+        openRows = {},
+        sort = "ilevel",
+    }
     t.meta = {}
-    t.visibility = {}
+    t.visibility = {
+        drawer_currencies = false,
+        pvp = false,
+    }
     return t
 end
 
@@ -871,38 +939,16 @@ function AltManager:IsRowVisible(key)
     local vis = MyAltManagerDB and MyAltManagerDB.visibility
     if not vis then return true end
 
-    -- Check if this key belongs to a section
-    local section_key = constants.section_lookup[key]
+    local section_key = constants.child_lookup[key]
+        or constants.section_lookup[key]
+        or (constants.section_keys[key] and key)
     if section_key then
-        -- If the parent section is toggled off, hide the row
         if vis[section_key] == false then return false end
-        -- If this key also has an individual child toggle, check it
         if constants.child_lookup[key] and vis[key] == false then return false end
         return true
     end
 
-    return true
-end
-
-function AltManager:CalculateYSize()
-    if self.columns_table then
-        local count = 0
-        for key, row in pairs(self.columns_table) do
-            if self:IsRowVisible(key) then
-                count = count + 1
-                if row.topSpacing then
-                    count = count + 1
-                end
-            end
-        end
-        return (count * font_height) + 15
-    end
-    return sizey
-end
-
-function AltManager:CalculateXSizeNoGuidCheck()
-    local alts = MyAltManagerDB.alts
-    return max((alts + 1) * per_alt_x, min_x_size)
+    return vis[key] ~= false
 end
 
 function AltManager:OnLogin()
@@ -912,13 +958,7 @@ function AltManager:OnLogin()
         self._lastCollectAt = GetMonotonicTime()
     end
 
-    AltManager:CreateContent()
-
-    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
-    self.main_frame.background:SetAllPoints()
-
-    AltManager:MakeTopBottomTextures(self.main_frame)
-    AltManager:MakeBorder(self.main_frame, 5)
+    self:RebuildUI()
 end
 
 function AltManager:OnLoad()
@@ -930,17 +970,21 @@ function AltManager:OnLoad()
     -- One-time per-expansion migration (pre-expansion cleanup wipe)
     if self:RunExpansionMigrationIfNeeded() then
         self:LoadConfigFromDB()
+        self:MigrateDataSchema()
+        self:InitializeFrame()
         self:RegisterSettings()
         self.addon_loaded = true
         return
     end
 
     self:LoadConfigFromDB()
+    self:MigrateDataSchema()
 
     if MyAltManagerDB.alts ~= true_numel(MyAltManagerDB.data) then
         MyAltManagerDB.alts = true_numel(MyAltManagerDB.data)
     end
 
+    self:InitializeFrame()
     self:RegisterSettings()
     self.addon_loaded = true
 
@@ -948,25 +992,34 @@ function AltManager:OnLoad()
     self:RequestMythicPlusMetadata()
 end
 
--- ------------------------------------------------------------
--- UI helpers
--- ------------------------------------------------------------
-
-function AltManager:CreateFontFrame(parent, x_size, height, relative_to, y_offset, label, justify)
-    local f = CreateFrame("Button", nil, parent)
-    f:SetSize(x_size, height)
-    f:SetNormalFontObject(GameFontHighlightMedium)
-    f:SetText(label or " ")
-    f:SetPoint("TOPLEFT", relative_to, "TOPLEFT", 0, y_offset)
-    local fs = f:GetFontString()
-    if fs then
-        fs:SetJustifyH(justify)
-        fs:SetJustifyV("MIDDLE")
-        f:SetPushedTextOffset(0, 0)
-        fs:SetWidth(x_size)
-        fs:SetHeight(14)
+local function CreateEmptyVaultTrack(thresholds)
+    local slots = {}
+    for i = 1, 3 do
+        slots[i] = {
+            progress = 0,
+            threshold = thresholds[i],
+            earned = false,
+            ilvl = nil,
+            activityID = nil,
+            raidString = nil,
+        }
     end
-    return f
+    return slots
+end
+
+local function CreateResetWeeklies()
+    return {
+        { key = "weeklyMetaQuest", status = "notstarted" },
+        { key = "curseSurges", status = "notstarted" },
+        { key = "specialAssignment", status = "notstarted" },
+        { key = "saththerilSoiree", status = "notstarted" },
+        { key = "abundantOfferings", status = "notstarted" },
+        { key = "legendsOfTheHaranir", status = "notstarted" },
+        { key = "stormarianAssault", status = "notstarted" },
+        { key = "hiddenTrove", status = "notstarted" },
+        { key = "nightmarishTask", status = "notstarted" },
+        { key = "worldBoss", status = "notstarted" },
+    }
 end
 
 function AltManager:ValidateReset()
@@ -975,33 +1028,32 @@ function AltManager:ValidateReset()
 
     for _, char_table in pairs(db.data) do
         local expiry = char_table.expires or 0
-        if time() > expiry then
-            char_table.dungeon = " "
-            char_table.level = " "
+        if expiry > 0 and time() > expiry then
             char_table.runHistory = nil
-            char_table.highestCompletedWeeklyKeystone = " "
-            char_table.completedWeeklyKeystoneRewards = nil
-            char_table.weeklyDungeonRewards = "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
-            char_table.weeklyDelveRewards = "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r"
-            char_table.weeklyRaidRewards = "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r"
+            if char_table.mplus then
+                char_table.mplus.keyMapID = nil
+                char_table.mplus.keyLevel = nil
+            end
+            char_table.vault = {
+                raid = CreateEmptyVaultTrack({ 2, 4, 6 }),
+                dungeon = CreateEmptyVaultTrack({ 1, 4, 8 }),
+                world = CreateEmptyVaultTrack({ 2, 4, 8 }),
+            }
+            char_table.weeklies = CreateResetWeeklies()
             char_table.expires = self:GetNextWeeklyResetTime()
-            char_table.weeklyMetaQuest = false
-            char_table.specialAssignment = false
-            char_table.stormarianAssault = false
-            char_table.worldBoss = false
-            char_table.nightmarishTask = false
-            char_table.abundantOfferings = false
-            char_table.legendsOfTheHaranir = false
-            char_table.saththerilSoiree = false
-            char_table.hiddenTrove = false
             char_table.weeklyCofferKeysCollected = 0
         end
     end
 end
 
 function AltManager:Purge()
-    MyAltManagerDB = self:InitDB()
+    MyAltManagerDB = MyAltManagerDB or self:InitDB()
+    MyAltManagerDB.data = {}
+    MyAltManagerDB.alts = 0
+    MyAltManagerDB.config = MyAltManagerDB.config or {}
+    MyAltManagerDB.config.openRows = {}
     self:LoadConfigFromDB()
+    self:RebuildUI()
 end
 
 function AltManager:RemoveCharactersByName(name)
@@ -1014,13 +1066,16 @@ function AltManager:RemoveCharactersByName(name)
         end
     end
 
-    db.alts = db.alts - #indices
     for i = 1, #indices do
         db.data[indices[i]] = nil
+        if db.config and db.config.openRows then
+            db.config.openRows[indices[i]] = nil
+        end
     end
+    db.alts = true_numel(db.data)
 
     print("Found " .. (#indices) .. " characters by the name of " .. name)
-    print("Please reload ui to update the displayed info.")
+    self:RebuildUI()
 end
 
 function AltManager:RemoveCharacterByGuid(index)
@@ -1029,24 +1084,13 @@ function AltManager:RemoveCharacterByGuid(index)
 
     local delete = function()
         if db.data[index] == nil then return end
-        db.alts = db.alts - 1
         db.data[index] = nil
-        self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
-
-        if self.main_frame.alt_columns ~= nil then
-            local count = #self.main_frame.alt_columns
-            for j = 0, count - 1 do
-                if self.main_frame.alt_columns[count - j]:IsShown() then
-                    self.main_frame.alt_columns[count - j]:Hide()
-                    break
-                end
-            end
-
-            if self.main_frame.remove_buttons ~= nil and self.main_frame.remove_buttons[index] ~= nil then
-                self.main_frame.remove_buttons[index]:Hide()
-            end
+        db.alts = true_numel(db.data)
+        if db.config and db.config.openRows then
+            db.config.openRows[index] = nil
         end
-        self:UpdateStrings()
+        GameTooltip:Hide()
+        self:RebuildUI()
     end
 
     delete()
@@ -1089,10 +1133,42 @@ function AltManager:StoreData(data)
     local update = (db.data[guid] ~= nil)
     if not update then
         db.data[guid] = data
-        db.alts = db.alts + 1
+        db.alts = (tonumber(db.alts) or 0) + 1
     else
         db.data[guid] = data
     end
+end
+
+local function CollectVaultTrack(activityType, fallbackThresholds, useRaidStringFallback)
+    local activities = C_WeeklyRewards.GetActivities(activityType) or {}
+    local slots = {}
+
+    for i = 1, 3 do
+        local activity = activities[i]
+        local threshold = (activity and activity.threshold) or fallbackThresholds[i] or 0
+        if type(threshold) ~= "number" or threshold <= 0 then
+            threshold = fallbackThresholds[i] or 0
+        end
+
+        local progress = tonumber(activity and activity.progress) or 0
+        local earned = activity ~= nil and threshold > 0 and progress >= threshold
+        local ilvl
+        if earned and activity.id then
+            local link = C_WeeklyRewards.GetExampleRewardItemHyperlinks(activity.id)
+            ilvl = link and C_Item.GetDetailedItemLevelInfo(link) or nil
+        end
+
+        slots[i] = {
+            progress = progress,
+            threshold = threshold,
+            earned = earned,
+            ilvl = ilvl,
+            activityID = activity and activity.id or nil,
+            raidString = (useRaidStringFallback and activity and activity.raidString) or nil,
+        }
+    end
+
+    return slots
 end
 
 function AltManager:CollectData()
@@ -1103,72 +1179,49 @@ function AltManager:CollectData()
 
     local name = UnitName("player")
     local _, class = UnitClass("player")
-    local dungeon = nil
-    local level = nil
 
     local guid = UnitGUID("player")
 
     local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
 
-    local function checkWeeklyMetaQuestStatus()
+    local function QuestSetStatus(questIDs)
         local inProgress = false
-        local questIDs = {
-            93912, 93769, 93913, 93910, 94457, 93766, 93911, 93909, 93767, 93892,
-            93891, 93889, 93890
-        }
-
-        for _, QUEST_ID in ipairs(questIDs) do
-            if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                return "|cFF00CF20Complete|r"
-            elseif C_QuestLog.IsOnQuest(QUEST_ID) then
+        for _, questID in ipairs(questIDs) do
+            if C_QuestLog.IsQuestFlaggedCompleted(questID) then
+                return "complete"
+            elseif C_QuestLog.IsOnQuest(questID) then
                 inProgress = true
             end
         end
+        return inProgress and "inprogress" or "notstarted"
+    end
 
-        if inProgress then
-            return "|cFFFBD910In Progress|r"
-        end
-
-        return "|cFFFF0000Not Started|r"
+    local function checkWeeklyMetaQuestStatus()
+        return QuestSetStatus({
+            93912, 93769, 93913, 93910, 94457, 93766, 93911, 93909, 93767, 93892,
+            93891, 93889, 93890
+        })
     end
 
     local function checkSpecialAssignmentStatus()
-        local questIDs = { 92848, 93244, 93013, 94391, 91390, 94795, 94743, 94865, 93438, 94390, 94866, 91700 }
-
-        for _, QUEST_ID in ipairs(questIDs) do
-            if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                return "|cFF00CF20Complete|r"
-            end
-        end
-
-        return "|cFFFF0000Incomplete|r"
+        return QuestSetStatus({ 92848, 93244, 93013, 94391, 91390, 94795, 94743, 94865, 93438, 94390, 94866, 91700 })
     end
 
     local function checkSaththerilSoireeStatus()
-        local questIDs = { 90575, 90576, 90574, 90573 }
-        for _, QUEST_ID in ipairs(questIDs) do
-            if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                return "|cFF00CF20Complete|r"
-            end
-        end
-        return "|cFFFF0000Incomplete|r"
+        return QuestSetStatus({ 90575, 90576, 90574, 90573 })
     end
 
     local function checkWorldBossStatus()
         local db2 = MyAltManagerDB and MyAltManagerDB.data
         -- Weekly world-boss completion can fall out of quest flags after login, so preserve a stored complete state until reset.
-        if db2 and guid and db2[guid] and db2[guid].worldBoss == "|cFF00CF20Complete|r" then
-            return "|cFF00CF20Complete|r"
-        end
-
-        local questIDs = { 92034, 92636, 92560, 92123 }
-        for _, QUEST_ID in ipairs(questIDs) do
-            if C_QuestLog.IsQuestFlaggedCompleted(QUEST_ID) then
-                return "|cFF00CF20Complete|r"
+        local stored = db2 and guid and db2[guid] and db2[guid].weeklies
+        for _, weekly in ipairs(stored or {}) do
+            if weekly.key == "worldBoss" and weekly.status == "complete" then
+                return "complete"
             end
         end
 
-        return "|cFFFF0000Incomplete|r"
+        return QuestSetStatus({ 92034, 92636, 92560, 92123 })
     end
 
     local function checkWeeklyCofferKeysCollected()
@@ -1179,49 +1232,45 @@ function AltManager:CollectData()
                 cofferKeysObtained = cofferKeysObtained + 1
             end
         end
-        return cofferKeysObtained .. "/4"
+        return cofferKeysObtained
     end
 
-    local function GetRollingCurrencyProgress(currencyID)
+    local function GetRollingCurrencyValues(currencyID)
         local info = C_CurrencyInfo.GetCurrencyInfo(currencyID)
-        if not info then return "0/0" end
+        if not info then return 0, 0 end
 
-        local totalEarned = info.totalEarned or info.quantity
-        local maxQuantity = info.maxQuantity
+        local quantity = tonumber(info.quantity) or 0
+        local totalEarned = tonumber(info.totalEarned) or quantity
+        local maxQuantity = tonumber(info.maxQuantity) or 0
         if info.useTotalEarnedForMaxQty then
-            if type(maxQuantity) ~= "number" or maxQuantity <= 0 then
+            if maxQuantity <= 0 then
                 maxQuantity = totalEarned
             end
-            return ("%d/%d"):format(totalEarned, maxQuantity)
+            return totalEarned, maxQuantity
         end
 
-        local spent = math.max(0, totalEarned - info.quantity)
-        if type(maxQuantity) ~= "number" or maxQuantity <= 0 then
-            maxQuantity = info.quantity
+        local spent = math.max(0, totalEarned - quantity)
+        if maxQuantity <= 0 then
+            maxQuantity = quantity
         end
 
-        local rollingMax = math.max(info.quantity, maxQuantity - spent)
-        return ("%d/%d"):format(info.quantity, rollingMax)
+        local rollingMax = math.max(quantity, maxQuantity - spent)
+        return quantity, rollingMax
     end
 
-    local keystone_details = "None"
     local ownedKeystoneChallengeMapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
     local ownedKeystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
-    if ownedKeystoneChallengeMapID and ownedKeystoneLevel then
-        dungeon = ownedKeystoneChallengeMapID
-        level = "+" .. ownedKeystoneLevel
-        keystone_details = level .. " " .. GetDungeonShortName(dungeon)
-    end
 
     local weeklyMetaQuest = checkWeeklyMetaQuestStatus()
+    local curseSurges = QuestSetStatus({ 96995 })
     local worldBoss = checkWorldBossStatus()
 
-    local abundantOfferings = C_QuestLog.IsQuestFlaggedCompleted(89507) and true or false
-    local stormarianAssault = C_QuestLog.IsQuestFlaggedCompleted(94581) and true or false
-    local legendsOfTheHaranir = C_QuestLog.IsQuestFlaggedCompleted(89268) and true or false
+    local abundantOfferings = QuestSetStatus({ 89507 })
+    local stormarianAssault = QuestSetStatus({ 94581 })
+    local legendsOfTheHaranir = QuestSetStatus({ 89268 })
     local saththerilSoiree = checkSaththerilSoireeStatus()
-    local hiddenTrove = C_QuestLog.IsQuestFlaggedCompleted(86371) and true or false
-    local nightmarishTask = C_QuestLog.IsQuestFlaggedCompleted(94446) and true or false
+    local hiddenTrove = QuestSetStatus({ 86371 })
+    local nightmarishTask = QuestSetStatus({ 94446 })
 
     local specialAssignment = checkSpecialAssignmentStatus()
     local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
@@ -1235,21 +1284,12 @@ function AltManager:CollectData()
     local honor = GetCurrencyAmount(constants.currencies.honor)
     local bloody_tokens = GetCurrencyAmount(constants.currencies.bloodyTokens)
 
-    local forged_weapons
-    if total_conquest_earned > 2500 then
-        forged_weapons = "|cFF00CF20Complete|r"
-    else
-        forged_weapons = "|cFFFFCD44" .. total_conquest_earned .. "/2500|r"
-    end
-
-    local adventurer_crests = GetRollingCurrencyProgress(constants.currencies.adventurer_crests)
-    local veteran_crests = GetRollingCurrencyProgress(constants.currencies.veteran_crests)
-    local champion_crests = GetRollingCurrencyProgress(constants.currencies.champion_crests)
-    local hero_crests = GetRollingCurrencyProgress(constants.currencies.hero_crests)
-    local hero_crests_current = GetCurrencyAmount(constants.currencies.hero_crests)
-    local myth_crests = GetRollingCurrencyProgress(constants.currencies.myth_crests)
-    local myth_crests_current = GetCurrencyAmount(constants.currencies.myth_crests)
-    local radiantSparks = GetRollingCurrencyProgress(constants.currencies.radiantSparks)
+    local adventurerCur, adventurerMax = GetRollingCurrencyValues(constants.currencies.adventurer_crests)
+    local veteranCur, veteranMax = GetRollingCurrencyValues(constants.currencies.veteran_crests)
+    local championCur, championMax = GetRollingCurrencyValues(constants.currencies.champion_crests)
+    local heroCur, heroMax = GetRollingCurrencyValues(constants.currencies.hero_crests)
+    local mythCur, mythMax = GetRollingCurrencyValues(constants.currencies.myth_crests)
+    local sparksCur, sparksMax = GetRollingCurrencyValues(constants.currencies.tidalSparks)
     local undercoin = GetCurrencyAmount(constants.currencies.undercoin) or 0
     local anglerPearls = GetCurrencyAmount(constants.currencies.anglerPearls) or 0
     local voidlightMarl = GetCurrencyAmount(constants.currencies.voidlightMarl) or 0
@@ -1258,7 +1298,7 @@ function AltManager:CollectData()
     local shardOfDundun = GetCurrencyAmount(constants.currencies.shardOfDundun) or 0
     local remnantOfAnguish = GetCurrencyAmount(constants.currencies.remnantOfAnguish) or 0
     local unalloyedAbundance = GetCurrencyAmount(constants.currencies.unalloyedAbundance) or 0
-    local nebulousVoidcore = GetRollingCurrencyProgress(constants.currencies.nebulousVoidcore)
+    local nebulousVoidcore = GetRollingCurrencyValues(constants.currencies.nebulousVoidcore)
     local untaintedManaCrystal = GetCurrencyAmount(constants.currencies.untaintedManaCrystal) or 0
     local fieldAccolade = GetCurrencyAmount(constants.currencies.fieldAccolade) or 0
     local luminousDust = GetCurrencyAmount(constants.currencies.luminousDust) or 0
@@ -1268,63 +1308,77 @@ function AltManager:CollectData()
     local catalystCharges = catalystInfo and catalystInfo.quantity or 0
     local catalystChargesMax = catalystInfo and catalystInfo.maxQuantity or 0
 
-    local char_table = {}
+    local tierPieces, tierSlots = self:GetTierBonuses()
+    local mplus = self:GetOverallDungeonScore()
+    mplus.keyMapID = ownedKeystoneChallengeMapID
+    mplus.keyLevel = ownedKeystoneLevel
 
-    char_table.guid = guid
-    char_table.name = name
-    char_table.class = class
-    char_table.ilevel = math.floor(ilevel)
-    char_table.charLevel = UnitLevel("player")
-    char_table.realmName = GetRealmName()
-    char_table.dungeon = dungeon
-    char_table.level = level
-    char_table.keystone_details = keystone_details
-    char_table.runHistory = runHistory
-    char_table.highestCompletedWeeklyKeystone = self:GetHighestCompletedWeeklyKeystone()
-    char_table.weeklyDungeonRewards = self:GetWeeklyDungeonRewards()
-    char_table.weeklyDelveRewards = self:GetWeeklyDelvesRewards()
-    char_table.weeklyRaidRewards = self:GetWeeklyRaidRewards()
-    char_table.tierBonuses = self:GetTierBonuses()
-    char_table.overallDungeonScore = self:GetOverallDungeonScore()
-    char_table.weeklyMetaQuest = weeklyMetaQuest
-    char_table.hiddenTrove = hiddenTrove
-    char_table.specialAssignment = specialAssignment
-    char_table.saththerilSoiree = saththerilSoiree
-    char_table.abundantOfferings = abundantOfferings
-    char_table.legendsOfTheHaranir = legendsOfTheHaranir
-    char_table.stormarianAssault = stormarianAssault
-    char_table.nightmarishTask = nightmarishTask
-    char_table.worldBoss = worldBoss
-    char_table.conquest = conquest
-    char_table.forged_weapons = forged_weapons
-    char_table.honor = honor
-    char_table.bloody_tokens = bloody_tokens
-    char_table.adventurer_crests = adventurer_crests
-    char_table.veteran_crests = veteran_crests
-    char_table.champion_crests = champion_crests
-    char_table.hero_crests = hero_crests
-    char_table.hero_crests_current = hero_crests_current
-    char_table.myth_crests = myth_crests
-    char_table.myth_crests_current = myth_crests_current
-    char_table.radiantSparks = radiantSparks
-    char_table.undercoin = undercoin
-    char_table.anglerPearls = anglerPearls
-    char_table.voidlightMarl = voidlightMarl
-    char_table.restored_coffer_keys = restored_coffer_keys
-    char_table.cofferKeyShards = cofferKeyShards
-    char_table.shardOfDundun = shardOfDundun
-    char_table.remnantOfAnguish = remnantOfAnguish
-    char_table.unalloyedAbundance = unalloyedAbundance
-    char_table.nebulousVoidcore = nebulousVoidcore
-    char_table.untaintedManaCrystal = untaintedManaCrystal
-    char_table.fieldAccolade = fieldAccolade
-    char_table.luminousDust = luminousDust
-    char_table.brimmingArcana = brimmingArcana
-    char_table.weeklyCofferKeysCollected = weeklyCofferKeysCollected
-    char_table.catalystCharges = string.format("%d/%d", catalystCharges, catalystChargesMax)
-    char_table.version = constants.VERSION
-    char_table.expires = self:GetNextWeeklyResetTime()
-    char_table.dataObtained = time()
+    local char_table = {
+        schema = constants.DATA_SCHEMA,
+        seasonID = constants.SEASON_ID,
+        guid = guid,
+        name = name,
+        class = class,
+        ilevel = math.floor(ilevel),
+        charLevel = UnitLevel("player"),
+        realmName = GetRealmName(),
+        tierPieces = tierPieces,
+        tierSlots = tierSlots,
+        catalyst = {
+            current = tonumber(catalystCharges) or 0,
+            max = tonumber(catalystChargesMax) or 0,
+        },
+        mplus = mplus,
+        vault = {
+            raid = CollectVaultTrack(Enum.WeeklyRewardChestThresholdType.Raid, { 2, 4, 6 }, true),
+            dungeon = CollectVaultTrack(Enum.WeeklyRewardChestThresholdType.Activities, { 1, 4, 8 }, false),
+            world = CollectVaultTrack(Enum.WeeklyRewardChestThresholdType.World, { 2, 4, 8 }, false),
+        },
+        season = {
+            sparks = { sparksCur, sparksMax },
+            adventurer = { adventurerCur, adventurerMax },
+            veteran = { veteranCur, veteranMax },
+            champion = { championCur, championMax },
+            hero = { heroCur, heroMax },
+            myth = { mythCur, mythMax },
+        },
+        weeklies = {
+            { key = "weeklyMetaQuest", status = weeklyMetaQuest },
+            { key = "curseSurges", status = curseSurges },
+            { key = "specialAssignment", status = specialAssignment },
+            { key = "saththerilSoiree", status = saththerilSoiree },
+            { key = "abundantOfferings", status = abundantOfferings },
+            { key = "legendsOfTheHaranir", status = legendsOfTheHaranir },
+            { key = "stormarianAssault", status = stormarianAssault },
+            { key = "hiddenTrove", status = hiddenTrove },
+            { key = "nightmarishTask", status = nightmarishTask },
+            { key = "worldBoss", status = worldBoss },
+        },
+        pvp = {
+            honor = tonumber(honor) or 0,
+            conquest = tonumber(conquest) or 0,
+            conquestEarned = tonumber(total_conquest_earned) or 0,
+            bloodyTokens = tonumber(bloody_tokens) or 0,
+        },
+        undercoin = undercoin,
+        anglerPearls = anglerPearls,
+        voidlightMarl = voidlightMarl,
+        restored_coffer_keys = restored_coffer_keys,
+        cofferKeyShards = cofferKeyShards,
+        shardOfDundun = shardOfDundun,
+        remnantOfAnguish = remnantOfAnguish,
+        unalloyedAbundance = unalloyedAbundance,
+        nebulousVoidcore = nebulousVoidcore,
+        untaintedManaCrystal = untaintedManaCrystal,
+        fieldAccolade = fieldAccolade,
+        luminousDust = luminousDust,
+        brimmingArcana = brimmingArcana,
+        weeklyCofferKeysCollected = weeklyCofferKeysCollected,
+        runHistory = runHistory,
+        version = constants.VERSION,
+        expires = self:GetNextWeeklyResetTime(),
+        dataObtained = time(),
+    }
 
     return char_table
 end
@@ -1351,7 +1405,6 @@ function AltManager:RequestTierItemRescan(itemID)
 end
 
 function AltManager:GetTierBonuses()
-    local tierText = ""
     local tierCount = 0
     local tierItems = {}
 
@@ -1360,7 +1413,7 @@ function AltManager:GetTierBonuses()
         if invItem then
             local setId = select(16, C_Item.GetItemInfo(invItem))
             if setId and constants.TIER_SETS[setId] then
-                tierItems["equip:" .. slotId] = 1
+                tierItems["equip:" .. slotId] = constants.TIER_SLOTS[slotId]
             elseif not setId then
                 self:RequestTierItemRescan(invItem)
             end
@@ -1374,7 +1427,7 @@ function AltManager:GetTierBonuses()
             if slotItem ~= nil then
                 local setId = select(16, C_Item.GetItemInfo(slotItem.itemID))
                 if setId and constants.TIER_SETS[setId] then
-                    tierItems[("bag:%d:%d"):format(container, slot)] = 1
+                    tierItems[("bag:%d:%d"):format(container, slot)] = "Stored tier piece"
                 elseif not setId then
                     self:RequestTierItemRescan(slotItem.itemID)
                 end
@@ -1382,653 +1435,1068 @@ function AltManager:GetTierBonuses()
         end
     end
 
-    for _ in pairs(tierItems) do
+    local tierSlots = {}
+    for _, slotName in pairs(tierItems) do
         tierCount = tierCount + 1
+        tierSlots[#tierSlots + 1] = slotName
     end
 
-    if tierCount > 0 then
-        if tierCount >= 4 then
-            tierCount = 4
-        end
-        tierText = tierCount .. "/4 Set"
-    else
-        tierText = "No Set"
+    tierCount = math.min(tierCount, 5)
+    table.sort(tierSlots)
+    while #tierSlots > tierCount do
+        table.remove(tierSlots)
     end
-
-    return tierText
+    return tierCount, tierSlots
 end
 
 function AltManager:GetOverallDungeonScore()
     local overallDungeonScore = C_ChallengeMode.GetOverallDungeonScore() or 0
     local color = C_ChallengeMode.GetDungeonScoreRarityColor(overallDungeonScore) or HIGHLIGHT_FONT_COLOR
-    local r, g, b = color.r * 255, color.g * 255, color.b * 255
-    local colorString = string.format("|cff%02x%02x%02x", r, g, b)
-    return colorString .. overallDungeonScore .. "|r"
-end
-
-local function GetWeeklyRewardItemLevel(activity)
-    if not activity or not activity.id then
-        return nil
-    end
-
-    local itemLink = C_WeeklyRewards.GetExampleRewardItemHyperlinks(activity.id)
-    return itemLink and C_Item.GetDetailedItemLevelInfo(itemLink) or nil
-end
-
-local function FormatWeeklyRewardActivity(activity, fallbackThreshold, useRaidStringFallback)
-    local progress = (activity and activity.progress) or 0
-    local threshold = activity and activity.threshold or fallbackThreshold
-    if type(threshold) ~= "number" or threshold <= 0 then
-        threshold = fallbackThreshold or 0
-    end
-
-    if activity and progress >= threshold then
-        local rewardLabel = GetWeeklyRewardItemLevel(activity)
-            or (useRaidStringFallback and activity.raidString)
-            or "?"
-        return "|cFF00CF20" .. rewardLabel .. "|r"
-    end
-
-    return "|cFFFFCD44" .. progress .. "/" .. threshold .. "|r"
-end
-
-local function FormatWeeklyRewardRow(activityType, fallbackThresholds, useRaidStringFallback)
-    local activities = C_WeeklyRewards.GetActivities(activityType) or {}
-    local rewards = {}
-
-    for i = 1, 3 do
-        rewards[i] = FormatWeeklyRewardActivity(activities[i], fallbackThresholds[i], useRaidStringFallback)
-    end
-
-    return table.concat(rewards, " | ")
-end
-
-function AltManager:GetWeeklyDelvesRewards()
-    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.World, { 2, 4, 8 }, false)
-end
-
-function AltManager:GetWeeklyRaidRewards()
-    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.Raid, { 2, 4, 6 }, true)
-end
-
-function AltManager:GetWeeklyDungeonRewards()
-    return FormatWeeklyRewardRow(Enum.WeeklyRewardChestThresholdType.Activities, { 1, 4, 8 }, false)
-end
-
-function AltManager:GetHighestCompletedWeeklyKeystone()
-    local info = C_MythicPlus.GetRunHistory(false, true) or {}
-
-    table.sort(info, function(a, b)
-        return (a.level or 0) > (b.level or 0)
-    end)
-
-    local highestRun = info[1]
-    local level = highestRun and highestRun.level or 0
-    local dungeon = highestRun and highestRun.mapChallengeModeID or ""
-
-    if level == 0 then
-        return " "
-    elseif level and level > 0 then
-        local color = "|cFF1EFF00"
-        if level >= 10 then
-            color = "|cFFFF8000"
-        elseif level >= 7 then
-            color = "|cFFA335EE"
-        elseif level >= 5 then
-            color = "|cFF0070DD"
-        end
-        return color .. "+" .. level .. " " .. GetDungeonShortName(dungeon) .. "|r"
-    else
-        return " "
-    end
-end
-
-function AltManager:GetSortedColumnKeys()
-    if self._sortedColumnKeys then
-        return self._sortedColumnKeys
-    end
-
-    local keys = {}
-    for key in pairs(self.columns_table or {}) do
-        keys[#keys + 1] = key
-    end
-
-    table.sort(keys, function(a, b)
-        return self.columns_table[a].order < self.columns_table[b].order
-    end)
-
-    self._sortedColumnKeys = keys
-    return keys
+    return {
+        score = tonumber(overallDungeonScore) or 0,
+        r = color.r or 1,
+        g = color.g or 1,
+        b = color.b or 1,
+    }
 end
 
 -- ------------------------------------------------------------
 -- UI content
 -- ------------------------------------------------------------
 
-function AltManager:CreateContent()
-    self.main_frame.closeButton = self.main_frame.closeButton or CreateFrame("Button", nil, self.main_frame, "UIPanelCloseButton")
-    self.main_frame.closeButton:ClearAllPoints()
-    self.main_frame.closeButton:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPRIGHT", -3, 2)
-    self.main_frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
-    self.main_frame.closeButton:Show()
+local SEASON_CURRENCY_DEFS = {
+    { childKey = "tidalSparks",       storeKey = "sparks",     currencyKey = "tidalSparks",       fallbackName = "Tidal Sparks" },
+    { childKey = "adventurer_crests", storeKey = "adventurer", currencyKey = "adventurer_crests", fallbackName = "Adventurer Crests" },
+    { childKey = "veteran_crests",    storeKey = "veteran",    currencyKey = "veteran_crests",    fallbackName = "Veteran Crests" },
+    { childKey = "champion_crests",   storeKey = "champion",   currencyKey = "champion_crests",   fallbackName = "Champion Crests" },
+    { childKey = "hero_crests",       storeKey = "hero",       currencyKey = "hero_crests",       fallbackName = "Hero Crests" },
+    { childKey = "myth_crests",       storeKey = "myth",       currencyKey = "myth_crests",       fallbackName = "Myth Crests" },
+}
 
-    local column_table = {
-        name = {
-            order = 1,
-            topSpacing = true,
-            label = constants.labels.NAME,
-            data = function(alt_data) return alt_data.name .. " (" .. (alt_data.ilevel or 0) .. ")" end,
-            color = function(alt_data) return RAID_CLASS_COLORS[alt_data.class] end,
-        },
-        realm = {
-            order = 2,
-            data = function(alt_data) return tostring(alt_data.realmName) .. "  " end,
-            remove_button = function(alt_data) return self:CreateRemoveButton(function() AltManager:RemoveCharacterByGuid(alt_data.guid) end) end,
-        },
-        tier = {
-            order = 3,
-            label = constants.labels.TIER_SET,
-            data = function(alt_data) return (tostring(alt_data.tierBonuses) or "No Set") end,
-        },
-        catalyst_charges = {
-            order = 4,
-            label = constants.labels.CATALYST_CHARGES,
-            data = function(alt_data) return (alt_data.catalystCharges and tostring(alt_data.catalystCharges) or "0/0") end,
-        },
-        nebulousVoidcore = {
-            order = 41,
-            label = constants.labels.NEBULOUS_VOIDCORE,
-            data = function(alt_data) return (alt_data.nebulousVoidcore and tostring(alt_data.nebulousVoidcore) or "0/0") end,
-        },
-        mythic_title = {
-            order = 5,
-            topSpacing = true,
-            label = constants.labels.KEYSTONE,
-            title = true,
-            data = function(_) return " " end,
-        },
-        mythic_rating = {
-            order = 6,
-            label = constants.labels.MYTHIC_RATING,
-            data = function(alt_data) return tostring(alt_data.overallDungeonScore) or 0 end,
-        },
-        current_keystone = {
-            order = 7,
-            label = constants.labels.CURRENT_KEYSTONE,
-            data = function(alt_data) return tostring(alt_data.keystone_details) or "None" end,
-        },
-        weekly_highest = {
-            order = 8,
-            label = constants.labels.WEEKLY_HIGHEST,
-            data = function(alt_data) return tostring(alt_data.highestCompletedWeeklyKeystone) or " " end,
-        },
-        great_vault_rewards = {
-            order = 9,
-            topSpacing = true,
-            label = constants.labels.GREAT_VAULT_REWARDS,
-            title = true,
-            data = function(_) return " " end,
-        },
-        weekly_raid_rewards = {
-            order = 10,
-            label = constants.labels.WEEKLY_RAID_REWARDS,
-            data = function(alt_data) return tostring(alt_data.weeklyRaidRewards) or "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/6|r" end,
-        },
-        weekly_key_rewards = {
-            order = 11,
-            label = constants.labels.WEEKLY_DUNGEON_REWARDS,
-            data = function(alt_data) return tostring(alt_data.weeklyDungeonRewards) or "|cFFFFCD440/1|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r" end,
-        },
-        weekly_delve_rewards = {
-            order = 12,
-            label = constants.labels.WEEKLY_DELVE_REWARDS,
-            data = function(alt_data) return tostring(alt_data.weeklyDelveRewards) or "|cFFFFCD440/2|r | |cFFFFCD440/4|r | |cFFFFCD440/8|r" end,
-        },
-        pvp_data = {
-            order = 13,
-            topSpacing = true,
-            label = constants.labels.PVP,
-            title = true,
-            data = function(_) return " " end,
-        },
-        pvp_honor = {
-            order = 14,
-            label = constants.labels.HONOR,
-            data = function(alt_data) return (alt_data.honor and tostring(alt_data.honor) or "0") end,
-        },
-        pvp_conquest = {
-            order = 15,
-            label = constants.labels.CONQUEST,
-            data = function(alt_data) return (alt_data.conquest and tostring(alt_data.conquest) or "0") end,
-        },
-        pvp_conquest_earned = {
-            order = 16,
-            label = constants.labels.FORGED_WEAPONS,
-            data = function(alt_data) return (alt_data.forged_weapons and tostring(alt_data.forged_weapons) or "|cFFFF0000Incomplete|r") end,
-        },
-        pvp_bloody_tokens = {
-            order = 17,
-            label = constants.labels.BLOODY_TOKENS,
-            data = function(alt_data) return (alt_data.bloody_tokens and tostring(alt_data.bloody_tokens) or "0") end,
-        },
-        weekly_quests = {
-            order = 18,
-            topSpacing = true,
-            label = constants.labels.WEEKLY_QUESTS,
-            title = true,
-            data = function(_) return " " end,
-        },
-        weekly_meta_quest = {
-            order = 19,
-            label = constants.labels.WEEKLY_META_QUEST,
-            data = function(alt_data) return (alt_data.weeklyMetaQuest and tostring(alt_data.weeklyMetaQuest) or "|cFFFF0000Not Started|r") end,
-        },
-        special_assignment = {
-            order = 20,
-            label = constants.labels.SPECIAL_ASSIGNMENT,
-            data = function(alt_data) return (alt_data.specialAssignment and tostring(alt_data.specialAssignment) or "|cFFFF0000Incomplete|r") end,
-        },
-        saththeril_soiree = {
-            order = 21,
-            label = constants.labels.SATHTHERIL_SOIREE,
-            data = function(alt_data) return (alt_data.saththerilSoiree and tostring(alt_data.saththerilSoiree) or "|cFFFF0000Incomplete|r") end,
-        },
-        abundant_offerings = {
-            order = 22,
-            label = constants.labels.ABUNDANT_OFFERINGS,
-            data = function(alt_data) return alt_data.abundantOfferings and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-        },
-        legends_of_the_haranir = {
-            order = 23,
-            label = constants.labels.LEGENDS_OF_THE_HARANIR,
-            data = function(alt_data) return alt_data.legendsOfTheHaranir and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-        },
-        stormarian_assault = {
-            order = 24,
-            label = constants.labels.STORMARIAN_ASSAULT,
-            data = function(alt_data) return alt_data.stormarianAssault and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-        },
-        hidden_trove = {
-            order = 25,
-            label = constants.labels.HIDDEN_TROVE,
-            data = function(alt_data) return alt_data.hiddenTrove and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-        },
-        nightmarish_task = {
-            order = 25.5,
-            label = constants.labels.NIGHTMARISH_TASK,
-            data = function(alt_data) return alt_data.nightmarishTask and "|cFF00CF20Complete|r" or "|cFFFF0000Incomplete|r" end,
-        },
-        world_boss = {
-            order = 26,
-            label = constants.labels.WORLD_BOSS,
-            data = function(alt_data) return (alt_data.worldBoss and tostring(alt_data.worldBoss) or "|cFFFF0000Incomplete|r") end,
-        },
-        currencies = {
-            order = 27,
-            topSpacing = true,
-            label = constants.labels.CURRENCIES,
-            title = true,
-            data = function(_) return " " end,
-        },
-        radiantSparks = {
-            order = 28,
-            label = constants.labels.RADIANT_SPARKS,
-            data = function(alt_data) return (alt_data.radiantSparks and tostring(alt_data.radiantSparks) or "0") end,
-        },
-        adventurer_crests = {
-            order = 29,
-            label = constants.labels.ADVENTURER_CRESTS,
-            data = function(alt_data) return (alt_data.adventurer_crests and tostring(alt_data.adventurer_crests) or "0") end,
-        },
-        veteran_crests = {
-            order = 30,
-            label = constants.labels.VETERAN_CRESTS,
-            data = function(alt_data) return (alt_data.veteran_crests and tostring(alt_data.veteran_crests) or "0") end,
-        },
-        champion_crests = {
-            order = 31,
-            label = constants.labels.CHAMPION_CRESTS,
-            data = function(alt_data) return (alt_data.champion_crests and tostring(alt_data.champion_crests) or "0") end,
-        },
-        hero_crests = {
-            order = 32,
-            label = constants.labels.HERO_CRESTS,
-            data = function(alt_data) return (alt_data.hero_crests and tostring(alt_data.hero_crests) or "0") end,
-        },
-        myth_crests = {
-            order = 33,
-            label = constants.labels.MYTH_CRESTS,
-            data = function(alt_data) return (alt_data.myth_crests and tostring(alt_data.myth_crests) or "0") end,
-        },
-        restored_coffer_keys = {
-            order = 34,
-            label = constants.labels.RESTORED_COFFER_KEY,
-            data = function(alt_data) return (alt_data.restored_coffer_keys and tostring(alt_data.restored_coffer_keys) or "0") end,
-        },
-        coffer_key_shards = {
-            order = 35,
-            label = constants.labels.COFFER_KEY_SHARDS,
-            data = function(alt_data) return (alt_data.cofferKeyShards and tostring(alt_data.cofferKeyShards) or "0") end,
-        },
-        undercoin = {
-            order = 36,
-            label = constants.labels.UNDERCOIN,
-            data = function(alt_data) return (alt_data.undercoin and tostring(alt_data.undercoin) or "0") end,
-        },
-        anglerPearls = {
-            order = 36.5,
-            label = constants.labels.ANGLER_PEARLS,
-            data = function(alt_data) return (alt_data.anglerPearls and tostring(alt_data.anglerPearls) or "0") end,
-        },
-        voidlightMarl = {
-            order = 37,
-            label = constants.labels.VOIDLIGHT_MARL,
-            data = function(alt_data) return (alt_data.voidlightMarl and tostring(alt_data.voidlightMarl) or "0") end,
-        },
-        shardOfDundun = {
-            order = 38,
-            label = constants.labels.SHARD_OF_DUNDUN,
-            data = function(alt_data) return (alt_data.shardOfDundun and tostring(alt_data.shardOfDundun) or "0") end,
-        },
-        remnantOfAnguish = {
-            order = 39,
-            label = constants.labels.REMNANT_OF_ANGUISH,
-            data = function(alt_data) return (alt_data.remnantOfAnguish and tostring(alt_data.remnantOfAnguish) or "0") end,
-        },
-        unalloyedAbundance = {
-            order = 40,
-            label = constants.labels.UNALLOYED_ABUNDANCE,
-            data = function(alt_data) return (alt_data.unalloyedAbundance and tostring(alt_data.unalloyedAbundance) or "0") end,
-        },
-        untaintedManaCrystal = {
-            order = 42,
-            label = constants.labels.UNTAINTED_MANA_CRYSTAL,
-            data = function(alt_data) return (alt_data.untaintedManaCrystal and tostring(alt_data.untaintedManaCrystal) or "0") end,
-        },
-        fieldAccolade = {
-            order = 43,
-            label = constants.labels.FIELD_ACCOLADE,
-            data = function(alt_data) return (alt_data.fieldAccolade and tostring(alt_data.fieldAccolade) or "0") end,
-        },
-        luminousDust = {
-            order = 44,
-            label = constants.labels.LUMINOUS_DUST,
-            data = function(alt_data) return (alt_data.luminousDust and tostring(alt_data.luminousDust) or "0") end,
-        },
-        brimmingArcana = {
-            order = 45,
-            label = constants.labels.BRIMMING_ARCANA,
-            data = function(alt_data) return (alt_data.brimmingArcana and tostring(alt_data.brimmingArcana) or "0") end,
-        },
-    }
+local SEASON_CHILD_KEYS = {}
+for _, definition in ipairs(SEASON_CURRENCY_DEFS) do
+    SEASON_CHILD_KEYS[definition.childKey] = true
+end
 
-    self.columns_table = column_table
-    self._sortedColumnKeys = nil
+local STATUS_STYLES = {
+    complete = { glyph = "|TInterface\\RaidFrame\\ReadyCheck-Ready:12:12:0:0|t", color = constants.colors.success },
+    incomplete = { glyph = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:12:12:0:0|t", color = constants.colors.danger },
+    inprogress = { glyph = "|TInterface\\GossipFrame\\ActiveQuestIcon:12:12:0:0|t", color = constants.colors.inProgress },
+    notstarted = { glyph = "|TInterface\\GossipFrame\\AvailableQuestIcon:12:12:0:0|t", color = constants.colors.warning },
+}
 
-    local calcY = self:CalculateYSize()
-    local label_column = self.main_frame.label_column or CreateFrame("Button", nil, self.main_frame)
-    if not self.main_frame.label_column then self.main_frame.label_column = label_column end
-    label_column:SetSize(per_alt_x, calcY)
-    label_column:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", 4, -1)
-
-    self.main_frame.label_frames = self.main_frame.label_frames or {}
-
-    local show_icons = MyAltManagerDB and MyAltManagerDB.config and MyAltManagerDB.config.show_icons
-    if show_icons == nil then show_icons = true end
-
-    local i = 1
-    for _, key in ipairs(self:GetSortedColumnKeys()) do
-        local row = self.columns_table[key]
-        if self:IsRowVisible(key) then
-            if row.topSpacing then
-                i = i + 1
-            end
-            if row.label then
-                local display_label = row.label
-                if display_label ~= "" and not row.title then
-                    display_label = display_label .. ":"
-                elseif display_label == "" then
-                    display_label = " "
-                end
-                if not show_icons then
-                    display_label = StripInlineIconMarkup(display_label)
-                end
-                local frame = self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i - 1) * font_height, display_label, "RIGHT")
-                table.insert(self.main_frame.label_frames, frame)
-                self.main_frame.lowest_point = -(i - 1) * font_height
-            end
-            i = i + 1
+local function FindSection(sectionKey)
+    for _, section in ipairs(constants.sections) do
+        if section.key == sectionKey then
+            return section
         end
     end
 end
 
-function AltManager:UpdateStrings()
-    local db = MyAltManagerDB
-    local calcY = self:CalculateYSize()
+local function SetTextureColor(texture, color)
+    texture:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+end
 
-    self.main_frame.alt_columns = self.main_frame.alt_columns or {}
+local function SetFontColor(fontString, color)
+    fontString:SetTextColor(color[1], color[2], color[3], color[4] or 1)
+end
 
-    local alt = 0
-    for alt_guid, alt_data in spairs(db.data, function(t, a, b) return (t[a].ilevel or 0) > (t[b].ilevel or 0) end) do
-        alt = alt + 1
-        local anchor_frame = self.main_frame.alt_columns[alt] or CreateFrame("Button", nil, self.main_frame)
-        if not self.main_frame.alt_columns[alt] then
-            self.main_frame.alt_columns[alt] = anchor_frame
-            self.main_frame.alt_columns[alt].guid = alt_guid
-            anchor_frame:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", per_alt_x * alt, -1)
-        end
+local function SetFontSize(fontString, fontObject, size, flags)
+    fontString:SetFontObject(fontObject)
+    local fontPath, _, inheritedFlags = fontString:GetFont()
+    if fontPath then
+        fontString:SetFont(fontPath, size, flags or inheritedFlags)
+    end
+end
 
-        anchor_frame:SetSize(per_alt_x, calcY)
-        self.main_frame.alt_columns[alt].label_columns = self.main_frame.alt_columns[alt].label_columns or {}
-        local label_columns = self.main_frame.alt_columns[alt].label_columns
+local function CreateText(parent, fontObject, size, layer)
+    local text = parent:CreateFontString(nil, layer or "OVERLAY")
+    SetFontSize(text, fontObject or GameFontNormalSmall, size)
+    text:SetJustifyV("MIDDLE")
+    return text
+end
 
-        local i = 1
-        for _, key in ipairs(self:GetSortedColumnKeys()) do
-            local column = self.columns_table[key]
-            if self:IsRowVisible(key) then
-                if column.topSpacing then
-                    i = i + 1
-                end
-                if type(column.data) == "function" then
-                    local cellText = column.data(alt_data)
-                    local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, cellText, "CENTER")
-                    if not self.main_frame.alt_columns[alt].label_columns[i] then
-                        self.main_frame.alt_columns[alt].label_columns[i] = current_row
-                    end
+local function SetGradientTexture(texture, topColor, bottomColor)
+    texture:SetGradient(
+        "VERTICAL",
+        CreateColor(bottomColor[1], bottomColor[2], bottomColor[3], bottomColor[4] or 1),
+        CreateColor(topColor[1], topColor[2], topColor[3], topColor[4] or 1)
+    )
+end
 
-                    if column.color then
-                        local color = column.color(alt_data)
-                        current_row:GetFontString():SetTextColor(color.r, color.g, color.b, 1)
-                    end
+local function CreateInsetBorder(frame)
+    if frame.borderParts then return end
+    frame.borderParts = {}
+    for i = 1, 4 do
+        local part = frame:CreateTexture(nil, "OVERLAY")
+        SetTextureColor(part, constants.colors.barBorder)
+        frame.borderParts[i] = part
+    end
+    frame.borderParts[1]:SetPoint("TOPLEFT")
+    frame.borderParts[1]:SetPoint("TOPRIGHT")
+    frame.borderParts[1]:SetHeight(1)
+    frame.borderParts[2]:SetPoint("BOTTOMLEFT")
+    frame.borderParts[2]:SetPoint("BOTTOMRIGHT")
+    frame.borderParts[2]:SetHeight(1)
+    frame.borderParts[3]:SetPoint("TOPLEFT")
+    frame.borderParts[3]:SetPoint("BOTTOMLEFT")
+    frame.borderParts[3]:SetWidth(1)
+    frame.borderParts[4]:SetPoint("TOPRIGHT")
+    frame.borderParts[4]:SetPoint("BOTTOMRIGHT")
+    frame.borderParts[4]:SetWidth(1)
+end
 
-                    current_row:SetText(cellText)
+function AltManager:GetColumnLayout()
+    local layout = constants.layout
+    local columns = {
+        character = { key = "character", x = 0, width = layout.COL_CHARACTER, visible = true },
+        mplus = { key = "mplus", width = layout.COL_MPLUS, visible = self:IsRowVisible("mythic_plus") },
+        vault = { key = "vault", width = layout.COL_VAULT, visible = self:IsRowVisible("great_vault") },
+        currency = { key = "currency", width = layout.COL_CURRENCY, visible = self:IsRowVisible("currencies") },
+    }
 
-                    if column.font then
-                        current_row:GetFontString():SetFont(column.font, ilvl_text_size)
-                    end
-
-                    if column.justify then
-                        current_row:GetFontString():SetJustifyV(column.justify)
-                    end
-
-                    if column.remove_button ~= nil then
-                        self.main_frame.remove_buttons = self.main_frame.remove_buttons or {}
-                        local extra = self.main_frame.remove_buttons[alt_data.guid] or column.remove_button(alt_data)
-                        if self.main_frame.remove_buttons[alt_data.guid] == nil then
-                            self.main_frame.remove_buttons[alt_data.guid] = extra
-                        end
-                        extra:SetParent(current_row)
-                        extra:SetPoint("TOPRIGHT", current_row, "TOPRIGHT", -20, 0)
-                        extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size + 4)
-                        extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
-                        extra:Show()
-                    end
-                end
-                i = i + 1
-            end
+    local ordered = { columns.character }
+    for _, key in ipairs({ "mplus", "vault", "currency" }) do
+        if columns[key].visible then
+            ordered[#ordered + 1] = columns[key]
         end
     end
+
+    local innerWidth = layout.FRAME_WIDTH - (2 * layout.PAD_X)
+    local used = layout.COL_GAP * math.max(0, #ordered - 1)
+    for _, column in ipairs(ordered) do
+        used = used + column.width
+    end
+
+    local extra = math.max(0, innerWidth - used)
+    local recipient = columns.vault.visible and columns.vault
+        or (columns.currency.visible and columns.currency)
+        or (columns.mplus.visible and columns.mplus)
+        or columns.character
+    recipient.width = recipient.width + extra
+
+    local x = 0
+    for index, column in ipairs(ordered) do
+        column.x = x
+        x = x + column.width
+        if index < #ordered then
+            x = x + layout.COL_GAP
+        end
+    end
+
+    columns.ordered = ordered
+    return columns
+end
+
+local function ResetRowPool(_, row)
+    row:Hide()
+    row:ClearAllPoints()
+    row:SetScript("OnClick", nil)
+    row:SetScript("OnEnter", nil)
+    row:SetScript("OnLeave", nil)
+    row.guid = nil
+    row.rowData = nil
+    if row.highlight then row.highlight:Hide() end
+end
+
+local function ResetDrawerPool(_, drawer)
+    drawer:Hide()
+    drawer:ClearAllPoints()
+    if drawer.texts then
+        for _, text in ipairs(drawer.texts) do
+            text:Hide()
+        end
+    end
+end
+
+function AltManager:InitializeFrame()
+    local frame = self.main_frame
+    if frame.uiInitialized then return end
+    frame.uiInitialized = true
+
+    local layout = constants.layout
+    frame:SetScale(constants.config.UI_SCALE)
+    frame:SetSize(layout.FRAME_WIDTH, layout.TITLE_HEIGHT + layout.HEADER_HEIGHT + layout.FOOTER_HEIGHT + 1)
+
+    -- The solid base guarantees an opaque window even if gradient rendering is unavailable.
+    frame.backgroundBase = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+    frame.backgroundBase:SetAllPoints()
+    frame.backgroundBase:SetColorTexture(0x17 / 255, 0x13 / 255, 0x1E / 255, 1)
+    frame.background = frame:CreateTexture(nil, "BACKGROUND", nil, -7)
+    frame.background:SetAllPoints()
+    SetGradientTexture(frame.background, constants.colors.frameTop, constants.colors.frameBottom)
+
+    frame.titleBar = CreateFrame("Frame", nil, frame)
+    frame.titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
+    frame.titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -1, -1)
+    frame.titleBar:SetHeight(layout.TITLE_HEIGHT - 1)
+    frame.titleBar.background = frame.titleBar:CreateTexture(nil, "ARTWORK")
+    frame.titleBar.background:SetAllPoints()
+    SetGradientTexture(frame.titleBar.background, constants.colors.titleTop, constants.colors.titleBottom)
+
+    frame.title = CreateText(frame.titleBar, GameFontNormal, 15)
+    frame.title:SetPoint("CENTER")
+    frame.title:SetText("MyAltManager")
+    SetFontColor(frame.title, constants.colors.titleText)
+
+    frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
+    frame.closeButton:SetScale(0.90)
+    frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
+
+    frame:SetMovable(true)
+    frame:SetClampedToScreen(true)
+    frame.titleBar:EnableMouse(true)
+    frame.titleBar:RegisterForDrag("LeftButton")
+    frame.titleBar:SetScript("OnDragStart", function()
+        frame:StartMoving()
+    end)
+    frame.titleBar:SetScript("OnDragStop", function()
+        frame:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = frame:GetPoint(1)
+        MyAltManagerDB.config.framePoint = {
+            point = point,
+            relativePoint = relativePoint,
+            x = x,
+            y = y,
+        }
+    end)
+
+    local savedPoint = MyAltManagerDB.config.framePoint
+    if type(savedPoint) == "table" and savedPoint.point then
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            savedPoint.point,
+            UIParent,
+            savedPoint.relativePoint or savedPoint.point,
+            tonumber(savedPoint.x) or 0,
+            tonumber(savedPoint.y) or 0
+        )
+    end
+
+    frame.headerFrame = CreateFrame("Frame", nil, frame)
+    frame.headerFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -layout.TITLE_HEIGHT)
+    frame.headerFrame:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -layout.TITLE_HEIGHT)
+    frame.headerFrame:SetHeight(layout.HEADER_HEIGHT)
+    frame.headers = {}
+    for key, label in pairs({
+        character = "CHARACTER",
+        mplus = "MYTHIC+",
+        vault = "GREAT VAULT",
+        currency = "CURRENCIES",
+    }) do
+        local header = CreateText(frame.headerFrame, GameFontNormalSmall, 10.5)
+        header:SetText(label)
+        header:SetJustifyH(key == "character" and "LEFT" or "CENTER")
+        SetFontColor(header, constants.colors.brightText)
+        frame.headers[key] = header
+    end
+    frame.headerSeparator = frame.headerFrame:CreateTexture(nil, "ARTWORK")
+    frame.headerSeparator:SetPoint("BOTTOMLEFT", frame.headerFrame, "BOTTOMLEFT", layout.PAD_X, 0)
+    frame.headerSeparator:SetPoint("BOTTOMRIGHT", frame.headerFrame, "BOTTOMRIGHT", -layout.PAD_X, 0)
+    frame.headerSeparator:SetHeight(1)
+    SetTextureColor(frame.headerSeparator, constants.colors.barBorder)
+
+    frame.scrollFrame = CreateFrame("ScrollFrame", "AltManagerScrollFrame", frame, "UIPanelScrollFrameTemplate")
+    local scrollBar = frame.scrollFrame.ScrollBar or _G.AltManagerScrollFrameScrollBar
+    if scrollBar then
+        scrollBar:ClearAllPoints()
+        scrollBar:SetPoint("TOPLEFT", frame.scrollFrame, "TOPRIGHT", 1, -16)
+        scrollBar:SetPoint("BOTTOMLEFT", frame.scrollFrame, "BOTTOMRIGHT", 1, 16)
+        scrollBar:SetWidth(12)
+        scrollBar:Hide()
+    end
+    frame.scrollChild = CreateFrame("Frame", nil, frame.scrollFrame)
+    frame.scrollChild:SetSize(layout.FRAME_WIDTH - (2 * layout.PAD_X), 1)
+    frame.scrollFrame:SetScrollChild(frame.scrollChild)
+
+    frame.footer = CreateFrame("Frame", nil, frame)
+    frame.footerCurseSurge = CreateFrame("Frame", nil, frame.footer)
+    frame.footerCurseSurge:SetPoint("BOTTOMLEFT", frame.footer, "BOTTOMLEFT", layout.PAD_X, 0)
+    frame.footerCurseSurge:SetSize(300, layout.FOOTER_HEIGHT)
+    frame.footerCurseSurge.text = CreateText(frame.footerCurseSurge, GameFontNormalSmall, 9)
+    frame.footerCurseSurge.text:SetAllPoints()
+    frame.footerCurseSurge.text:SetJustifyH("LEFT")
+    SetFontColor(frame.footerCurseSurge.text, constants.colors.brightText)
+
+    frame.footerVersion = CreateText(frame.footer, GameFontNormalSmall, 9)
+    frame.footerVersion:SetPoint("BOTTOM", frame.footer, "BOTTOM", 0, 0)
+    frame.footerVersion:SetSize(180, layout.FOOTER_HEIGHT)
+    frame.footerVersion:SetJustifyH("CENTER")
+    frame.footerVersion:SetText(constants.VERSION)
+    SetFontColor(frame.footerVersion, constants.colors.brightText)
+
+    frame.footerReset = CreateText(frame.footer, GameFontNormalSmall, 9)
+    frame.footerReset:SetPoint("BOTTOMRIGHT", frame.footer, "BOTTOMRIGHT", -layout.PAD_X, 0)
+    frame.footerReset:SetSize(300, layout.FOOTER_HEIGHT)
+    frame.footerReset:SetJustifyH("RIGHT")
+    SetFontColor(frame.footerReset, constants.colors.brightText)
+
+    frame.footer.separator = frame.footer:CreateTexture(nil, "ARTWORK")
+    frame.footer.separator:SetPoint("TOPLEFT", frame.footer, "TOPLEFT", layout.PAD_X, 0)
+    frame.footer.separator:SetPoint("TOPRIGHT", frame.footer, "TOPRIGHT", -layout.PAD_X, 0)
+    frame.footer.separator:SetHeight(1)
+    SetTextureColor(frame.footer.separator, constants.colors.drawerDivider)
+
+    frame:SetScript("OnHide", function() AltManager:StopFooterTicker() end)
+
+    self.rowPool = CreateFramePool("Button", frame.scrollChild, nil, ResetRowPool)
+    self.drawerPool = CreateFramePool("Frame", frame.scrollChild, nil, ResetDrawerPool)
+    self:MakeBorder(frame, 1)
+end
+
+function AltManager:UpdateColumnHeaders(columnLayout)
+    local layout = constants.layout
+    for key, header in pairs(self.main_frame.headers) do
+        local column = columnLayout[key]
+        if column and column.visible then
+            header:ClearAllPoints()
+            header:SetPoint("TOPLEFT", self.main_frame.headerFrame, "TOPLEFT", layout.PAD_X + column.x, 0)
+            header:SetSize(column.width, layout.HEADER_HEIGHT - 1)
+            header:Show()
+        else
+            header:Hide()
+        end
+    end
+end
+
+local function GetClassColor(class)
+    return RAID_CLASS_COLORS[class] or HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }
+end
+
+local function GetKeystoneColor(level)
+    level = tonumber(level) or 0
+    if level >= 10 then
+        return 1, 0.5, 0
+    elseif level >= 7 then
+        return 0.64, 0.21, 0.93
+    elseif level >= 5 then
+        return 0, 0.44, 0.87
+    end
+    return 0.12, 1, 0
+end
+
+local function ToggleFromChild(child)
+    local row = child.ownerRow
+    if row and row.guid then
+        GameTooltip:Hide()
+        AltManager:ToggleRowDrawer(row.guid)
+    end
+end
+
+local function ShowVaultTooltip(segment)
+    if not segment.earned then return end
+    local link = segment.activityID and C_WeeklyRewards.GetExampleRewardItemHyperlinks(segment.activityID)
+    GameTooltip:SetOwner(segment, "ANCHOR_RIGHT")
+    if link then
+        GameTooltip:SetHyperlink(link)
+    else
+        GameTooltip:SetText(("Great Vault reward — item level %s"):format(segment.ilvl or "?"))
+    end
+    GameTooltip:Show()
+end
+
+local function ShowCurrencyTooltip(button)
+    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+    GameTooltip:SetText(button.currencyName or "Currency")
+    GameTooltip:Show()
+end
+
+function AltManager:InitializeRow(row)
+    if row.initialized then return end
+    row.initialized = true
+    local layout = constants.layout
+
+    row:RegisterForClicks("LeftButtonUp")
+    row.separator = row:CreateTexture(nil, "ARTWORK")
+    row.separator:SetPoint("TOPLEFT")
+    row.separator:SetPoint("TOPRIGHT")
+    row.separator:SetHeight(1)
+    SetTextureColor(row.separator, constants.colors.rowSeparator)
+
+    row.stripe = row:CreateTexture(nil, "ARTWORK")
+    row.stripe:SetSize(layout.STRIPE_W, layout.STRIPE_H)
+
+    row.nameText = CreateText(row, GameFontNormal, 12)
+    row.nameText:SetJustifyH("LEFT")
+    row.realmText = CreateText(row, GameFontNormalSmall, 9.5)
+    row.realmText:SetJustifyH("LEFT")
+    row.detailText = CreateText(row, GameFontNormalSmall, 9)
+    row.detailText:SetJustifyH("LEFT")
+    row.removeButton = self:CreateRemoveButton(row)
+
+    row.tierHit = CreateFrame("Button", nil, row)
+    row.tierHit.ownerRow = row
+    row.tierHit:RegisterForClicks("LeftButtonUp")
+
+    row.catalystHit = CreateFrame("Button", nil, row)
+    row.catalystHit.ownerRow = row
+    row.catalystHit:RegisterForClicks("LeftButtonUp")
+
+    row.mplusFrame = CreateFrame("Frame", nil, row)
+    row.mplusFrame.score = CreateText(row.mplusFrame, GameFontNormal, 15)
+    row.mplusFrame.score:SetJustifyH("CENTER")
+    row.mplusFrame.key = CreateText(row.mplusFrame, GameFontNormalSmall, 9.5)
+    row.mplusFrame.key:SetJustifyH("CENTER")
+
+    row.vaultFrame = CreateFrame("Frame", nil, row)
+    row.vaultFrame.tracks = {}
+    local trackNames = { "RAIDS", "DUNGEONS", "OUTDOORS" }
+    for trackIndex, trackName in ipairs(trackNames) do
+        local track = {}
+        track.label = CreateText(row.vaultFrame, GameFontNormalSmall, 8.5)
+        track.label:SetText(trackName)
+        track.label:SetJustifyH("RIGHT")
+        SetFontColor(track.label, constants.colors.header)
+        track.segments = {}
+        for slotIndex = 1, 3 do
+            local segment = CreateFrame("Button", nil, row.vaultFrame)
+            segment.ownerRow = row
+            segment:RegisterForClicks("LeftButtonUp")
+            segment.background = segment:CreateTexture(nil, "BACKGROUND")
+            segment.background:SetAllPoints()
+            segment.fill = segment:CreateTexture(nil, "ARTWORK")
+            segment.fill:SetAllPoints()
+            segment.text = CreateText(segment, GameFontNormalSmall, 8.5)
+            segment.text:SetPoint("CENTER")
+            segment.text:SetJustifyH("CENTER")
+            segment:SetScript("OnEnter", ShowVaultTooltip)
+            segment:SetScript("OnLeave", GameTooltip_Hide)
+            CreateInsetBorder(segment)
+            track.segments[slotIndex] = segment
+        end
+        row.vaultFrame.tracks[trackIndex] = track
+    end
+
+    row.currencyFrame = CreateFrame("Frame", nil, row)
+    row.currencyFrame.cells = {}
+    for index = 1, #SEASON_CURRENCY_DEFS do
+        local cell = CreateFrame("Frame", nil, row.currencyFrame)
+        cell.iconButton = CreateFrame("Button", nil, cell)
+        cell.iconButton.ownerRow = row
+        cell.iconButton:RegisterForClicks("LeftButtonUp")
+        cell.iconButton.texture = cell.iconButton:CreateTexture(nil, "ARTWORK")
+        cell.iconButton.texture:SetAllPoints()
+        cell.iconButton.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        cell.iconButton:SetScript("OnEnter", ShowCurrencyTooltip)
+        cell.iconButton:SetScript("OnLeave", GameTooltip_Hide)
+
+        cell.bar = CreateFrame("StatusBar", nil, cell)
+        cell.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        cell.bar.background = cell.bar:CreateTexture(nil, "BACKGROUND")
+        cell.bar.background:SetAllPoints()
+        SetTextureColor(cell.bar.background, constants.colors.barEmpty)
+        cell.bar.text = CreateText(cell.bar, GameFontNormalSmall, 8.5)
+        cell.bar.text:SetPoint("CENTER")
+        cell.bar.text:SetJustifyH("CENTER")
+        SetFontColor(cell.bar.text, constants.colors.currencyText)
+        CreateInsetBorder(cell.bar)
+        row.currencyFrame.cells[index] = cell
+    end
+
+    row.interactiveChildren = { row.tierHit, row.catalystHit }
+    for _, track in ipairs(row.vaultFrame.tracks) do
+        for _, segment in ipairs(track.segments) do
+            row.interactiveChildren[#row.interactiveChildren + 1] = segment
+        end
+    end
+    for _, cell in ipairs(row.currencyFrame.cells) do
+        row.interactiveChildren[#row.interactiveChildren + 1] = cell.iconButton
+    end
+end
+
+function AltManager:ConfigureRowInteractions(row)
+    if constants.config.ENABLE_DRAWER then
+        if not row.highlight then
+            row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
+            row.highlight:SetAllPoints()
+            row.highlight:SetColorTexture(1, 1, 1, 0.03)
+            row.highlight:Hide()
+        end
+        row:SetScript("OnClick", function(button) AltManager:ToggleRowDrawer(button.guid) end)
+        row:SetScript("OnEnter", function(button) button.highlight:Show() end)
+        row:SetScript("OnLeave", function(button) button.highlight:Hide() end)
+        for _, child in ipairs(row.interactiveChildren) do
+            child:SetScript("OnClick", ToggleFromChild)
+        end
+    else
+        if row.highlight then row.highlight:Hide() end
+        row:SetScript("OnClick", nil)
+        row:SetScript("OnEnter", nil)
+        row:SetScript("OnLeave", nil)
+        for _, child in ipairs(row.interactiveChildren) do
+            child:SetScript("OnClick", nil)
+        end
+    end
+end
+
+function AltManager:ConfigureCharacterCell(row, data, column)
+    local classColor = GetClassColor(data.class)
+    row.stripe:ClearAllPoints()
+    row.stripe:SetPoint("LEFT", row, "LEFT", column.x, 0)
+    row.stripe:SetColorTexture(classColor.r or 1, classColor.g or 1, classColor.b or 1, 1)
+
+    local textX = column.x + constants.layout.STRIPE_W + 7
+    local textWidth = math.max(1, column.width - constants.layout.STRIPE_W - 10)
+    row.nameText:ClearAllPoints()
+    row.nameText:SetPoint("TOPLEFT", row, "TOPLEFT", textX, -5)
+    row.nameText:SetSize(textWidth - remove_button_size - 3, 15)
+    row.nameText:SetText(data.name or "Unknown")
+    row.nameText:SetTextColor(classColor.r or 1, classColor.g or 1, classColor.b or 1, 1)
+
+    local nameWidth = math.min(row.nameText:GetStringWidth() + 4, textWidth - remove_button_size)
+    row.removeButton:ClearAllPoints()
+    row.removeButton:SetPoint("TOPLEFT", row, "TOPLEFT", textX + nameWidth, -4)
+    row.removeButton:SetSize(remove_button_size, remove_button_size)
+    row.removeButton.guid = data.guid
+    row.removeButton:Show()
+
+    row.realmText:ClearAllPoints()
+    row.realmText:SetPoint("TOPLEFT", row, "TOPLEFT", textX, -21)
+    row.realmText:SetSize(textWidth, 13)
+    row.realmText:SetText(("|cff90899a%s · |r|cffd8b85a%d ilvl|r"):format(
+        tostring(data.realmName or "Unknown realm"),
+        tonumber(data.ilevel) or 0
+    ))
+
+    local isCurrentSeason = tonumber(data.seasonID) == constants.SEASON_ID
+    local tierPieces = isCurrentSeason and math.max(0, math.min(5, tonumber(data.tierPieces) or 0)) or 0
+    local catalyst = isCurrentSeason and (data.catalyst or {}) or {}
+    local catalystCurrent = tonumber(catalyst.current) or 0
+    local catalystMax = tonumber(catalyst.max) or 0
+    row.detailText:ClearAllPoints()
+    row.detailText:SetPoint("TOPLEFT", row, "TOPLEFT", textX, -37)
+    row.detailText:SetSize(textWidth, 13)
+    row.detailText:SetText(("|cff90899aTier Set: |r|cffc5c0cd%d/5|r |cff90899a· Catalyst Charges: |r|cffc5c0cd%d/%d|r"):format(
+        tierPieces,
+        catalystCurrent,
+        catalystMax
+    ))
+
+    row.tierHit:ClearAllPoints()
+    row.tierHit:SetPoint("TOPLEFT", row, "TOPLEFT", textX, -35)
+    row.tierHit:SetSize(math.min(82, textWidth * 0.4), 15)
+    row.catalystHit:ClearAllPoints()
+    row.catalystHit:SetPoint("TOPRIGHT", row, "TOPLEFT", column.x + column.width, -35)
+    row.catalystHit:SetSize(math.max(1, textWidth - 84), 15)
+end
+
+function AltManager:ConfigureMythicCell(row, data, column)
+    local frame = row.mplusFrame
+    if not column.visible then
+        frame:Hide()
+        return
+    end
+
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", row, "TOPLEFT", column.x, 0)
+    frame:SetSize(column.width, constants.layout.ROW_HEIGHT)
+    frame.score:ClearAllPoints()
+    frame.score:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -9)
+    frame.score:SetSize(column.width, 20)
+    frame.key:ClearAllPoints()
+    frame.key:SetPoint("TOPLEFT", frame.score, "BOTTOMLEFT", 0, -1)
+    frame.key:SetSize(column.width, 16)
+
+    local mplus = tonumber(data.seasonID) == constants.SEASON_ID and (data.mplus or {}) or {}
+    frame.score:SetText(tostring(math.floor(tonumber(mplus.score) or 0)))
+    frame.score:SetTextColor(tonumber(mplus.r) or 1, tonumber(mplus.g) or 1, tonumber(mplus.b) or 1, 1)
+
+    local mapID = tonumber(mplus.keyMapID)
+    local level = tonumber(mplus.keyLevel)
+    if mapID and level and level > 0 then
+        frame.key:SetText(("+%d %s"):format(level, GetDungeonShortName(mapID)))
+        frame.key:SetTextColor(GetKeystoneColor(level))
+    else
+        frame.key:SetText("No key")
+        SetFontColor(frame.key, constants.colors.muted)
+    end
+    frame:Show()
+end
+
+function AltManager:ConfigureVaultCell(row, data, column)
+    local frame = row.vaultFrame
+    if not column.visible then
+        frame:Hide()
+        return
+    end
+
+    local layout = constants.layout
+    local trackDefinitions = {
+        { key = "raid", thresholds = { 2, 4, 6 } },
+        { key = "dungeon", thresholds = { 1, 4, 8 } },
+        { key = "world", thresholds = { 2, 4, 8 } },
+    }
+    local segmentWidth = math.max(1, (column.width - layout.VAULT_LABEL_W - 7) / 3)
+    local totalHeight = (3 * layout.BAR_H) + (2 * layout.BAR_GAP)
+    local topOffset = (layout.ROW_HEIGHT - totalHeight) / 2
+    local vault = data.vault or {}
+    local currentCharacter = data.guid == UnitGUID("player")
+
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", row, "TOPLEFT", column.x, 0)
+    frame:SetSize(column.width, layout.ROW_HEIGHT)
+
+    for trackIndex, definition in ipairs(trackDefinitions) do
+        local trackWidget = frame.tracks[trackIndex]
+        local trackData = vault[definition.key] or {}
+        local y = -(topOffset + ((trackIndex - 1) * (layout.BAR_H + layout.BAR_GAP)))
+        trackWidget.label:ClearAllPoints()
+        trackWidget.label:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, y)
+        trackWidget.label:SetSize(layout.VAULT_LABEL_W, layout.BAR_H)
+
+        for slotIndex, segment in ipairs(trackWidget.segments) do
+            local slot = trackData[slotIndex] or {}
+            local progress = tonumber(slot.progress) or 0
+            local threshold = tonumber(slot.threshold) or definition.thresholds[slotIndex]
+            if threshold <= 0 then threshold = definition.thresholds[slotIndex] end
+            local earned = slot.earned == true or progress >= threshold
+
+            segment:ClearAllPoints()
+            segment:SetPoint(
+                "TOPLEFT",
+                frame,
+                "TOPLEFT",
+                layout.VAULT_LABEL_W + 7 + ((slotIndex - 1) * segmentWidth),
+                y
+            )
+            segment:SetSize(segmentWidth, layout.BAR_H)
+            segment.earned = earned
+            segment.activityID = currentCharacter and slot.activityID or nil
+            segment.ilvl = slot.ilvl or slot.raidString or "?"
+
+            if earned then
+                SetTextureColor(segment.background, constants.colors.vaultComplete)
+                segment.fill:Hide()
+                segment.text:SetText(tostring(slot.ilvl or slot.raidString or "?"))
+                SetFontColor(segment.text, constants.colors.vaultText)
+            else
+                SetTextureColor(segment.background, progress > 0 and constants.colors.vaultProgress or constants.colors.vaultNotStarted)
+                segment.fill:Hide()
+                segment.text:SetText(("%d/%d"):format(progress, threshold))
+                SetFontColor(segment.text, constants.colors.vaultText)
+            end
+            segment:Show()
+        end
+    end
+    frame:Show()
+end
+
+function AltManager:ConfigureCurrencyCell(row, data, column)
+    local frame = row.currencyFrame
+    if not column.visible then
+        frame:Hide()
+        return
+    end
+
+    local layout = constants.layout
+    local visible = {}
+    for definitionIndex, definition in ipairs(SEASON_CURRENCY_DEFS) do
+        if self:IsRowVisible(definition.childKey) then
+            visible[#visible + 1] = { index = definitionIndex, definition = definition }
+        end
+    end
+
+    for _, cell in ipairs(frame.cells) do
+        cell:Hide()
+    end
+
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", row, "TOPLEFT", column.x, 0)
+    frame:SetSize(column.width, layout.ROW_HEIGHT)
+    local cellWidth = math.max(1, (column.width - 5) / 2)
+    local rowCount = math.max(1, math.ceil(#visible / 2))
+    local totalHeight = (rowCount * layout.BAR_H) + ((rowCount - 1) * layout.BAR_GAP)
+    local topOffset = (layout.ROW_HEIGHT - totalHeight) / 2
+
+    for visibleIndex, item in ipairs(visible) do
+        local cell = frame.cells[item.index]
+        local definition = item.definition
+        local columnIndex = (visibleIndex - 1) % 2
+        local rowIndex = math.floor((visibleIndex - 1) / 2)
+        local currencyID = constants.currencies[definition.currencyKey]
+        local info = currencyID and C_CurrencyInfo.GetCurrencyInfo(currencyID) or nil
+        local values = tonumber(data.seasonID) == constants.SEASON_ID
+            and data.season and data.season[definition.storeKey] or nil
+        local current = tonumber(values and values[1]) or 0
+        local maximum = tonumber(values and values[2]) or 0
+
+        cell:ClearAllPoints()
+        cell:SetPoint(
+            "TOPLEFT",
+            frame,
+            "TOPLEFT",
+            columnIndex * (cellWidth + 5),
+            -(topOffset + (rowIndex * (layout.BAR_H + layout.BAR_GAP)))
+        )
+        cell:SetSize(cellWidth, layout.ICON_SIZE)
+        cell.iconButton:ClearAllPoints()
+        cell.iconButton:SetPoint("LEFT", cell, "LEFT", 0, 0)
+        cell.iconButton:SetSize(layout.ICON_SIZE, layout.ICON_SIZE)
+        cell.iconButton.texture:SetTexture(info and info.iconFileID or nil)
+        cell.iconButton.currencyName = (info and info.name) or definition.fallbackName
+
+        cell.bar:ClearAllPoints()
+        cell.bar:SetPoint("LEFT", cell.iconButton, "RIGHT", 4, 0)
+        cell.bar:SetSize(math.max(1, cellWidth - layout.ICON_SIZE - 4), layout.BAR_H)
+        if maximum > 0 then
+            cell.bar:SetMinMaxValues(0, maximum)
+            cell.bar:SetValue(math.min(current, maximum))
+        else
+            cell.bar:SetMinMaxValues(0, 1)
+            cell.bar:SetValue(0)
+        end
+        local statusTexture = cell.bar:GetStatusBarTexture()
+        if statusTexture then
+            SetTextureColor(statusTexture, constants.colors.currencyFill)
+        end
+        cell.bar.text:SetText(("%d/%d"):format(current, maximum))
+        cell:Show()
+    end
+    frame:Show()
+end
+
+function AltManager:ConfigureRow(row, guid, data, columnLayout)
+    local layout = constants.layout
+    row.guid = guid
+    row.rowData = data
+    row:SetSize(layout.FRAME_WIDTH - (2 * layout.PAD_X), layout.ROW_HEIGHT)
+    self:ConfigureCharacterCell(row, data, columnLayout.character)
+    self:ConfigureMythicCell(row, data, columnLayout.mplus)
+    self:ConfigureVaultCell(row, data, columnLayout.vault)
+    self:ConfigureCurrencyCell(row, data, columnLayout.currency)
+    self:ConfigureRowInteractions(row)
+    row:Show()
+end
+
+function AltManager:InitializeDrawer(drawer)
+    if drawer.initialized then return end
+    drawer.initialized = true
+    drawer.texts = {}
+    drawer.background = drawer:CreateTexture(nil, "BACKGROUND")
+    drawer.background:SetAllPoints()
+    drawer.background:SetColorTexture(0x17 / 255, 0x13 / 255, 0x1E / 255, 0.90)
+    drawer.separator = drawer:CreateTexture(nil, "ARTWORK")
+    drawer.separator:SetPoint("TOPLEFT", drawer, "TOPLEFT", 10, 0)
+    drawer.separator:SetPoint("TOPRIGHT", drawer, "TOPRIGHT", -10, 0)
+    drawer.separator:SetHeight(1)
+    SetTextureColor(drawer.separator, constants.colors.drawerDivider)
+end
+
+function AltManager:ConfigureDrawer(drawer, data)
+    local layout = constants.layout
+    local innerWidth = layout.FRAME_WIDTH - (2 * layout.PAD_X)
+    local textIndex = 0
+    local cursor = 7
+
+    for _, text in ipairs(drawer.texts) do
+        text:Hide()
+    end
+
+    local function NextText(fontObject, size)
+        textIndex = textIndex + 1
+        local text = drawer.texts[textIndex]
+        if not text then
+            text = CreateText(drawer, fontObject, size)
+            drawer.texts[textIndex] = text
+        else
+            SetFontSize(text, fontObject, size)
+        end
+        text:ClearAllPoints()
+        text:SetJustifyH("LEFT")
+        text:Show()
+        return text
+    end
+
+    local function AddHeading(label)
+        local text = NextText(GameFontNormalSmall, 10)
+        text:SetPoint("TOPLEFT", drawer, "TOPLEFT", 12, -cursor)
+        text:SetSize(innerWidth - 24, 14)
+        text:SetText(label)
+        SetFontColor(text, constants.colors.drawerHeading)
+        cursor = cursor + 17
+    end
+
+    local function AddGrid(entries, columns)
+        if #entries == 0 then return end
+        local availableWidth = innerWidth - 24
+        local columnWidth = availableWidth / columns
+        local rowHeight = 16
+        for index, entry in ipairs(entries) do
+            local columnIndex = (index - 1) % columns
+            local rowIndex = math.floor((index - 1) / columns)
+            local text = NextText(GameFontHighlightSmall, 9.5)
+            text:SetPoint(
+                "TOPLEFT",
+                drawer,
+                "TOPLEFT",
+                12 + (columnIndex * columnWidth),
+                -(cursor + (rowIndex * rowHeight))
+            )
+            text:SetSize(columnWidth - 8, rowHeight)
+            text:SetText(entry.text)
+            SetFontColor(text, entry.color or constants.colors.body)
+        end
+        cursor = cursor + (math.ceil(#entries / columns) * rowHeight) + 7
+    end
+
+    local statusByKey = {}
+    for _, weekly in ipairs(data.weeklies or {}) do
+        statusByKey[weekly.key] = weekly.status
+    end
+
+    local STATUS_ORDER = { complete = 1, inprogress = 2, notstarted = 3, incomplete = 3 }
+    local function AddWeeklyGroup(sectionKey, headingText)
+        if not self:IsRowVisible(sectionKey) then return end
+
+        local section = FindSection(sectionKey)
+        local entries = {}
+        for _, child in ipairs((section and section.children) or {}) do
+            if self:IsRowVisible(child.key) then
+                local status = statusByKey[child.dataKey] or "notstarted"
+                if status == "incomplete" then status = "notstarted" end
+                local style = STATUS_STYLES[status] or STATUS_STYLES.notstarted
+                entries[#entries + 1] = {
+                    key = child.key,
+                    label = child.label,
+                    status = status,
+                    text = style.glyph .. " " .. child.label,
+                    color = status == "complete" and constants.colors.muted or constants.colors.body,
+                }
+            end
+        end
+
+        table.sort(entries, function(a, b)
+            local rankA = STATUS_ORDER[a.status] or 99
+            local rankB = STATUS_ORDER[b.status] or 99
+            if rankA ~= rankB then return rankA < rankB end
+            if a.label ~= b.label then return a.label < b.label end
+            return a.key < b.key
+        end)
+
+        if #entries > 0 then
+            local completed = 0
+            for _, entry in ipairs(entries) do
+                if entry.status == "complete" then completed = completed + 1 end
+            end
+            AddHeading(("%s — %d/%d COMPLETE"):format(headingText, completed, #entries))
+            AddGrid(entries, 6)
+        end
+    end
+
+    AddWeeklyGroup("world_events", "WORLD EVENTS")
+    AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS")
+
+    if self:IsRowVisible("drawer_currencies") then
+        local section = FindSection("currencies")
+        local entries = {}
+        for _, child in ipairs((section and section.children) or {}) do
+            if not SEASON_CHILD_KEYS[child.key] and self:IsRowVisible(child.key) then
+                local field = child.dataKey or child.key
+                entries[#entries + 1] = {
+                    text = ("|cffd8b85a▪|r %s %d"):format(child.label, tonumber(data[field]) or 0),
+                    color = constants.colors.body,
+                }
+            end
+        end
+        if #entries > 0 then
+            AddHeading("CURRENCIES")
+            AddGrid(entries, 4)
+        end
+    end
+
+    if self:IsRowVisible("pvp") then
+        local section = FindSection("pvp")
+        local pvp = data.pvp or {}
+        local entries = {}
+        local pvpValues = {
+            pvp_honor = tostring(tonumber(pvp.honor) or 0),
+            pvp_conquest = tostring(tonumber(pvp.conquest) or 0),
+            pvp_bloody_tokens = tostring(tonumber(pvp.bloodyTokens) or 0),
+        }
+        local conquestEarned = tonumber(pvp.conquestEarned) or 0
+        pvpValues.pvp_conquest_earned = conquestEarned >= 2500 and "Complete" or (("%d/2500"):format(conquestEarned))
+
+        for _, child in ipairs((section and section.children) or {}) do
+            if self:IsRowVisible(child.key) then
+                entries[#entries + 1] = {
+                    text = ("|cffd8b85a▪|r %s %s"):format(child.label, pvpValues[child.key] or "0"),
+                    color = child.key == "pvp_conquest_earned" and conquestEarned >= 2500
+                        and constants.colors.success or constants.colors.body,
+                }
+            end
+        end
+        if #entries > 0 then
+            AddHeading("PVP")
+            AddGrid(entries, 4)
+        end
+    end
+
+    if textIndex == 0 then
+        return 0
+    end
+
+    local height = cursor + 3
+    drawer:SetSize(innerWidth, height)
+    drawer:Show()
+    return height
+end
+
+function AltManager:ToggleRowDrawer(guid)
+    if not constants.config.ENABLE_DRAWER or not guid then return end
+    local config = MyAltManagerDB.config
+    config.openRows = config.openRows or {}
+    if config.openRows[guid] then
+        config.openRows = {}
+    else
+        config.openRows = { [guid] = true }
+    end
+    self:RebuildUI()
+end
+
+function AltManager:GetSortedCharacters()
+    local characters = {}
+    for guid, data in pairs((MyAltManagerDB and MyAltManagerDB.data) or {}) do
+        if data and (tonumber(data.schema) or 0) >= constants.DATA_SCHEMA then
+            characters[#characters + 1] = { guid = guid, data = data }
+        end
+    end
+
+    local sortKey = MyAltManagerDB.config.sort or "ilevel"
+    table.sort(characters, function(a, b)
+        if sortKey == "name" then
+            local aName = tostring(a.data.name or "")
+            local bName = tostring(b.data.name or "")
+            if aName ~= bName then return aName < bName end
+        elseif sortKey == "score" then
+            local aScore = tonumber(a.data.mplus and a.data.mplus.score) or 0
+            local bScore = tonumber(b.data.mplus and b.data.mplus.score) or 0
+            if aScore ~= bScore then return aScore > bScore end
+        else
+            local aLevel = tonumber(a.data.ilevel) or 0
+            local bLevel = tonumber(b.data.ilevel) or 0
+            if aLevel ~= bLevel then return aLevel > bLevel end
+        end
+        return tostring(a.data.name or a.guid) < tostring(b.data.name or b.guid)
+    end)
+    return characters
 end
 
 function AltManager:RebuildUI()
-    if not self.main_frame then return end
+    if not self.main_frame or not MyAltManagerDB then return end
+    self:InitializeFrame()
 
-    -- Hide old label frames
-    if self.main_frame.label_frames then
-        for _, frame in ipairs(self.main_frame.label_frames) do
-            frame:Hide()
+    local layout = constants.layout
+    local frame = self.main_frame
+    local innerWidth = layout.FRAME_WIDTH - (2 * layout.PAD_X)
+    local columnLayout = self:GetColumnLayout()
+    self:UpdateColumnHeaders(columnLayout)
+    self:UpdateFooter()
+
+    self.rowPool:ReleaseAll()
+    self.drawerPool:ReleaseAll()
+
+    local contentHeight = 0
+    local characters = self:GetSortedCharacters()
+    for _, character in ipairs(characters) do
+        local row = self.rowPool:Acquire()
+        self:InitializeRow(row)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", frame.scrollChild, "TOPLEFT", 0, -contentHeight)
+        self:ConfigureRow(row, character.guid, character.data, columnLayout)
+        contentHeight = contentHeight + layout.ROW_HEIGHT
+
+        local openRows = MyAltManagerDB.config.openRows or {}
+        if constants.config.ENABLE_DRAWER and openRows[character.guid] then
+            local drawer = self.drawerPool:Acquire()
+            self:InitializeDrawer(drawer)
+            local drawerHeight = self:ConfigureDrawer(drawer, character.data)
+            if drawerHeight > 0 then
+                drawer:ClearAllPoints()
+                drawer:SetPoint("TOPLEFT", frame.scrollChild, "TOPLEFT", 0, -contentHeight)
+                contentHeight = contentHeight + drawerHeight
+            else
+                self.drawerPool:Release(drawer)
+            end
         end
-        self.main_frame.label_frames = nil
     end
 
-    -- Hide old label column
-    if self.main_frame.label_column then
-        self.main_frame.label_column:Hide()
-        self.main_frame.label_column = nil
-    end
+    local viewportHeight = math.max(1, contentHeight)
+    frame.scrollChild:SetSize(innerWidth, math.max(contentHeight, viewportHeight))
+    frame.scrollFrame:ClearAllPoints()
+    frame.scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", layout.PAD_X, -(layout.TITLE_HEIGHT + layout.HEADER_HEIGHT))
+    frame.scrollFrame:SetSize(innerWidth, viewportHeight)
 
-    -- Hide old alt data columns
-    if self.main_frame.alt_columns then
-        for _, col in pairs(self.main_frame.alt_columns) do
-            col:Hide()
-        end
-        self.main_frame.alt_columns = nil
-    end
+    frame.footer:ClearAllPoints()
+    frame.footer:SetPoint("TOPLEFT", frame.scrollFrame, "BOTTOMLEFT", -layout.PAD_X, 0)
+    frame.footer:SetSize(layout.FRAME_WIDTH, layout.FOOTER_HEIGHT)
 
-    -- Hide old remove buttons
-    if self.main_frame.remove_buttons then
-        for _, btn in pairs(self.main_frame.remove_buttons) do
-            btn:Hide()
-        end
-        self.main_frame.remove_buttons = nil
-    end
+    frame:SetSize(
+        layout.FRAME_WIDTH,
+        layout.TITLE_HEIGHT + layout.HEADER_HEIGHT + viewportHeight + layout.FOOTER_HEIGHT
+    )
+    frame.background:SetAllPoints()
+    self:MakeBorder(frame, 1)
 
-    self:CreateContent()
-    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
-    self.main_frame.background:SetAllPoints()
-    self:MakeTopBottomTextures(self.main_frame)
-    self:MakeBorder(self.main_frame, 5)
-
-    if MyAltManagerDB and MyAltManagerDB.data then
-        self:UpdateStrings()
-    end
+    frame.scrollFrame:SetVerticalScroll(0)
+    local scrollBar = frame.scrollFrame.ScrollBar or _G.AltManagerScrollFrameScrollBar
+    if scrollBar then scrollBar:Hide() end
 end
 
 function AltManager:HideInterface()
+    self:StopFooterTicker()
     self.main_frame:Hide()
 end
 
 function AltManager:ShowInterface()
-    self.main_frame:Show()
     if self:CanCollectNow() then
         self:CollectAndStore()
     end
-    self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), self:CalculateYSize())
-    self.main_frame.background:SetAllPoints()
-    self:MakeTopBottomTextures(self.main_frame)
-    self:MakeBorder(self.main_frame, 5)
-    self:UpdateStrings()
+    self:RebuildUI()
+    self.main_frame:Show()
+    self:StartFooterTicker()
 end
 
-function AltManager:CreateRemoveButton(func)
-    local frame = CreateFrame("Button", nil, nil)
-    frame:ClearAllPoints()
-    frame:SetScript("OnClick", function() func() end)
+function AltManager:CreateRemoveButton(parent)
+    local frame = CreateFrame("Button", nil, parent)
+    frame:RegisterForClicks("LeftButtonUp")
+    frame:SetScript("OnClick", function(button)
+        GameTooltip:Hide()
+        AltManager:RemoveCharacterByGuid(button.guid)
+    end)
+    frame:SetScript("OnEnter", function(button)
+        GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Remove character")
+        GameTooltip:Show()
+    end)
+    frame:SetScript("OnLeave", GameTooltip_Hide)
     self:MakeRemoveTexture(frame)
-    frame:SetWidth(remove_button_size)
     return frame
 end
 
 function AltManager:MakeRemoveTexture(frame)
-    if frame.remove_tex == nil then
-        frame.remove_tex = frame:CreateTexture(nil, "BACKGROUND")
+    if not frame.remove_tex then
+        frame.remove_tex = frame:CreateTexture(nil, "ARTWORK")
         frame.remove_tex:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
         frame.remove_tex:SetAllPoints()
-        frame.remove_tex:Show()
     end
-    return frame
-end
-
-function AltManager:MakeTopBottomTextures(frame)
-    if frame.bottomPanel == nil then
-        frame.bottomPanel = frame:CreateTexture(nil)
-    end
-    if frame.topPanel == nil then
-        frame.topPanel = CreateFrame("Frame", "AltManagerTopPanel", frame)
-        frame.topPanelTex = frame.topPanel:CreateTexture(nil, "BACKGROUND")
-        frame.topPanelTex:SetAllPoints()
-        frame.topPanelTex:SetDrawLayer("ARTWORK", -5)
-        frame.topPanelTex:SetColorTexture(0, 0, 0, 1)
-
-        frame.topPanelString = frame.topPanel:CreateFontString("AddonName")
-        frame.topPanelString:SetFont(STANDARD_TEXT_FONT, 16)
-        frame.topPanelString:SetTextColor(1, 1, 1, 1)
-        frame.topPanelString:SetJustifyH("CENTER")
-        frame.topPanelString:SetJustifyV("MIDDLE")
-        frame.topPanelString:SetWidth(260)
-        frame.topPanelString:SetHeight(20)
-        frame.topPanelString:SetText("My Alt Manager")
-        frame.topPanelString:ClearAllPoints()
-        frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0)
-        frame.topPanelString:Show()
-    end
-
-    frame.bottomPanel:SetColorTexture(0, 0, 0, 1)
-    frame.bottomPanel:ClearAllPoints()
-    frame.bottomPanel:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 0)
-    frame.bottomPanel:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-    frame.bottomPanel:SetSize(frame:GetWidth(), 30)
-    frame.bottomPanel:SetDrawLayer("ARTWORK", 7)
-
-    if frame.bottomPanelString == nil then
-        frame.bottomPanelString = frame:CreateFontString(nil, "OVERLAY")
-        frame.bottomPanelString:SetFont(STANDARD_TEXT_FONT, 12)
-        frame.bottomPanelString:SetTextColor(1, 1, 1, 1)
-        frame.bottomPanelString:SetJustifyH("CENTER")
-        frame.bottomPanelString:SetJustifyV("MIDDLE")
-        frame.bottomPanelString:SetWidth(260)
-        frame.bottomPanelString:SetHeight(20)
-        frame.bottomPanelString:SetText("Version " .. constants.VERSION)
-        frame.bottomPanelString:ClearAllPoints()
-        frame.bottomPanelString:SetPoint("CENTER", frame.bottomPanel, "CENTER", 0, 0)
-        frame.bottomPanelString:Show()
-    end
-
-    frame.topPanel:ClearAllPoints()
-    frame.topPanel:SetSize(frame:GetWidth(), 30)
-    frame.topPanel:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 0)
-    frame.topPanel:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 0)
-
-    -- Keep existing drag behavior unless you want it locked.
-    frame:SetMovable(true)
-    frame.topPanel:EnableMouse(true)
-    frame.topPanel:RegisterForDrag("LeftButton")
-    frame.topPanel:SetScript("OnDragStart", function()
-        frame:SetMovable(true)
-        frame:StartMoving()
-    end)
-    frame.topPanel:SetScript("OnDragStop", function()
-        frame:StopMovingOrSizing()
-        frame:SetMovable(false)
-    end)
+    return frame.remove_tex
 end
 
 function AltManager:MakeBorderPart(frame, x, y, xoff, yoff, part)
-    if part == nil then
-        part = frame:CreateTexture(nil)
+    if not part then
+        part = frame:CreateTexture(nil, "OVERLAY")
     end
-    part:SetColorTexture(0, 0, 0, 1)
+    SetTextureColor(part, constants.colors.frameBorder)
     part:ClearAllPoints()
     part:SetPoint("TOPLEFT", frame, "TOPLEFT", xoff, yoff)
     part:SetSize(x, y)
-    part:SetDrawLayer("ARTWORK", 7)
+    part:Show()
     return part
 end
 
 function AltManager:MakeBorder(frame, size)
-    if size == 0 then
-        return
-    end
+    if size <= 0 then return end
     frame.borderTop = self:MakeBorderPart(frame, frame:GetWidth(), size, 0, 0, frame.borderTop)
     frame.borderLeft = self:MakeBorderPart(frame, size, frame:GetHeight(), 0, 0, frame.borderLeft)
     frame.borderBottom = self:MakeBorderPart(frame, frame:GetWidth(), size, 0, -frame:GetHeight() + size, frame.borderBottom)
@@ -2036,8 +2504,118 @@ function AltManager:MakeBorder(frame, size)
 end
 
 -- ------------------------------------------------------------
--- Reset time helpers (unchanged)
+-- Reset time helpers
 -- ------------------------------------------------------------
+
+local function ColorizeText(text, color)
+    local red = math.floor((color[1] or 1) * 255 + 0.5)
+    local green = math.floor((color[2] or 1) * 255 + 0.5)
+    local blue = math.floor((color[3] or 1) * 255 + 0.5)
+    return ("|cff%02x%02x%02x%s|r"):format(red, green, blue, text)
+end
+
+local function FormatWeeklyResetDuration(seconds)
+    seconds = math.floor(tonumber(seconds) or 0)
+    if seconds <= 0 then return nil end
+
+    local days = math.floor(seconds / 86400)
+    if days > 0 then
+        local hours = math.floor((seconds % 86400) / 3600)
+        return ("%dd %02dh"):format(days, hours)
+    end
+
+    local hours = math.floor(seconds / 3600)
+    if hours > 0 then
+        local minutes = math.floor((seconds % 3600) / 60)
+        return ("%dh %02dm"):format(hours, minutes)
+    end
+
+    return ("%dm"):format(math.max(1, math.floor(seconds / 60)))
+end
+
+local function FormatLocalClock(timestamp)
+    local hour = tonumber(date("%H", timestamp))
+    local minute = tonumber(date("%M", timestamp))
+    if GameTime_GetFormattedTime and hour and minute then
+        return GameTime_GetFormattedTime(hour, minute, true)
+    end
+    return date("%H:%M", timestamp)
+end
+
+local function GetCurseSurgeStatus()
+    if not GetServerTime or not date then
+        return nil
+    end
+
+    local now = GetServerTime()
+    local schedule = constants.CURSE_SURGE
+    local elapsed = (now - schedule.ANCHOR_EPOCH) % schedule.INTERVAL_SECONDS
+    if elapsed < schedule.ACTIVE_SECONDS then
+        return true
+    end
+
+    local secondsUntil = schedule.INTERVAL_SECONDS - elapsed
+    return false, secondsUntil, now + secondsUntil
+end
+
+function AltManager:UpdateFooterCurseSurge()
+    local footerCurseSurge = self.main_frame and self.main_frame.footerCurseSurge
+    if not footerCurseSurge then return end
+
+    local isActive, secondsUntil, nextEpoch = GetCurseSurgeStatus()
+    if isActive == nil then
+        footerCurseSurge:Hide()
+        return
+    end
+
+    local icon = "|TInterface\\Icons\\inv_ability_poison_buff:12:12:0:0|t"
+    if isActive then
+        footerCurseSurge.text:SetText(("%s Curse Surge %s"):format(
+            icon,
+            ColorizeText("Active!", constants.colors.success)
+        ))
+    else
+        footerCurseSurge.text:SetText(("%s Curse Surge in %d minutes (%s)"):format(
+            icon,
+            math.ceil(secondsUntil / 60),
+            FormatLocalClock(nextEpoch)
+        ))
+    end
+    footerCurseSurge:Show()
+end
+
+function AltManager:UpdateFooterReset()
+    local footerReset = self.main_frame and self.main_frame.footerReset
+    if not footerReset then return end
+
+    local duration = FormatWeeklyResetDuration(C_DateAndTime.GetSecondsUntilWeeklyReset())
+    if not duration then
+        footerReset:Hide()
+        return
+    end
+
+    footerReset:SetText("Weekly reset in " .. ColorizeText(duration, constants.colors.brightText))
+    footerReset:Show()
+end
+
+function AltManager:UpdateFooter()
+    self:UpdateFooterCurseSurge()
+    self:UpdateFooterReset()
+end
+
+function AltManager:StopFooterTicker()
+    if self._footerTicker then
+        self._footerTicker:Cancel()
+        self._footerTicker = nil
+    end
+end
+
+function AltManager:StartFooterTicker()
+    self:StopFooterTicker()
+    self._footerTicker = C_Timer.NewTicker(30, function()
+        AltManager:UpdateFooter()
+    end)
+end
 
 function AltManager:GetNextWeeklyResetTime()
     local seconds = C_DateAndTime.GetSecondsUntilWeeklyReset()

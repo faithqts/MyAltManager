@@ -2,15 +2,15 @@
 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact, sortable panel.
 
-Current addon version: 12.0.5.0 (TOC interface 120005).
+Current addon version: 12.1.0.15 (TOC interface 120100).
 
 ## What It Tracks
 
 The addon stores data per character and displays it in columns.
 
 - Character name, class color, realm, item level
-- Tier set progress (set-piece count)
-- Catalyst charges
+- Season 2 tier set progress (Season 1 pieces are ignored)
+- Season 2 catalyst charges
 - Mythic+
 	- Overall rating
 	- Current keystone (level + dungeon)
@@ -26,6 +26,7 @@ The addon stores data per character and displays it in columns.
 	- Bloody Tokens
 - Weekly activity status
 	- Weekly Meta Quest
+	- Curse Surges
 	- Special Assignment
 	- Sath'theril Soiree
 	- Abundant Offerings
@@ -35,7 +36,7 @@ The addon stores data per character and displays it in columns.
 	- A Nightmarish Task
 	- World Boss
 - Currencies
-	- Radiant Sparks
+	- Tidal Sparks
 	- Adventurer, Veteran, Champion, Hero, and Myth crests
 	- Bountiful Keys and Coffer Key Shards
 	- Undercoin
@@ -88,6 +89,7 @@ The addon registers a settings category named MyAltManager with:
 - Open with /alts
 - Window is draggable
 - Characters are shown in descending item-level order
+- The footer shows the next Curse Surge on its 45-minute schedule and highlights its five-minute active window
 - Use settings to hide sections or specific rows you do not care about
 
 ## Credits
