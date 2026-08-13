@@ -2,6 +2,22 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.22 — 2026-08-13
+
+- Split each Curse Surge window into a two-minute `Curse Surge Starting` phase followed by a three-minute `Curse Surge Active` phase.
+- Added an independent countdown for each phase.
+- Inverted the standalone tracker during the starting and active phases so its progress bar depletes toward zero; the waiting phase continues filling toward the next surge.
+
+## 12.1.0.21 — 2026-08-13
+
+- Replaced the Special Assignment weekly tracker with `Purging the Vaults` (quest ID `95520`).
+- Renamed the weekly quest display from `Hidden Trove` to `Hidden Trove (Delves)`.
+
+## 12.1.0.20 — 2026-08-13
+
+- Added `Midnight: World Tour` (quest ID `95245`) to World Events.
+- Placed the parent quest after its four component events in the character information drawer and Interface visibility settings.
+
 ## 12.1.0.19 — 2026-08-13
 
 - Added a standalone Curse Surge progress bar, toggled by clicking the Curse Surge footer in MyAltManager.

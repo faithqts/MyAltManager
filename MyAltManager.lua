@@ -96,6 +96,7 @@ constants.config.ENABLE_DRAWER = false
 constants.ACTIVE_SEASON_ID = 2
 constants.CURSE_SURGE = {
     INTERVAL_SECONDS = 45 * 60,
+    STARTING_SECONDS = 2 * 60,
     ACTIVE_SECONDS = 5 * 60,
     -- 2026-08-12 17:00 GMT+8 (09:00 UTC), supplied launch-day observation.
     ANCHOR_EPOCH = 1786525200,
@@ -141,10 +142,11 @@ constants.labels = {
     WEEKLY_META_QUEST = "Weekly Meta Quest",
     CURSE_SURGES = "Curse Surges",
     SATHTHERIL_SOIREE = "Sath'theril Soiree",
-    SPECIAL_ASSIGNMENT = "Special Assignment",
+    PURGING_THE_VAULTS = "Purging the Vaults",
     ABUNDANT_OFFERINGS = "Abundant Offerings",
     LEGENDS_OF_THE_HARANIR = "Legends of the Haranir",
     STORMARIAN_ASSAULT = "Stormarian Assault",
+    MIDNIGHT_WORLD_TOUR = "Midnight: World Tour",
     NIGHTMARISH_TASK = "A Nightmarish Task",
     GREAT_VAULT_REWARDS = "Great Vault",
     WORLD_BOSS = "World Boss",
@@ -174,22 +176,23 @@ constants.sections = {
     },
     {
         key = "world_events", label = constants.labels.WEEKLY_EVENTS,
-        keys = { "world_events", "saththeril_soiree", "stormarian_assault", "legends_of_the_haranir", "abundant_offerings" },
+        keys = { "world_events", "saththeril_soiree", "stormarian_assault", "legends_of_the_haranir", "abundant_offerings", "midnight_world_tour" },
         children = {
             { key = "saththeril_soiree",      dataKey = "saththerilSoiree",     label = "Sath'theril Soiree" },
             { key = "stormarian_assault",     dataKey = "stormarianAssault",   label = "Stormarian Assault" },
             { key = "legends_of_the_haranir", dataKey = "legendsOfTheHaranir", label = "Legends of the Haranir" },
             { key = "abundant_offerings",     dataKey = "abundantOfferings",    label = "Abundant Offerings" },
+            { key = "midnight_world_tour",    dataKey = "midnightWorldTour",    label = "Midnight: World Tour", alwaysLast = true },
         },
     },
     {
         key = "weekly_quests", label = "Weekly Quests",
-        keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "special_assignment", "hidden_trove", "nightmarish_task", "world_boss" },
+        keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "purging_the_vaults", "hidden_trove", "nightmarish_task", "world_boss" },
         children = {
             { key = "weekly_meta_quest",       dataKey = "weeklyMetaQuest",      label = "Weekly Meta Quest" },
             { key = "curse_surges",            dataKey = "curseSurges",          label = "Curse Surges" },
-            { key = "special_assignment",      dataKey = "specialAssignment",    label = "Special Assignment" },
-            { key = "hidden_trove",            dataKey = "hiddenTrove",          label = "Hidden Trove" },
+            { key = "purging_the_vaults",      dataKey = "purgingTheVaults",     label = "Purging the Vaults" },
+            { key = "hidden_trove",            dataKey = "hiddenTrove",          label = "Hidden Trove (Delves)" },
             { key = "nightmarish_task",        dataKey = "nightmarishTask",       label = "A Nightmarish Task" },
             { key = "world_boss",              dataKey = "worldBoss",            label = "World Boss" },
         },
@@ -443,7 +446,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.19"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.22"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -730,6 +733,10 @@ function AltManager:LoadConfigFromDB()
     if db.visibility.pvp == nil then
         db.visibility.pvp = false
     end
+    if db.visibility.purging_the_vaults == nil and db.visibility.special_assignment ~= nil then
+        db.visibility.purging_the_vaults = db.visibility.special_assignment
+    end
+    db.visibility.special_assignment = nil
 
     constants.config.MIN_ITEM_LEVEL = tonumber(db.config.MIN_ITEM_LEVEL) or 0
     constants.config.MIN_LEVEL = tonumber(db.config.MIN_LEVEL) or 80
@@ -1083,11 +1090,12 @@ local function CreateResetWeeklies()
     return {
         { key = "weeklyMetaQuest", status = "notstarted" },
         { key = "curseSurges", status = "notstarted" },
-        { key = "specialAssignment", status = "notstarted" },
+        { key = "purgingTheVaults", status = "notstarted" },
         { key = "saththerilSoiree", status = "notstarted" },
         { key = "abundantOfferings", status = "notstarted" },
         { key = "legendsOfTheHaranir", status = "notstarted" },
         { key = "stormarianAssault", status = "notstarted" },
+        { key = "midnightWorldTour", status = "notstarted" },
         { key = "hiddenTrove", status = "notstarted" },
         { key = "nightmarishTask", status = "notstarted" },
         { key = "worldBoss", status = "notstarted" },
@@ -1272,10 +1280,6 @@ function AltManager:CollectData()
         return QuestSetStatus({ 98172 }) -- Trailing Xal'atath
     end
 
-    local function checkSpecialAssignmentStatus()
-        return QuestSetStatus({ 92848, 93244, 93013, 94391, 91390, 94795, 94743, 94865, 93438, 94390, 94866, 91700 })
-    end
-
     local function checkSaththerilSoireeStatus()
         return QuestSetStatus({ 90575, 90576, 90574, 90573 })
     end
@@ -1338,10 +1342,11 @@ function AltManager:CollectData()
     local stormarianAssault = QuestSetStatus({ 94581 })
     local legendsOfTheHaranir = QuestSetStatus({ 89268 })
     local saththerilSoiree = checkSaththerilSoireeStatus()
+    local midnightWorldTour = QuestSetStatus({ 95245 })
     local hiddenTrove = QuestSetStatus({ 86371 })
     local nightmarishTask = QuestSetStatus({ 94446 })
+    local purgingTheVaults = QuestSetStatus({ 95520 })
 
-    local specialAssignment = checkSpecialAssignmentStatus()
     local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
 
     local ilevel = i
@@ -1414,11 +1419,12 @@ function AltManager:CollectData()
         weeklies = {
             { key = "weeklyMetaQuest", status = weeklyMetaQuest },
             { key = "curseSurges", status = curseSurges },
-            { key = "specialAssignment", status = specialAssignment },
+            { key = "purgingTheVaults", status = purgingTheVaults },
             { key = "saththerilSoiree", status = saththerilSoiree },
             { key = "abundantOfferings", status = abundantOfferings },
             { key = "legendsOfTheHaranir", status = legendsOfTheHaranir },
             { key = "stormarianAssault", status = stormarianAssault },
+            { key = "midnightWorldTour", status = midnightWorldTour },
             { key = "hiddenTrove", status = hiddenTrove },
             { key = "nightmarishTask", status = nightmarishTask },
             { key = "worldBoss", status = worldBoss },
@@ -2334,6 +2340,7 @@ function AltManager:ConfigureDrawer(drawer, data)
                     key = child.key,
                     label = child.label,
                     status = status,
+                    alwaysLast = child.alwaysLast,
                     text = style.glyph .. " " .. child.label,
                     color = status == "complete" and constants.colors.muted or constants.colors.body,
                 }
@@ -2341,6 +2348,9 @@ function AltManager:ConfigureDrawer(drawer, data)
         end
 
         table.sort(entries, function(a, b)
+            local aLast = a.alwaysLast and true or false
+            local bLast = b.alwaysLast and true or false
+            if aLast ~= bLast then return not aLast end
             local rankA = STATUS_ORDER[a.status] or 99
             local rankB = STATUS_ORDER[b.status] or 99
             if rankA ~= rankB then return rankA < rankB end
@@ -2635,15 +2645,22 @@ local function GetCurseSurgeStatus()
     local now = GetServerTime()
     local schedule = constants.CURSE_SURGE
     local elapsed = (now - schedule.ANCHOR_EPOCH) % schedule.INTERVAL_SECONDS
+    if elapsed < schedule.STARTING_SECONDS then
+        local secondsRemaining = schedule.STARTING_SECONDS - elapsed
+        return "starting", secondsRemaining, now + secondsRemaining, elapsed, schedule.STARTING_SECONDS
+    end
+
     if elapsed < schedule.ACTIVE_SECONDS then
-        local secondsRemaining = schedule.ACTIVE_SECONDS - elapsed
-        return true, secondsRemaining, now + secondsRemaining, elapsed, schedule.ACTIVE_SECONDS
+        local activeElapsed = elapsed - schedule.STARTING_SECONDS
+        local activeDuration = schedule.ACTIVE_SECONDS - schedule.STARTING_SECONDS
+        local secondsRemaining = activeDuration - activeElapsed
+        return "active", secondsRemaining, now + secondsRemaining, activeElapsed, activeDuration
     end
 
     local secondsUntil = schedule.INTERVAL_SECONDS - elapsed
     local waitingElapsed = elapsed - schedule.ACTIVE_SECONDS
     local waitingDuration = schedule.INTERVAL_SECONDS - schedule.ACTIVE_SECONDS
-    return false, secondsUntil, now + secondsUntil, waitingElapsed, waitingDuration
+    return "waiting", secondsUntil, now + secondsUntil, waitingElapsed, waitingDuration
 end
 
 local function FormatCurseSurgeCountdown(seconds)
@@ -2679,8 +2696,8 @@ function AltManager:UpdateCurseSurgeTracker()
     local tracker = self.curseSurgeTracker
     if not tracker or not tracker:IsShown() then return end
 
-    local isActive, secondsRemaining, _, phaseElapsed, phaseDuration = GetCurseSurgeStatus()
-    if isActive == nil then
+    local phase, secondsRemaining, _, phaseElapsed, phaseDuration = GetCurseSurgeStatus()
+    if phase == nil then
         tracker.statusText:SetText("Curse Surge Unavailable")
         tracker.timerText:SetText("--:--")
         tracker:SetMinMaxValues(0, 1)
@@ -2688,10 +2705,21 @@ function AltManager:UpdateCurseSurgeTracker()
         return
     end
 
-    tracker.statusText:SetText(isActive and "Curse Surge Active" or "Next Curse Surge")
+    local statusText = "Next Curse Surge"
+    if phase == "starting" then
+        statusText = "Curse Surge Starting"
+    elseif phase == "active" then
+        statusText = "Curse Surge Active"
+    end
+
+    tracker.statusText:SetText(statusText)
     tracker.timerText:SetText(FormatCurseSurgeCountdown(secondsRemaining))
     tracker:SetMinMaxValues(0, math.max(1, phaseDuration or 1))
-    tracker:SetValue(math.max(0, phaseElapsed or 0))
+    if phase == "waiting" then
+        tracker:SetValue(math.max(0, phaseElapsed or 0))
+    else
+        tracker:SetValue(math.max(0, secondsRemaining or 0))
+    end
 end
 
 
@@ -2801,17 +2829,19 @@ function AltManager:UpdateFooterCurseSurge()
     local footerCurseSurge = self.main_frame and self.main_frame.footerCurseSurge
     if not footerCurseSurge then return end
 
-    local isActive, secondsUntil, nextEpoch = GetCurseSurgeStatus()
-    if isActive == nil then
+    local phase, secondsUntil, nextEpoch = GetCurseSurgeStatus()
+    if phase == nil then
         footerCurseSurge:Hide()
         return
     end
 
     local icon = "|TInterface\\Icons\\inv_ability_poison_buff:12:12:0:0|t"
-    if isActive then
+    if phase == "starting" then
+        footerCurseSurge.text:SetText(("%s Curse Surge Starting"):format(icon))
+    elseif phase == "active" then
         footerCurseSurge.text:SetText(("%s Curse Surge %s"):format(
             icon,
-            ColorizeText("Active!", constants.colors.success)
+            ColorizeText("Active", constants.colors.success)
         ))
     else
         footerCurseSurge.text:SetText(("%s Curse Surge in %d minutes (%s)"):format(

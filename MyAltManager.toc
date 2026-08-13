@@ -1,7 +1,7 @@
 ## Interface: 120100
 ## Title: MyAltManager
 ## Author: Qoning, Updated by Faith
-## Version: 12.1.0.19
+## Version: 12.1.0.22
 ## Notes: An overview of your alts and relevant information.
 ## IconTexture: Interface\AddOns\MyAltManager\media\icon.tga
 ## AddonCompartmentFunc: MyAltManager_OnCompartmentClick
