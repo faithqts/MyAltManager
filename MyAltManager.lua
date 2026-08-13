@@ -100,6 +100,12 @@ constants.CURSE_SURGE = {
     -- 2026-08-12 17:00 GMT+8 (09:00 UTC), supplied launch-day observation.
     ANCHOR_EPOCH = 1786525200,
 }
+constants.CURSE_SURGE_TRACKER = {
+    WIDTH = 360,
+    HEIGHT = 30,
+    FONT_SIZE = 12,
+    BACKGROUND_OPACITY = 85,
+}
 
 constants.labels = {
     NAME = "",
@@ -437,7 +443,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.17"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.19"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -690,6 +696,22 @@ function AltManager:LoadConfigFromDB()
     if db.config.MIN_LEVEL == nil then
         db.config.MIN_LEVEL = 80
     end
+    local trackerDefaults = constants.CURSE_SURGE_TRACKER
+    if db.config.curse_surge_tracker_shown == nil then
+        db.config.curse_surge_tracker_shown = false
+    end
+    if db.config.curse_surge_tracker_width == nil then
+        db.config.curse_surge_tracker_width = trackerDefaults.WIDTH
+    end
+    if db.config.curse_surge_tracker_height == nil then
+        db.config.curse_surge_tracker_height = trackerDefaults.HEIGHT
+    end
+    if db.config.curse_surge_tracker_font_size == nil then
+        db.config.curse_surge_tracker_font_size = trackerDefaults.FONT_SIZE
+    end
+    if db.config.curse_surge_tracker_background_opacity == nil then
+        db.config.curse_surge_tracker_background_opacity = trackerDefaults.BACKGROUND_OPACITY
+    end
     -- Older builds force-saved this as false. Re-enable once, then respect later changes.
     if db.config.drawer_config_version == nil then
         db.config.enable_drawer = true
@@ -762,6 +784,51 @@ function AltManager:RegisterSettings()
             constants.config.MIN_ITEM_LEVEL = v
             RebuildIfNeeded()
         end)
+    end
+
+    -- Curse Surge tracker appearance
+    do
+        local function RegisterTrackerSlider(variable, label, defaultValue, minimum, maximum, step, description)
+            local variableName = "MyAltManager_" .. variable
+            local setting = Settings.RegisterAddOnSetting(
+                category, variableName, variable,
+                MyAltManagerDB.config, Settings.VarType.Number,
+                label, defaultValue
+            )
+            local sliderOptions = Settings.CreateSliderOptions(minimum, maximum, step)
+            sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Min, function() return tostring(minimum) end)
+            sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Max, function() return tostring(maximum) end)
+            sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+                return tostring(math.floor(value))
+            end)
+            Settings.CreateSlider(category, setting, sliderOptions, description)
+            Settings.SetOnValueChangedCallback(variableName, function(_, _, value)
+                MyAltManagerDB.config[variable] = math.floor(value)
+                AltManager:ApplyCurseSurgeTrackerSettings()
+            end)
+        end
+
+        local trackerDefaults = constants.CURSE_SURGE_TRACKER
+        RegisterTrackerSlider(
+            "curse_surge_tracker_width", "Curse Surge Tracker Width",
+            trackerDefaults.WIDTH, 220, 600, 10,
+            "Set the width of the standalone Curse Surge timer."
+        )
+        RegisterTrackerSlider(
+            "curse_surge_tracker_height", "Curse Surge Tracker Height",
+            trackerDefaults.HEIGHT, 20, 60, 2,
+            "Set the height of the standalone Curse Surge timer."
+        )
+        RegisterTrackerSlider(
+            "curse_surge_tracker_font_size", "Curse Surge Tracker Text Size",
+            trackerDefaults.FONT_SIZE, 9, 24, 1,
+            "Set the font size of the standalone Curse Surge timer."
+        )
+        RegisterTrackerSlider(
+            "curse_surge_tracker_background_opacity", "Curse Surge Tracker Background Opacity",
+            trackerDefaults.BACKGROUND_OPACITY, 0, 100, 5,
+            "Set the dark grey background opacity as a percentage."
+        )
     end
 
     -- Section toggles with child sub-toggles
@@ -926,6 +993,11 @@ function AltManager:InitDB()
         drawer_config_version = 1,
         openRows = {},
         sort = "ilevel",
+        curse_surge_tracker_shown = false,
+        curse_surge_tracker_width = constants.CURSE_SURGE_TRACKER.WIDTH,
+        curse_surge_tracker_height = constants.CURSE_SURGE_TRACKER.HEIGHT,
+        curse_surge_tracker_font_size = constants.CURSE_SURGE_TRACKER.FONT_SIZE,
+        curse_surge_tracker_background_opacity = constants.CURSE_SURGE_TRACKER.BACKGROUND_OPACITY,
     }
     t.meta = {}
     t.visibility = {
@@ -1197,10 +1269,7 @@ function AltManager:CollectData()
     end
 
     local function checkWeeklyMetaQuestStatus()
-        return QuestSetStatus({
-            93912, 93769, 93913, 93910, 94457, 93766, 93911, 93909, 93767, 93892,
-            93891, 93889, 93890
-        })
+        return QuestSetStatus({ 98172 }) -- Trailing Xal'atath
     end
 
     local function checkSpecialAssignmentStatus()
@@ -1711,9 +1780,13 @@ function AltManager:InitializeFrame()
     frame.scrollFrame:SetScrollChild(frame.scrollChild)
 
     frame.footer = CreateFrame("Frame", nil, frame)
-    frame.footerCurseSurge = CreateFrame("Frame", nil, frame.footer)
+    frame.footerCurseSurge = CreateFrame("Button", nil, frame.footer)
     frame.footerCurseSurge:SetPoint("BOTTOMLEFT", frame.footer, "BOTTOMLEFT", layout.PAD_X, 0)
     frame.footerCurseSurge:SetSize(300, layout.FOOTER_HEIGHT)
+    frame.footerCurseSurge:RegisterForClicks("LeftButtonUp")
+    frame.footerCurseSurge:SetScript("OnClick", function()
+        AltManager:ToggleCurseSurgeTracker()
+    end)
     frame.footerCurseSurge.text = CreateText(frame.footerCurseSurge, GameFontNormalSmall, 9)
     frame.footerCurseSurge.text:SetAllPoints()
     frame.footerCurseSurge.text:SetJustifyH("LEFT")
@@ -1743,6 +1816,7 @@ function AltManager:InitializeFrame()
     self.rowPool = CreateFramePool("Button", frame.scrollChild, nil, ResetRowPool)
     self.drawerPool = CreateFramePool("Frame", frame.scrollChild, nil, ResetDrawerPool)
     self:MakeBorder(frame, 1)
+    self:InitializeCurseSurgeTracker()
 end
 
 function AltManager:UpdateColumnHeaders(columnLayout)
@@ -2562,11 +2636,165 @@ local function GetCurseSurgeStatus()
     local schedule = constants.CURSE_SURGE
     local elapsed = (now - schedule.ANCHOR_EPOCH) % schedule.INTERVAL_SECONDS
     if elapsed < schedule.ACTIVE_SECONDS then
-        return true
+        local secondsRemaining = schedule.ACTIVE_SECONDS - elapsed
+        return true, secondsRemaining, now + secondsRemaining, elapsed, schedule.ACTIVE_SECONDS
     end
 
     local secondsUntil = schedule.INTERVAL_SECONDS - elapsed
-    return false, secondsUntil, now + secondsUntil
+    local waitingElapsed = elapsed - schedule.ACTIVE_SECONDS
+    local waitingDuration = schedule.INTERVAL_SECONDS - schedule.ACTIVE_SECONDS
+    return false, secondsUntil, now + secondsUntil, waitingElapsed, waitingDuration
+end
+
+local function FormatCurseSurgeCountdown(seconds)
+    seconds = math.max(0, math.ceil(tonumber(seconds) or 0))
+    local minutes = math.floor(seconds / 60)
+    local remainingSeconds = seconds % 60
+    return ("%02d:%02d"):format(minutes, remainingSeconds)
+end
+
+function AltManager:ApplyCurseSurgeTrackerSettings()
+    local tracker = self.curseSurgeTracker
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    if not tracker or not config then return end
+
+    local defaults = constants.CURSE_SURGE_TRACKER
+    local width = math.max(220, math.min(600, tonumber(config.curse_surge_tracker_width) or defaults.WIDTH))
+    local height = math.max(20, math.min(60, tonumber(config.curse_surge_tracker_height) or defaults.HEIGHT))
+    local fontSize = math.max(9, math.min(24, tonumber(config.curse_surge_tracker_font_size) or defaults.FONT_SIZE))
+    local opacity = math.max(0, math.min(100, tonumber(config.curse_surge_tracker_background_opacity) or defaults.BACKGROUND_OPACITY)) / 100
+
+    tracker:SetSize(width, height)
+    tracker.background:SetColorTexture(0x18 / 255, 0x1A / 255, 0x1B / 255, opacity)
+    SetFontSize(tracker.statusText, GameFontNormal, fontSize, "OUTLINE")
+    SetFontSize(tracker.timerText, GameFontNormal, fontSize, "OUTLINE")
+    local timerWidth = math.max(66, math.ceil(fontSize * 4.5))
+    tracker.timerText:SetWidth(timerWidth)
+    tracker.statusText:ClearAllPoints()
+    tracker.statusText:SetPoint("TOPLEFT", tracker, "TOPLEFT", 10, 0)
+    tracker.statusText:SetPoint("BOTTOMRIGHT", tracker, "BOTTOMRIGHT", -(timerWidth + 16), 0)
+end
+
+function AltManager:UpdateCurseSurgeTracker()
+    local tracker = self.curseSurgeTracker
+    if not tracker or not tracker:IsShown() then return end
+
+    local isActive, secondsRemaining, _, phaseElapsed, phaseDuration = GetCurseSurgeStatus()
+    if isActive == nil then
+        tracker.statusText:SetText("Curse Surge Unavailable")
+        tracker.timerText:SetText("--:--")
+        tracker:SetMinMaxValues(0, 1)
+        tracker:SetValue(0)
+        return
+    end
+
+    tracker.statusText:SetText(isActive and "Curse Surge Active" or "Next Curse Surge")
+    tracker.timerText:SetText(FormatCurseSurgeCountdown(secondsRemaining))
+    tracker:SetMinMaxValues(0, math.max(1, phaseDuration or 1))
+    tracker:SetValue(math.max(0, phaseElapsed or 0))
+end
+
+
+function AltManager:StopCurseSurgeTrackerTicker()
+    if self._curseSurgeTrackerTicker then
+        self._curseSurgeTrackerTicker:Cancel()
+        self._curseSurgeTrackerTicker = nil
+    end
+end
+
+function AltManager:StartCurseSurgeTrackerTicker()
+    self:StopCurseSurgeTrackerTicker()
+    self:UpdateCurseSurgeTracker()
+    self._curseSurgeTrackerTicker = C_Timer.NewTicker(1, function()
+        AltManager:UpdateCurseSurgeTracker()
+    end)
+end
+
+function AltManager:SetCurseSurgeTrackerShown(shown)
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    if not config then return end
+
+    config.curse_surge_tracker_shown = shown and true or false
+    self:InitializeCurseSurgeTracker()
+    if config.curse_surge_tracker_shown then
+        self:ApplyCurseSurgeTrackerSettings()
+        self.curseSurgeTracker:Show()
+        self:StartCurseSurgeTrackerTicker()
+    else
+        self:StopCurseSurgeTrackerTicker()
+        self.curseSurgeTracker:Hide()
+    end
+end
+
+function AltManager:ToggleCurseSurgeTracker()
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    if not config then return end
+    self:SetCurseSurgeTrackerShown(not config.curse_surge_tracker_shown)
+end
+
+function AltManager:InitializeCurseSurgeTracker()
+    if self.curseSurgeTracker then return end
+
+    local tracker = CreateFrame("StatusBar", "MyAltManagerCurseSurgeTracker", UIParent)
+    self.curseSurgeTracker = tracker
+    tracker:SetFrameStrata("HIGH")
+    tracker:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    tracker:SetStatusBarColor(0x20 / 255, 0x55 / 255, 0x38 / 255, 1)
+    tracker:SetMinMaxValues(0, 1)
+    tracker:SetValue(0)
+    tracker:SetMovable(true)
+    tracker:SetClampedToScreen(true)
+    tracker:EnableMouse(true)
+    tracker:RegisterForDrag("LeftButton")
+
+    tracker.background = tracker:CreateTexture(nil, "BACKGROUND")
+    tracker.background:SetAllPoints()
+
+    tracker.statusText = CreateText(tracker, GameFontNormal, constants.CURSE_SURGE_TRACKER.FONT_SIZE)
+    tracker.statusText:SetJustifyH("LEFT")
+    SetFontColor(tracker.statusText, constants.colors.brightText)
+
+    tracker.timerText = CreateText(tracker, GameFontNormal, constants.CURSE_SURGE_TRACKER.FONT_SIZE)
+    tracker.timerText:SetPoint("TOPRIGHT", tracker, "TOPRIGHT", -10, 0)
+    tracker.timerText:SetPoint("BOTTOMRIGHT", tracker, "BOTTOMRIGHT", -10, 0)
+    tracker.timerText:SetJustifyH("RIGHT")
+    SetFontColor(tracker.timerText, constants.colors.brightText)
+
+    CreateInsetBorder(tracker)
+    tracker:SetScript("OnDragStart", function(frame)
+        frame:StartMoving()
+    end)
+    tracker:SetScript("OnDragStop", function(frame)
+        frame:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = frame:GetPoint(1)
+        MyAltManagerDB.config.curse_surge_tracker_point = {
+            point = point,
+            relativePoint = relativePoint,
+            x = x,
+            y = y,
+        }
+    end)
+
+    local savedPoint = MyAltManagerDB.config.curse_surge_tracker_point
+    if type(savedPoint) == "table" and savedPoint.point then
+        tracker:SetPoint(
+            savedPoint.point,
+            UIParent,
+            savedPoint.relativePoint or savedPoint.point,
+            tonumber(savedPoint.x) or 0,
+            tonumber(savedPoint.y) or 0
+        )
+    else
+        tracker:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
+    end
+
+    self:ApplyCurseSurgeTrackerSettings()
+    if MyAltManagerDB.config.curse_surge_tracker_shown then
+        tracker:Show()
+        self:StartCurseSurgeTrackerTicker()
+    else
+        tracker:Hide()
+    end
 end
 
 function AltManager:UpdateFooterCurseSurge()

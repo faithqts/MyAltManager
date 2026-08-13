@@ -2,7 +2,9 @@
 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact, sortable panel.
 
-Current addon version: 12.1.0.17 (TOC interface 120100).
+Current addon version: 12.1.0.19 (TOC interface 120100).
+
+See [MyAltManager Patch Notes](CHANGELOG.md) for the complete version history.
 
 ## What It Tracks
 
@@ -25,7 +27,7 @@ The addon stores data per character and displays it in columns.
 	- Forged Weapons progress
 	- Bloody Tokens
 - Weekly activity status
-	- Weekly Meta Quest
+	- Weekly Meta Quest (Trailing Xal'atath)
 	- Curse Surges
 	- Special Assignment
 	- Sath'theril Soiree
@@ -72,6 +74,7 @@ The addon registers a settings category named MyAltManager with:
 
 - Minimum Level slider (80-90)
 - Minimum Item Level slider (0-500)
+- Curse Surge tracker width, height, text size, and background opacity sliders
 - Show Icons toggle
 - Section visibility toggles
 - Child-row toggles for grouped sections (PvP, Weekly Quests, Currencies)
@@ -90,6 +93,7 @@ The addon registers a settings category named MyAltManager with:
 - Window is draggable
 - Characters are shown in descending item-level order
 - The footer shows the next Curse Surge on its 45-minute schedule and highlights its five-minute active window
+- Click the Curse Surge footer to toggle a draggable standalone progress bar
 - Use settings to hide sections or specific rows you do not care about
 
 ## Credits
