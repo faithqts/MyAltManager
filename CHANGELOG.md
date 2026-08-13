@@ -2,6 +2,17 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.24 — 2026-08-13
+
+- Added the Curse Surge poison-buff icon inside the left edge of the standalone tracker, sized as a square matching the configured progress-bar height, rendered above the bar fill, with padding before the status text.
+- Kept the tracker's outer border above both the icon and progress fill, and added a matching border-colored divider between the icon and status text.
+- Replaced the waiting label with `Next: <event name>` whenever Blizzard's Event Scheduler provides the next Curse Surge POI name.
+
+## 12.1.0.23 — 2026-08-13
+
+- Automatically focus the in-game Events entry for a Curse Surge when its two-minute starting phase begins and the standalone tracker is visible.
+- Resolve the matching scheduled event from Blizzard's Event Scheduler data and focus it once per surge without opening the world map.
+
 ## 12.1.0.22 — 2026-08-13
 
 - Split each Curse Surge window into a two-minute `Curse Surge Starting` phase followed by a three-minute `Curse Surge Active` phase.

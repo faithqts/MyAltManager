@@ -98,6 +98,7 @@ constants.CURSE_SURGE = {
     INTERVAL_SECONDS = 45 * 60,
     STARTING_SECONDS = 2 * 60,
     ACTIVE_SECONDS = 5 * 60,
+    EVENT_START_TOLERANCE_SECONDS = 60,
     -- 2026-08-12 17:00 GMT+8 (09:00 UTC), supplied launch-day observation.
     ANCHOR_EPOCH = 1786525200,
 }
@@ -446,7 +447,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.22"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.24"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -2645,22 +2646,23 @@ local function GetCurseSurgeStatus()
     local now = GetServerTime()
     local schedule = constants.CURSE_SURGE
     local elapsed = (now - schedule.ANCHOR_EPOCH) % schedule.INTERVAL_SECONDS
+    local surgeStartEpoch = now - elapsed
     if elapsed < schedule.STARTING_SECONDS then
         local secondsRemaining = schedule.STARTING_SECONDS - elapsed
-        return "starting", secondsRemaining, now + secondsRemaining, elapsed, schedule.STARTING_SECONDS
+        return "starting", secondsRemaining, now + secondsRemaining, elapsed, schedule.STARTING_SECONDS, surgeStartEpoch
     end
 
     if elapsed < schedule.ACTIVE_SECONDS then
         local activeElapsed = elapsed - schedule.STARTING_SECONDS
         local activeDuration = schedule.ACTIVE_SECONDS - schedule.STARTING_SECONDS
         local secondsRemaining = activeDuration - activeElapsed
-        return "active", secondsRemaining, now + secondsRemaining, activeElapsed, activeDuration
+        return "active", secondsRemaining, now + secondsRemaining, activeElapsed, activeDuration, surgeStartEpoch
     end
 
     local secondsUntil = schedule.INTERVAL_SECONDS - elapsed
     local waitingElapsed = elapsed - schedule.ACTIVE_SECONDS
     local waitingDuration = schedule.INTERVAL_SECONDS - schedule.ACTIVE_SECONDS
-    return "waiting", secondsUntil, now + secondsUntil, waitingElapsed, waitingDuration
+    return "waiting", secondsUntil, now + secondsUntil, waitingElapsed, waitingDuration, surgeStartEpoch
 end
 
 local function FormatCurseSurgeCountdown(seconds)
@@ -2668,6 +2670,119 @@ local function FormatCurseSurgeCountdown(seconds)
     local minutes = math.floor(seconds / 60)
     local remainingSeconds = seconds % 60
     return ("%02d:%02d"):format(minutes, remainingSeconds)
+end
+
+local function FindScheduledCurseSurgeEvent(surgeStartEpoch)
+    if not surgeStartEpoch or not C_EventScheduler or not C_EventScheduler.GetScheduledEvents then
+        return nil
+    end
+
+    local scheduledEvents = C_EventScheduler.GetScheduledEvents()
+    if type(scheduledEvents) ~= "table" then
+        return nil
+    end
+
+    local schedule = constants.CURSE_SURGE
+    local bestEvent
+    local bestScore
+    for _, eventInfo in ipairs(scheduledEvents) do
+        local startTime = tonumber(eventInfo.startTime)
+        local areaPoiID = tonumber(eventInfo.areaPoiID)
+        if startTime and areaPoiID then
+            local startDifference = math.abs(startTime - surgeStartEpoch)
+            if startDifference <= schedule.EVENT_START_TOLERANCE_SECONDS then
+                local duration = tonumber(eventInfo.duration)
+                    or ((tonumber(eventInfo.endTime) or startTime) - startTime)
+                local durationDifference = math.abs(duration - schedule.ACTIVE_SECONDS)
+                local score = (startDifference * 10000) + durationDifference
+                if not bestScore or score < bestScore then
+                    bestEvent = eventInfo
+                    bestScore = score
+                end
+            end
+        end
+    end
+
+    return bestEvent
+end
+
+local function GetCurseSurgeEventName(areaPoiID)
+    if not areaPoiID or not C_AreaPoiInfo or not C_AreaPoiInfo.GetAreaPOIInfo then
+        return nil
+    end
+
+    -- This is the same nil-map lookup used by Blizzard's Events panel.
+    local poiInfo = C_AreaPoiInfo.GetAreaPOIInfo(nil, areaPoiID)
+    return poiInfo and poiInfo.name or nil
+end
+
+function AltManager:RequestCurseSurgeEventData()
+    if not C_EventScheduler or not C_EventScheduler.RequestEvents then return end
+
+    local now = GetTime and GetTime() or 0
+    if self._curseSurgeEventRequestTime and now - self._curseSurgeEventRequestTime < 10 then
+        return
+    end
+
+    self._curseSurgeEventRequestTime = now
+    C_EventScheduler.RequestEvents()
+end
+
+function AltManager:RefreshCurseSurgeEventName()
+    if self._curseSurgeEventName or not self._curseSurgeAreaPoiID then return end
+    self._curseSurgeEventName = GetCurseSurgeEventName(self._curseSurgeAreaPoiID)
+end
+
+function AltManager:RefreshCurseSurgeEventCache()
+    local tracker = self.curseSurgeTracker
+    if not tracker or not tracker:IsShown() then return end
+
+    local phase, _, phaseEndEpoch, _, _, surgeStartEpoch = GetCurseSurgeStatus()
+    if not phase then return end
+
+    local targetStartEpoch = phase == "waiting" and phaseEndEpoch or surgeStartEpoch
+    if self._curseSurgeEventStartEpoch == targetStartEpoch
+        and self._curseSurgeAreaPoiID and self._curseSurgeEventName then
+        return
+    end
+
+    local eventInfo = FindScheduledCurseSurgeEvent(targetStartEpoch)
+    if not eventInfo then
+        self:RequestCurseSurgeEventData()
+        return
+    end
+
+    self._curseSurgeEventStartEpoch = targetStartEpoch
+    self._curseSurgeAreaPoiID = eventInfo.areaPoiID
+    self._curseSurgeEventName = nil
+    C_Timer.After(0, function()
+        AltManager:RefreshCurseSurgeEventName()
+    end)
+end
+
+-- Keep the scheduler lookup in its own timer callback. Event timestamps can be
+-- secret in 12.x, while SetSuperTrackedMapPin must run outside that tainted path.
+function AltManager:FocusStartingCurseSurge(surgeStartEpoch)
+    if not surgeStartEpoch or self._curseSurgeFocusedStartEpoch == surgeStartEpoch then return end
+    if not C_SuperTrack or not C_SuperTrack.SetSuperTrackedMapPin
+        or not Enum or not Enum.SuperTrackingMapPinType
+        or not Enum.SuperTrackingMapPinType.AreaPOI then
+        return
+    end
+
+    local areaPoiID = self._curseSurgeEventStartEpoch == surgeStartEpoch
+        and self._curseSurgeAreaPoiID or nil
+    if not areaPoiID then return end
+
+    local focusedAreaPoiID
+    if C_SuperTrack.GetSuperTrackedMapPin then
+        local _, currentAreaPoiID = C_SuperTrack.GetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI)
+        focusedAreaPoiID = currentAreaPoiID
+    end
+    if focusedAreaPoiID ~= areaPoiID then
+        C_SuperTrack.SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI, areaPoiID)
+    end
+    self._curseSurgeFocusedStartEpoch = surgeStartEpoch
 end
 
 function AltManager:ApplyCurseSurgeTrackerSettings()
@@ -2682,13 +2797,14 @@ function AltManager:ApplyCurseSurgeTrackerSettings()
     local opacity = math.max(0, math.min(100, tonumber(config.curse_surge_tracker_background_opacity) or defaults.BACKGROUND_OPACITY)) / 100
 
     tracker:SetSize(width, height)
+    tracker.icon:SetSize(height, height)
     tracker.background:SetColorTexture(0x18 / 255, 0x1A / 255, 0x1B / 255, opacity)
     SetFontSize(tracker.statusText, GameFontNormal, fontSize, "OUTLINE")
     SetFontSize(tracker.timerText, GameFontNormal, fontSize, "OUTLINE")
     local timerWidth = math.max(66, math.ceil(fontSize * 4.5))
     tracker.timerText:SetWidth(timerWidth)
     tracker.statusText:ClearAllPoints()
-    tracker.statusText:SetPoint("TOPLEFT", tracker, "TOPLEFT", 10, 0)
+    tracker.statusText:SetPoint("TOPLEFT", tracker, "TOPLEFT", height + 8, 0)
     tracker.statusText:SetPoint("BOTTOMRIGHT", tracker, "BOTTOMRIGHT", -(timerWidth + 16), 0)
 end
 
@@ -2696,7 +2812,7 @@ function AltManager:UpdateCurseSurgeTracker()
     local tracker = self.curseSurgeTracker
     if not tracker or not tracker:IsShown() then return end
 
-    local phase, secondsRemaining, _, phaseElapsed, phaseDuration = GetCurseSurgeStatus()
+    local phase, secondsRemaining, phaseEndEpoch, phaseElapsed, phaseDuration, surgeStartEpoch = GetCurseSurgeStatus()
     if phase == nil then
         tracker.statusText:SetText("Curse Surge Unavailable")
         tracker.timerText:SetText("--:--")
@@ -2705,7 +2821,9 @@ function AltManager:UpdateCurseSurgeTracker()
         return
     end
 
-    local statusText = "Next Curse Surge"
+    local nextEventName = self._curseSurgeEventStartEpoch == phaseEndEpoch
+        and self._curseSurgeEventName or nil
+    local statusText = nextEventName and ("Next: " .. nextEventName) or "Next Curse Surge"
     if phase == "starting" then
         statusText = "Curse Surge Starting"
     elseif phase == "active" then
@@ -2719,6 +2837,9 @@ function AltManager:UpdateCurseSurgeTracker()
         tracker:SetValue(math.max(0, phaseElapsed or 0))
     else
         tracker:SetValue(math.max(0, secondsRemaining or 0))
+        if phase == "starting" then
+            self:FocusStartingCurseSurge(surgeStartEpoch)
+        end
     end
 end
 
@@ -2728,13 +2849,23 @@ function AltManager:StopCurseSurgeTrackerTicker()
         self._curseSurgeTrackerTicker:Cancel()
         self._curseSurgeTrackerTicker = nil
     end
+    if self._curseSurgeEventResolverTicker then
+        self._curseSurgeEventResolverTicker:Cancel()
+        self._curseSurgeEventResolverTicker = nil
+    end
 end
 
 function AltManager:StartCurseSurgeTrackerTicker()
     self:StopCurseSurgeTrackerTicker()
     self:UpdateCurseSurgeTracker()
+    C_Timer.After(0, function()
+        AltManager:RefreshCurseSurgeEventCache()
+    end)
     self._curseSurgeTrackerTicker = C_Timer.NewTicker(1, function()
         AltManager:UpdateCurseSurgeTracker()
+    end)
+    self._curseSurgeEventResolverTicker = C_Timer.NewTicker(5, function()
+        AltManager:RefreshCurseSurgeEventCache()
     end)
 end
 
@@ -2778,6 +2909,18 @@ function AltManager:InitializeCurseSurgeTracker()
     tracker.background = tracker:CreateTexture(nil, "BACKGROUND")
     tracker.background:SetAllPoints()
 
+    tracker.icon = tracker:CreateTexture(nil, "OVERLAY", nil, 6)
+    tracker.icon:SetTexture("Interface\\Icons\\inv_ability_poison_groundstate")
+    tracker.icon:SetDrawLayer("OVERLAY", 6)
+    tracker.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    tracker.icon:SetPoint("LEFT", tracker, "LEFT", 0, 0)
+
+    tracker.iconDivider = tracker:CreateTexture(nil, "OVERLAY", nil, 7)
+    SetTextureColor(tracker.iconDivider, constants.colors.barBorder)
+    tracker.iconDivider:SetPoint("TOPLEFT", tracker.icon, "TOPRIGHT", 0, -1)
+    tracker.iconDivider:SetPoint("BOTTOMLEFT", tracker.icon, "BOTTOMRIGHT", 0, 1)
+    tracker.iconDivider:SetWidth(1)
+
     tracker.statusText = CreateText(tracker, GameFontNormal, constants.CURSE_SURGE_TRACKER.FONT_SIZE)
     tracker.statusText:SetJustifyH("LEFT")
     SetFontColor(tracker.statusText, constants.colors.brightText)
@@ -2789,6 +2932,9 @@ function AltManager:InitializeCurseSurgeTracker()
     SetFontColor(tracker.timerText, constants.colors.brightText)
 
     CreateInsetBorder(tracker)
+    for _, borderPart in ipairs(tracker.borderParts) do
+        borderPart:SetDrawLayer("OVERLAY", 7)
+    end
     tracker:SetScript("OnDragStart", function(frame)
         frame:StartMoving()
     end)
@@ -2835,7 +2981,7 @@ function AltManager:UpdateFooterCurseSurge()
         return
     end
 
-    local icon = "|TInterface\\Icons\\inv_ability_poison_buff:12:12:0:0|t"
+    local icon = "|TInterface\\Icons\\inv_ability_poison_groundstate:12:12:0:0|t"
     if phase == "starting" then
         footerCurseSurge.text:SetText(("%s Curse Surge Starting"):format(icon))
     elseif phase == "active" then

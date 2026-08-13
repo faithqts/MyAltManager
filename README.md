@@ -2,7 +2,7 @@
 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact, sortable panel.
 
-Current addon version: 12.1.0.22 (TOC interface 120100).
+Current addon version: 12.1.0.24 (TOC interface 120100).
 
 See [MyAltManager Patch Notes](CHANGELOG.md) for the complete version history.
 
@@ -95,6 +95,8 @@ The addon registers a settings category named MyAltManager with:
 - Characters are shown in descending item-level order
 - The footer shows the next Curse Surge on its 45-minute schedule, including its two-minute starting and three-minute active phases
 - Click the Curse Surge footer to toggle a draggable standalone progress bar
+- The standalone tracker includes a height-matched Curse Surge icon inside the bar, with padded status text, and names the next scheduled surge event when Blizzard provides its POI name
+- While that tracker is visible, the active Curse Surge is automatically focused on the map when its starting phase begins
 - Use settings to hide sections or specific rows you do not care about
 
 ## Credits
