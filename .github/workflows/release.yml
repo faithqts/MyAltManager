@@ -94,16 +94,14 @@ jobs:
           rm -rf "$PACKAGE_DIR"
           mkdir -p "$PACKAGE_DIR/$PROJECT_NAME"
 
-          rsync -a \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.vscode/' \
-            --exclude 'references/' \
-            --exclude 'node_modules/' \
-            --exclude '.gitignore' \
-            --exclude '.editorconfig' \
-            --exclude 'README.md' \
-            . "$PACKAGE_DIR/$PROJECT_NAME/"
+            rsync -a \
+              --include '/*.toc' \
+              --include '/*.lua' \
+              --include '/*.xml' \
+              --include '/libs/***' \
+              --include '/media/***' \
+              --exclude '*' \
+              . "$PACKAGE_DIR/$PROJECT_NAME/"
 
       - name: Create Zip
         if: steps.release_gate.outputs.should_release == 'true'
