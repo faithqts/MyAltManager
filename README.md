@@ -2,7 +2,7 @@
 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact, sortable panel.
 
-Current addon version: 12.1.0.24 (TOC interface 120100).
+Current addon version: 12.1.0.30 (TOC interface 120100).
 
 See [MyAltManager Patch Notes](CHANGELOG.md) for the complete version history.
 
@@ -28,7 +28,7 @@ The addon stores data per character and displays it in columns.
 	- Bloody Tokens
 - Weekly activity status
 	- Weekly Meta Quest (Trailing Xal'atath)
-	- Curse Surges
+	- Turn Back the Surge
 	- Purging the Vaults
 	- Sath'theril Soiree
 	- Abundant Offerings

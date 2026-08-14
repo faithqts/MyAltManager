@@ -2,6 +2,34 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.30 — 2026-08-14
+
+- Made the standalone Curse Surge timer visibility character-specific while preserving its shared position and appearance settings.
+- Migrated the former shared enabled state to the first character loaded after updating.
+
+## 12.1.0.29 — 2026-08-14
+
+- Matched the scale label, percentage, and button text sizes and changed the label to the same bright text color as the percentage.
+
+## 12.1.0.28 — 2026-08-14
+
+- Tightened the title-bar scale control spacing and replaced the default panel buttons with compact flat buttons styled to match MyAltManager.
+
+## 12.1.0.27 — 2026-08-14
+
+- Renamed the weekly quest display from `Curse Surges` to `Turn Back the Surge` while retaining its live `X/3` progress.
+- Added live `X/4` progress for Midnight: World Tour, excluding the optional Lor'themar conversation objective.
+
+## 12.1.0.26 — 2026-08-14
+
+- Widened the main dashboard so all six weekly quests fit on one drawer row.
+- Added a persistent title-bar scale control with 5% decrease and increase buttons and a displayed percentage.
+
+## 12.1.0.25 — 2026-08-14
+
+- Added live in-progress counts to Curse Surges and A Nightmarish Task in character drawers.
+- Added live percentage progress to Purging the Vaults without duplicating the percent symbol.
+
 ## 12.1.0.24 — 2026-08-13
 
 - Added the Curse Surge poison-buff icon inside the left edge of the standalone tracker, sized as a square matching the configured progress-bar height, rendered above the bar fill, with padding before the status text.

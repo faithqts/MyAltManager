@@ -19,13 +19,13 @@ AltManager.constants = constants
 
 constants.DATA_SCHEMA = 2
 constants.layout = {
-    FRAME_WIDTH = 870,
+    FRAME_WIDTH = 1080,
     PAD_X = 14,
     COL_GAP = 10,
-    COL_CHARACTER = 222,
-    COL_MPLUS = 90,
-    COL_VAULT = 260,
-    COL_CURRENCY = 240,
+    COL_CHARACTER = 250,
+    COL_MPLUS = 110,
+    COL_VAULT = 370,
+    COL_CURRENCY = 292,
     ROW_HEIGHT = 58,
     HEADER_HEIGHT = 26,
     TITLE_HEIGHT = 32,
@@ -90,6 +90,9 @@ constants.config.MIN_ITEM_LEVEL = 0 -- controlled via settings panel
 constants.config.COLLECT_MIN_INTERVAL_SECONDS = 1.5
 constants.config.MYTHICPLUS_METADATA_MIN_INTERVAL_SECONDS = 20
 constants.config.UI_SCALE = 1.10
+constants.config.UI_SCALE_MIN = 0.50
+constants.config.UI_SCALE_MAX = 1.50
+constants.config.UI_SCALE_STEP = 0.05
 -- Default before SavedVariables are loaded; LoadConfigFromDB applies the saved setting.
 constants.config.ENABLE_DRAWER = false
 
@@ -141,7 +144,7 @@ constants.labels = {
     COFFER_KEY_SHARDS = "Coffer Key Shards |TInterface\\Icons\\inv_gizmo_hardenedadamantitetube:12:12:0:0|t",
     VOIDLIGHT_MARL = "Voidlight Marl |TInterface\\Icons\\inv_112_raidtrinkets_voidprism:12:12:0:0|t",
     WEEKLY_META_QUEST = "Weekly Meta Quest",
-    CURSE_SURGES = "Curse Surges",
+    CURSE_SURGES = "Turn Back the Surge",
     SATHTHERIL_SOIREE = "Sath'theril Soiree",
     PURGING_THE_VAULTS = "Purging the Vaults",
     ABUNDANT_OFFERINGS = "Abundant Offerings",
@@ -191,7 +194,7 @@ constants.sections = {
         keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "purging_the_vaults", "hidden_trove", "nightmarish_task", "world_boss" },
         children = {
             { key = "weekly_meta_quest",       dataKey = "weeklyMetaQuest",      label = "Weekly Meta Quest" },
-            { key = "curse_surges",            dataKey = "curseSurges",          label = "Curse Surges" },
+            { key = "curse_surges",            dataKey = "curseSurges",          label = "Turn Back the Surge" },
             { key = "purging_the_vaults",      dataKey = "purgingTheVaults",     label = "Purging the Vaults" },
             { key = "hidden_trove",            dataKey = "hiddenTrove",          label = "Hidden Trove (Delves)" },
             { key = "nightmarish_task",        dataKey = "nightmarishTask",       label = "A Nightmarish Task" },
@@ -447,7 +450,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.24"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.30"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -634,6 +637,9 @@ function AltManager:ScheduleCollect(reason)
         if not self:CanCollectNow() then return end
         if self:CollectAndStore() then
             self._lastCollectAt = GetMonotonicTime()
+            if self.main_frame and self.main_frame:IsShown() then
+                self:RebuildUI()
+            end
         end
     end)
 end
@@ -700,9 +706,13 @@ function AltManager:LoadConfigFromDB()
     if db.config.MIN_LEVEL == nil then
         db.config.MIN_LEVEL = 80
     end
+    local frameScale = tonumber(db.config.frame_scale) or constants.config.UI_SCALE
+    frameScale = math.max(constants.config.UI_SCALE_MIN, math.min(constants.config.UI_SCALE_MAX, frameScale))
+    frameScale = math.floor((frameScale * 20) + 0.5) / 20
+    db.config.frame_scale = frameScale
     local trackerDefaults = constants.CURSE_SURGE_TRACKER
-    if db.config.curse_surge_tracker_shown == nil then
-        db.config.curse_surge_tracker_shown = false
+    if type(db.config.curse_surge_tracker_shown_by_character) ~= "table" then
+        db.config.curse_surge_tracker_shown_by_character = {}
     end
     if db.config.curse_surge_tracker_width == nil then
         db.config.curse_surge_tracker_width = trackerDefaults.WIDTH
@@ -741,6 +751,7 @@ function AltManager:LoadConfigFromDB()
 
     constants.config.MIN_ITEM_LEVEL = tonumber(db.config.MIN_ITEM_LEVEL) or 0
     constants.config.MIN_LEVEL = tonumber(db.config.MIN_LEVEL) or 80
+    constants.config.UI_SCALE = frameScale
     constants.config.ENABLE_DRAWER = db.config.enable_drawer and true or false
 end
 
@@ -925,6 +936,7 @@ do
 
     main_frame:RegisterEvent("ADDON_LOADED")
     main_frame:RegisterEvent("PLAYER_LOGIN")
+    main_frame:RegisterEvent("QUEST_LOG_UPDATE")
     main_frame:RegisterEvent("QUEST_TURNED_IN")
     main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
     main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
@@ -956,6 +968,7 @@ do
         end
 
         if event == "BAG_UPDATE_DELAYED"
+            or event == "QUEST_LOG_UPDATE"
             or event == "QUEST_TURNED_IN"
             or event == "CURRENCY_DISPLAY_UPDATE"
             or event == "WEEKLY_REWARDS_UPDATE"
@@ -1001,7 +1014,8 @@ function AltManager:InitDB()
         drawer_config_version = 1,
         openRows = {},
         sort = "ilevel",
-        curse_surge_tracker_shown = false,
+        frame_scale = constants.config.UI_SCALE,
+        curse_surge_tracker_shown_by_character = {},
         curse_surge_tracker_width = constants.CURSE_SURGE_TRACKER.WIDTH,
         curse_surge_tracker_height = constants.CURSE_SURGE_TRACKER.HEIGHT,
         curse_surge_tracker_font_size = constants.CURSE_SURGE_TRACKER.FONT_SIZE,
@@ -1277,6 +1291,88 @@ function AltManager:CollectData()
         return inProgress and "inprogress" or "notstarted"
     end
 
+    local function GetQuestObjectiveProgress(questID, expectedRequired)
+        local objectives = C_QuestLog.GetQuestObjectives(questID) or {}
+        local fallback
+        for _, objective in ipairs(objectives) do
+            local progress = tonumber(objective.numFulfilled)
+            local required = tonumber(objective.numRequired)
+            if progress and required and required > 0 then
+                local values = { progress = progress, required = required }
+                if required == expectedRequired then
+                    return values
+                end
+                fallback = fallback or values
+            end
+        end
+        return fallback
+    end
+
+    local function GetCountQuestStatus(questID, expectedRequired)
+        local weekly = { status = QuestSetStatus({ questID }) }
+        if weekly.status ~= "inprogress" then return weekly end
+
+        local objective = GetQuestObjectiveProgress(questID, expectedRequired)
+        if objective then
+            weekly.progressType = "count"
+            weekly.progress = objective.progress
+            weekly.required = objective.required
+        end
+        return weekly
+    end
+
+    local function GetPercentageQuestStatus(questID)
+        local weekly = { status = QuestSetStatus({ questID }) }
+        if weekly.status ~= "inprogress" then return weekly end
+
+        local percentage
+        if type(GetQuestProgressBarPercent) == "function" then
+            percentage = tonumber(GetQuestProgressBarPercent(questID))
+        end
+        if not percentage then
+            local objective = GetQuestObjectiveProgress(questID, 100)
+            if objective then
+                percentage = (objective.progress / objective.required) * 100
+            end
+        end
+        if percentage then
+            weekly.progressType = "percent"
+            weekly.progress = math.floor(math.max(0, math.min(100, percentage)) + 0.5)
+        end
+        return weekly
+    end
+
+    local function GetMidnightWorldTourStatus()
+        local questID = 95245
+        local requiredCount = 4
+        local weekly = { status = QuestSetStatus({ questID }) }
+        if weekly.status ~= "inprogress" then return weekly end
+
+        local completed = 0
+        local tracked = 0
+        for _, objective in ipairs(C_QuestLog.GetQuestObjectives(questID) or {}) do
+            local normalizedText = tostring(objective.text or ""):lower():gsub("[^%a]", "")
+            local isOptional = normalizedText:find("lorthemar", 1, true) ~= nil
+            if not isOptional then
+                tracked = tracked + 1
+                local progress = tonumber(objective.numFulfilled) or 0
+                local required = tonumber(objective.numRequired) or 0
+                if objective.finished or (required > 0 and progress >= required) then
+                    completed = completed + 1
+                end
+            end
+        end
+
+        -- Only report a count when the optional objective was successfully excluded
+        -- (or Blizzard omitted it) and exactly four required objectives remain.
+        if tracked == requiredCount then
+            weekly.progressType = "count"
+            weekly.progress = completed
+            weekly.required = requiredCount
+        end
+        return weekly
+    end
+
     local function checkWeeklyMetaQuestStatus()
         return QuestSetStatus({ 98172 }) -- Trailing Xal'atath
     end
@@ -1336,17 +1432,17 @@ function AltManager:CollectData()
     local ownedKeystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
 
     local weeklyMetaQuest = checkWeeklyMetaQuestStatus()
-    local curseSurges = QuestSetStatus({ 96995 })
+    local curseSurges = GetCountQuestStatus(96995, 3)
     local worldBoss = checkWorldBossStatus()
 
     local abundantOfferings = QuestSetStatus({ 89507 })
     local stormarianAssault = QuestSetStatus({ 94581 })
     local legendsOfTheHaranir = QuestSetStatus({ 89268 })
     local saththerilSoiree = checkSaththerilSoireeStatus()
-    local midnightWorldTour = QuestSetStatus({ 95245 })
+    local midnightWorldTour = GetMidnightWorldTourStatus()
     local hiddenTrove = QuestSetStatus({ 86371 })
-    local nightmarishTask = QuestSetStatus({ 94446 })
-    local purgingTheVaults = QuestSetStatus({ 95520 })
+    local nightmarishTask = GetCountQuestStatus(94446, 3)
+    local purgingTheVaults = GetPercentageQuestStatus(95520)
 
     local weeklyCofferKeysCollected = checkWeeklyCofferKeysCollected()
 
@@ -1419,15 +1515,38 @@ function AltManager:CollectData()
         },
         weeklies = {
             { key = "weeklyMetaQuest", status = weeklyMetaQuest },
-            { key = "curseSurges", status = curseSurges },
-            { key = "purgingTheVaults", status = purgingTheVaults },
+            {
+                key = "curseSurges",
+                status = curseSurges.status,
+                progressType = curseSurges.progressType,
+                progress = curseSurges.progress,
+                required = curseSurges.required,
+            },
+            {
+                key = "purgingTheVaults",
+                status = purgingTheVaults.status,
+                progressType = purgingTheVaults.progressType,
+                progress = purgingTheVaults.progress,
+            },
             { key = "saththerilSoiree", status = saththerilSoiree },
             { key = "abundantOfferings", status = abundantOfferings },
             { key = "legendsOfTheHaranir", status = legendsOfTheHaranir },
             { key = "stormarianAssault", status = stormarianAssault },
-            { key = "midnightWorldTour", status = midnightWorldTour },
+            {
+                key = "midnightWorldTour",
+                status = midnightWorldTour.status,
+                progressType = midnightWorldTour.progressType,
+                progress = midnightWorldTour.progress,
+                required = midnightWorldTour.required,
+            },
             { key = "hiddenTrove", status = hiddenTrove },
-            { key = "nightmarishTask", status = nightmarishTask },
+            {
+                key = "nightmarishTask",
+                status = nightmarishTask.status,
+                progressType = nightmarishTask.progressType,
+                progress = nightmarishTask.progress,
+                required = nightmarishTask.required,
+            },
             { key = "worldBoss", status = worldBoss },
         },
         pvp = {
@@ -1592,6 +1711,37 @@ local function CreateText(parent, fontObject, size, layer)
     return text
 end
 
+function AltManager:UpdateFrameScaleControl()
+    local frame = self.main_frame
+    if not frame or not frame.scaleValue then return end
+
+    local scale = tonumber(constants.config.UI_SCALE) or 1
+    frame.scaleValue:SetText(("%d%%"):format(math.floor((scale * 100) + 0.5)))
+    local canDecrease = scale > constants.config.UI_SCALE_MIN
+    local canIncrease = scale < constants.config.UI_SCALE_MAX
+    frame.scaleDecrease:SetEnabled(canDecrease)
+    frame.scaleDecrease:SetAlpha(canDecrease and 1 or 0.35)
+    frame.scaleIncrease:SetEnabled(canIncrease)
+    frame.scaleIncrease:SetAlpha(canIncrease and 1 or 0.35)
+end
+
+function AltManager:SetFrameScale(scale)
+    scale = tonumber(scale) or constants.config.UI_SCALE
+    scale = math.max(constants.config.UI_SCALE_MIN, math.min(constants.config.UI_SCALE_MAX, scale))
+    scale = math.floor((scale * 20) + 0.5) / 20
+
+    constants.config.UI_SCALE = scale
+    MyAltManagerDB.config.frame_scale = scale
+    self.main_frame:SetScale(scale)
+    self:UpdateFrameScaleControl()
+end
+
+function AltManager:AdjustFrameScale(direction)
+    local scale = (tonumber(constants.config.UI_SCALE) or 1)
+        + ((tonumber(direction) or 0) * constants.config.UI_SCALE_STEP)
+    self:SetFrameScale(scale)
+end
+
 local function SetGradientTexture(texture, topColor, bottomColor)
     texture:SetGradient(
         "VERTICAL",
@@ -1620,6 +1770,43 @@ local function CreateInsetBorder(frame)
     frame.borderParts[4]:SetPoint("TOPRIGHT")
     frame.borderParts[4]:SetPoint("BOTTOMRIGHT")
     frame.borderParts[4]:SetWidth(1)
+end
+
+local function CreateFlatButton(parent, label)
+    local button = CreateFrame("Button", nil, parent)
+    button:SetSize(18, 18)
+
+    button.background = button:CreateTexture(nil, "BACKGROUND")
+    button.background:SetAllPoints()
+    SetTextureColor(button.background, constants.colors.barEmpty)
+
+    button.highlight = button:CreateTexture(nil, "HIGHLIGHT")
+    button.highlight:SetAllPoints()
+    button.highlight:SetColorTexture(
+        constants.colors.goldDark[1],
+        constants.colors.goldDark[2],
+        constants.colors.goldDark[3],
+        0.35
+    )
+    button:SetHighlightTexture(button.highlight)
+
+    button.pushed = button:CreateTexture(nil, "ARTWORK")
+    button.pushed:SetAllPoints()
+    button.pushed:SetColorTexture(
+        constants.colors.gold[1],
+        constants.colors.gold[2],
+        constants.colors.gold[3],
+        0.25
+    )
+    button:SetPushedTexture(button.pushed)
+
+    button.label = CreateText(button, GameFontNormalSmall, 10)
+    button.label:SetAllPoints()
+    button.label:SetJustifyH("CENTER")
+    button.label:SetText(label)
+    SetFontColor(button.label, constants.colors.brightText)
+    CreateInsetBorder(button)
+    return button
 end
 
 function AltManager:GetColumnLayout()
@@ -1714,6 +1901,32 @@ function AltManager:InitializeFrame()
     frame.title:SetPoint("CENTER")
     frame.title:SetText("MyAltManager")
     SetFontColor(frame.title, constants.colors.titleText)
+
+    frame.scaleControl = CreateFrame("Frame", nil, frame.titleBar)
+    frame.scaleControl:SetPoint("LEFT", frame.titleBar, "LEFT", 8, 0)
+    frame.scaleControl:SetSize(112, layout.TITLE_HEIGHT - 3)
+
+    frame.scaleLabel = CreateText(frame.scaleControl, GameFontNormalSmall, 10)
+    frame.scaleLabel:SetPoint("LEFT", frame.scaleControl, "LEFT", 0, 0)
+    frame.scaleLabel:SetSize(34, 20)
+    frame.scaleLabel:SetJustifyH("LEFT")
+    frame.scaleLabel:SetText("Scale:")
+    SetFontColor(frame.scaleLabel, constants.colors.brightText)
+
+    frame.scaleDecrease = CreateFlatButton(frame.scaleControl, "-")
+    frame.scaleDecrease:SetPoint("LEFT", frame.scaleLabel, "RIGHT", 2, 0)
+    frame.scaleDecrease:SetScript("OnClick", function() AltManager:AdjustFrameScale(-1) end)
+
+    frame.scaleValue = CreateText(frame.scaleControl, GameFontNormalSmall, 10)
+    frame.scaleValue:SetPoint("LEFT", frame.scaleDecrease, "RIGHT", 1, 0)
+    frame.scaleValue:SetSize(36, 18)
+    frame.scaleValue:SetJustifyH("CENTER")
+    SetFontColor(frame.scaleValue, constants.colors.brightText)
+
+    frame.scaleIncrease = CreateFlatButton(frame.scaleControl, "+")
+    frame.scaleIncrease:SetPoint("LEFT", frame.scaleValue, "RIGHT", 1, 0)
+    frame.scaleIncrease:SetScript("OnClick", function() AltManager:AdjustFrameScale(1) end)
+    self:UpdateFrameScaleControl()
 
     frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
@@ -2321,28 +2534,42 @@ function AltManager:ConfigureDrawer(drawer, data)
         cursor = cursor + (math.ceil(#entries / columns) * rowHeight) + 7
     end
 
-    local statusByKey = {}
+    local weeklyByKey = {}
     for _, weekly in ipairs(data.weeklies or {}) do
-        statusByKey[weekly.key] = weekly.status
+        weeklyByKey[weekly.key] = weekly
     end
 
     local STATUS_ORDER = { complete = 1, inprogress = 2, notstarted = 3, incomplete = 3 }
-    local function AddWeeklyGroup(sectionKey, headingText)
+    local function AddWeeklyGroup(sectionKey, headingText, columns)
         if not self:IsRowVisible(sectionKey) then return end
 
         local section = FindSection(sectionKey)
         local entries = {}
         for _, child in ipairs((section and section.children) or {}) do
             if self:IsRowVisible(child.key) then
-                local status = statusByKey[child.dataKey] or "notstarted"
+                local weekly = weeklyByKey[child.dataKey] or {}
+                local status = weekly.status or "notstarted"
                 if status == "incomplete" then status = "notstarted" end
                 local style = STATUS_STYLES[status] or STATUS_STYLES.notstarted
+                local progressText = ""
+                if status == "inprogress" and weekly.progressType == "percent" then
+                    local progress = tonumber(weekly.progress)
+                    if progress then
+                        progressText = (" (%d%%)"):format(progress)
+                    end
+                elseif status == "inprogress" and weekly.progressType == "count" then
+                    local progress = tonumber(weekly.progress)
+                    local required = tonumber(weekly.required)
+                    if progress and required and required > 0 then
+                        progressText = (" (%d/%d)"):format(progress, required)
+                    end
+                end
                 entries[#entries + 1] = {
                     key = child.key,
                     label = child.label,
                     status = status,
                     alwaysLast = child.alwaysLast,
-                    text = style.glyph .. " " .. child.label,
+                    text = style.glyph .. " " .. child.label .. progressText,
                     color = status == "complete" and constants.colors.muted or constants.colors.body,
                 }
             end
@@ -2365,12 +2592,12 @@ function AltManager:ConfigureDrawer(drawer, data)
                 if entry.status == "complete" then completed = completed + 1 end
             end
             AddHeading(("%s — %d/%d COMPLETE"):format(headingText, completed, #entries))
-            AddGrid(entries, 6)
+            AddGrid(entries, columns or 6)
         end
     end
 
-    AddWeeklyGroup("world_events", "WORLD EVENTS")
-    AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS")
+    AddWeeklyGroup("world_events", "WORLD EVENTS", 6)
+    AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS", 6)
 
     if self:IsRowVisible("drawer_currencies") then
         local section = FindSection("currencies")
@@ -2869,13 +3096,34 @@ function AltManager:StartCurseSurgeTrackerTicker()
     end)
 end
 
+function AltManager:IsCurseSurgeTrackerShown()
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    local guid = UnitGUID("player")
+    if not config or not guid then return false end
+
+    config.curse_surge_tracker_shown_by_character = config.curse_surge_tracker_shown_by_character or {}
+
+    -- Migrate the former account-wide value to the first character loaded after this update.
+    if config.curse_surge_tracker_shown ~= nil then
+        if config.curse_surge_tracker_shown_by_character[guid] == nil then
+            config.curse_surge_tracker_shown_by_character[guid] = config.curse_surge_tracker_shown and true or false
+        end
+        config.curse_surge_tracker_shown = nil
+    end
+
+    return config.curse_surge_tracker_shown_by_character[guid] == true
+end
+
 function AltManager:SetCurseSurgeTrackerShown(shown)
     local config = MyAltManagerDB and MyAltManagerDB.config
-    if not config then return end
+    local guid = UnitGUID("player")
+    if not config or not guid then return end
 
-    config.curse_surge_tracker_shown = shown and true or false
+    config.curse_surge_tracker_shown_by_character = config.curse_surge_tracker_shown_by_character or {}
+    config.curse_surge_tracker_shown_by_character[guid] = shown and true or false
+    config.curse_surge_tracker_shown = nil
     self:InitializeCurseSurgeTracker()
-    if config.curse_surge_tracker_shown then
+    if self:IsCurseSurgeTrackerShown() then
         self:ApplyCurseSurgeTrackerSettings()
         self.curseSurgeTracker:Show()
         self:StartCurseSurgeTrackerTicker()
@@ -2886,9 +3134,7 @@ function AltManager:SetCurseSurgeTrackerShown(shown)
 end
 
 function AltManager:ToggleCurseSurgeTracker()
-    local config = MyAltManagerDB and MyAltManagerDB.config
-    if not config then return end
-    self:SetCurseSurgeTrackerShown(not config.curse_surge_tracker_shown)
+    self:SetCurseSurgeTrackerShown(not self:IsCurseSurgeTrackerShown())
 end
 
 function AltManager:InitializeCurseSurgeTracker()
@@ -2963,7 +3209,7 @@ function AltManager:InitializeCurseSurgeTracker()
     end
 
     self:ApplyCurseSurgeTrackerSettings()
-    if MyAltManagerDB.config.curse_surge_tracker_shown then
+    if self:IsCurseSurgeTrackerShown() then
         tracker:Show()
         self:StartCurseSurgeTrackerTicker()
     else
