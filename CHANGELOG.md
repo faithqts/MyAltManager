@@ -2,6 +2,177 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.64 — 2026-08-21
+
+- Changed dashboard character ordering from descending item level to alphabetical character name, retiring the legacy saved sort value so the new order applies immediately.
+
+## 12.1.0.63 — 2026-08-21
+
+- Kept `Converting` at the exact same centered position and size as the normal Coffer Key Shards text while its cast-progress strip appears underneath.
+- Styled the eligible `Convert Keys` state with the same solid green background used by completed Great Vault segments.
+
+## 12.1.0.62 — 2026-08-21
+
+- Removed the Currencies and PvP sections from the expanded character drawer while retaining their collection and saved values; dashboard currencies remain visible.
+
+## 12.1.0.61 — 2026-08-21
+
+- Added comma-separated thousands to dashboard and drawer currencies, Mythic+ score, item levels, PvP balances, weekly count progress, and the Coffer Key Glue tooltip.
+
+## 12.1.0.60 — 2026-08-21
+
+- Added live Coffer Key Glue cast feedback: once the cast begins, `Convert Keys` changes to `Converting` with a compact progress bar beneath it and resets cleanly when the cast completes, fails, or is interrupted.
+- Raised the MyAltManager dashboard and its secure conversion click layer to fullscreen-dialog strata so the complete window stays above other game and addon frames.
+- Filled currencies without minimum, maximum, or rolling progress completely with the standard gold currency progress colour.
+
+## 12.1.0.59 — 2026-08-21
+
+- Expanded the Coffer Key Glue secure click target to the rendered bounds of both the shard icon and progress bar, so clicking the icon, `Convert Keys` text, or anywhere across the bar activates the toy.
+
+## 12.1.0.58 — 2026-08-21
+
+- Removed the redundant visible border from the transparent Coffer Key Glue secure overlay and now detach it before the dashboard closes, preventing an outline from remaining on screen.
+- Stopped rebuilding currency rows immediately after every click; failed casts while moving leave the dashboard untouched, while successful casts still refresh through the glue spell and currency-update events.
+
+## 12.1.0.57 — 2026-08-21
+
+- Changed `Convert Keys` to the secure item-action pattern used by working toy buttons: a left-click `item` action with `item:267291` as its protected attribute.
+- Reverted the green currency completion styling, restoring the previous dark backgrounds and gold rolling-progress fills while retaining numeric capped values such as `600/600`.
+
+## 12.1.0.56 — 2026-08-21
+
+- Fixed the `Convert Keys` click to invoke Coffer Key Glue through the client's native secure toy action instead of the non-functional `/use item:267291` macro form.
+- Retained the secure out-of-combat visibility guard and post-click currency refresh.
+
+## 12.1.0.55 — 2026-08-21
+
+- Fixed `Convert Keys` eligibility to use live Coffer Key Shards data for the logged-in character instead of allowing a legacy saved payload to keep the action hidden.
+- Recognized Coffer Key Glue through its known spell as well as its toy or physical item state.
+
+## 12.1.0.54 — 2026-08-21
+
+- Ensured `Convert Keys` takes priority whenever more than 100 Coffer Key Shards are spendable and Coffer Key Glue can be used, including after reaching the weekly-earned cap.
+- Kept the green numeric cap display for cases where conversion is unavailable.
+
+## 12.1.0.53 — 2026-08-21
+
+- Widened the currency area by 60 pixels, adding 20 pixels to each of its three currency progress bars.
+- Styled flat currency totals and capped rolling totals with the same green completion background as the Great Vault while retaining the existing in-progress colours.
+- Kept Coffer Key Shards numeric at the weekly cap, displaying `600/600` on the green background instead of `Weekly Cap`.
+
+## 12.1.0.52 — 2026-08-21
+
+- Fixed Coffer Key Shards to read Blizzard's weekly-earned and weekly-maximum currency fields, so progress such as `225/600` no longer collapses to the available balance as `25/25`.
+- Kept Coffer Key Glue conversion eligibility tied to the actual spendable shard balance, independently of the weekly progress shown on the dashboard.
+
+## 12.1.0.51 — 2026-08-21
+
+- Removed dashboard section, currency, weekly-row, PvP, and other content visibility options from the addon settings.
+- Made all supported dashboard columns and drawer details permanently available, ignoring and clearing legacy visibility choices and always enabling character drawers.
+- Kept settings focused on minimum tracked levels and visual sizing, plus the separate opt-in control required before sending Curse Surge announcements to guild chat.
+
+## 12.1.0.50 — 2026-08-21
+
+- Restricted the Coffer Key Glue secure action to out-of-combat use and added a combat guard inside its secure macro.
+- Changed Coffer Key Shards to show `Convert Keys` only when conversion is available, otherwise display the available shards against the spend-adjusted remaining weekly allowance, such as `25/400` after earning 225 and converting 200.
+- Added a green `Weekly Cap` state once the true weekly-earned total reaches its maximum, and refreshed the stored currency state immediately after the secure conversion click or glue spell succeeds.
+
+## 12.1.0.49 — 2026-08-21
+
+- Added a secure Coffer Key Glue action over the logged-in character's Coffer Key Shards currency when the toy is known and more than 100 shards are available.
+- Clicking the highlighted shard currency now uses Coffer Key Glue to convert the available shards into Restored Coffer Keys.
+- Kept the secure overlay independent from pooled dashboard rows and automatically hidden during combat or whenever the dashboard is closed.
+
+## 12.1.0.48 — 2026-08-21
+
+- Expanded the dashboard currency area to three fixed columns containing Tidal Spark Dust, Nebulous Voidcore, Restored Coffer Keys; Champion, Hero, and Myth Crests; and Voidlight Marl, Undercoin, and Coffer Key Shards.
+- Displayed flat available totals for Nebulous Voidcore, Restored Coffer Keys, Voidlight Marl, and Undercoin, while retaining current/weekly-maximum progress for sparks, crests, and Coffer Key Shards.
+- Added the weekly-highest keystone below the current keystone as a third Mythic+ line, with explicit empty states, and inset the close button from the window border.
+
+## 12.1.0.47 — 2026-08-21
+
+- Fixed the standalone Curse Surge tracker to resolve Blizzard's `Curse Surge:`-prefixed event names through the addon's short-name and coordinate table.
+- Kept every tracker phase concise as `Next: Short Event Name`, `Starting: Short Event Name`, or `Active: Short Event Name`.
+
+## 12.1.0.46 — 2026-08-18
+
+- Removed the coordinates from the standalone Curse Surge tracker, leaving just the phase and surge name.
+
+## 12.1.0.45 — 2026-08-18
+
+- Restored the clickable map pin in the Curse Surge guild announcement, placed after the coordinates.
+- Built the pin from the client's own waypoint hyperlink, which survives being sent by an addon where a composed link did not.
+- Saved and restored any waypoint and super-tracking you already had, so the announcement leaves your own map pin untouched.
+
+## 12.1.0.44 — 2026-08-18
+
+- Tracked Hidden Trove (Delves) from the Unlocking cast (spell 1248091) that opens the trove instead of a quest ID, so the row keeps working when the quest ID is re-issued each season.
+- Recorded the completion per character against the weekly reset, and cleared it automatically once that reset passes.
+- Kept the completion even when it is opened in combat or mid-delve, where data collection is deferred.
+
+## 12.1.0.43 — 2026-08-17
+
+- Shortened the Curse Surge names shown in the tracker, the footer tooltip, and the guild announcement to Looming Mutagenitor, Mlurkkr Massacre, Malformed Leviathan, Broodmother's Nest, and Whispering Marsh.
+- Kept matching on Blizzard's full event name and the boss name, so the shorter labels do not affect location lookup.
+
+## 12.1.0.42 — 2026-08-17
+
+- Named the surge in the standalone tracker's starting and active states, replacing "Curse Surge Starting" and "Curse Surge Active" with "Starting: <event>" and "Active: <event>".
+
+## 12.1.0.41 — 2026-08-17
+
+- Added the Curse Surge coordinates as `(xx, yy)` after the event text on the standalone tracker, in the same gold as the window header.
+
+## 12.1.0.40 — 2026-08-17
+
+- Made clicking the standalone Curse Surge tracker place and track a map pin at the surge, or clear it when that surge is already tracked.
+- Kept dragging the tracker to a new position from registering as a click.
+
+## 12.1.0.39 — 2026-08-17
+
+- Replaced the map pin link in the Curse Surge guild announcement with plain coordinates, because WoW strips hyperlinks from messages sent by addons and the link arrived as dead text.
+
+## 12.1.0.38 — 2026-08-17
+
+- Sent the Curse Surge announcement to guild chat, renaming the setting to Announce Next Curse Surge to Guild.
+- Included the countdown, surge name, plain coordinates, and a clickable map pin link in the announcement.
+- Printed to your own chat instead when you are not in a guild.
+
+## 12.1.0.37 — 2026-08-17
+
+- Saved the announced Curse Surge to disk, so a reload, a relog, or swapping characters mid-countdown can never repeat an announcement.
+
+## 12.1.0.36 — 2026-08-17
+
+- Added an Announce Next Curse Surge setting, off by default, that prints one chat message five minutes before each surge naming it and linking a clickable map pin.
+- Held the announcement back while in combat and released it on leaving combat, so it never fires under combat restrictions.
+- Limited the announcement to once per surge, and fell back to a bare countdown if the surge is still unnamed a minute into the window.
+
+## 12.1.0.35 — 2026-08-17
+
+- Made the Curse Surge footer coordinates a toggle, clearing the pin and focus tracking when that surge is already the tracked waypoint.
+- Switched the tooltip to read "Click to remove focus tracking." while that surge is tracked, and kept "Click to track this location." otherwise.
+
+## 12.1.0.34 — 2026-08-17
+
+- Requested the Curse Surge schedule at login and retried until the surge is named, so its location is known without opening the map or the events tab.
+- Refreshed the surge name, footer, and standalone tracker whenever Blizzard's Event Scheduler pushes new data.
+
+## 12.1.0.33 — 2026-08-17
+
+- Dropped the brackets around the Curse Surge footer coordinates and coloured them with the same gold as the MyAltManager window header.
+
+## 12.1.0.32 — 2026-08-17
+
+- Added the Curse Surge spawn coordinates to the footer once the scheduled surge is identified, shown after the countdown clock or the Starting and Active labels.
+- Clicking those coordinates places a map pin at the surge and super-tracks it, without showing or hiding the standalone Curse Surge tracker.
+- Resolved the scheduled surge event whenever the main window is open, not only while the standalone tracker is visible.
+
+## 12.1.0.31 — 2026-08-17
+
+- Switched World Boss tracking to the new per-character quest, Lair: Nymrissa Wavecaller, so each alt shows its own completion instead of an account-wide result.
+- Retired the previous account-wide world boss quest IDs, which are kept commented out for reference.
+
 ## 12.1.0.30 — 2026-08-14
 
 - Made the standalone Curse Surge timer visibility character-specific while preserving its shared position and appearance settings.

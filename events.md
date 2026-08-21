@@ -136,7 +136,7 @@ Rules the implementation must honour:
   local function checkWorldBossStatus()
       -- existing stored-complete scan stays exactly here, unchanged
       ...
-      return QuestSetStatus({ 92034, 92636, 92560, 92123 })
+      return QuestSetStatus({ 97128 })
   end
   ```
 - **Verify:** pick up (do not complete) a weekly on a test character, `/reload`, open its drawer —
@@ -377,7 +377,7 @@ Rules the implementation must honour:
 | Weekly Quests | Special Assignment | `specialAssignment` | 12-ID list, line 1166 |
 | Weekly Quests | Hidden Trove (Delves) | `hiddenTrove` | 86371 |
 | Weekly Quests | A Nightmarish Task | `nightmarishTask` | 94446 |
-| Weekly Quests | World Boss | `worldBoss` | 92034, 92636, 92560, 92123 |
+| Weekly Quests | World Boss | `worldBoss` | 97128 (92034, 92636, 92560, 92123 commented out — retired account-wide bosses) |
 
 ## Appendix B — Colour tokens (all already in `constants.colors`)
 

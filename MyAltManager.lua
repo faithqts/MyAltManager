@@ -19,13 +19,13 @@ AltManager.constants = constants
 
 constants.DATA_SCHEMA = 2
 constants.layout = {
-    FRAME_WIDTH = 1080,
+    FRAME_WIDTH = 1140,
     PAD_X = 14,
     COL_GAP = 10,
     COL_CHARACTER = 250,
     COL_MPLUS = 110,
     COL_VAULT = 370,
-    COL_CURRENCY = 292,
+    COL_CURRENCY = 352,
     ROW_HEIGHT = 58,
     HEADER_HEIGHT = 26,
     TITLE_HEIGHT = 32,
@@ -93,8 +93,6 @@ constants.config.UI_SCALE = 1.10
 constants.config.UI_SCALE_MIN = 0.50
 constants.config.UI_SCALE_MAX = 1.50
 constants.config.UI_SCALE_STEP = 0.05
--- Default before SavedVariables are loaded; LoadConfigFromDB applies the saved setting.
-constants.config.ENABLE_DRAWER = false
 
 constants.ACTIVE_SEASON_ID = 2
 constants.CURSE_SURGE = {
@@ -104,12 +102,41 @@ constants.CURSE_SURGE = {
     EVENT_START_TOLERANCE_SECONDS = 60,
     -- 2026-08-12 17:00 GMT+8 (09:00 UTC), supplied launch-day observation.
     ANCHOR_EPOCH = 1786525200,
+    -- Login-time retries while the scheduler and area POI data settle.
+    PRIME_ATTEMPTS = 12,
+    PRIME_INTERVAL_SECONDS = 5,
+    -- Optional chat announcement, opt-in via settings.
+    ANNOUNCE_LEAD_SECONDS = 5 * 60,
+    -- If the scheduler still has not named the surge by here, announce without a location.
+    ANNOUNCE_FALLBACK_SECONDS = 4 * 60,
+    ANNOUNCE_POLL_SECONDS = 10,
+}
+-- Hidden Trove (Delves) is tracked from the cast that opens the trove rather than from a quest ID,
+-- because the quest ID is re-issued every season while the "Unlocking" cast is not. The trove is
+-- weekly and per-character, so the completion is stored per GUID and expires at the weekly reset.
+constants.HIDDEN_TROVE = {
+    SPELL_IDS = { 1248091 }, -- 1248091 = Unlocking (Open Object, 1.5s cast)
+}
+constants.COFFER_KEY_GLUE = {
+    ITEM_ID = 267291,
+    SPELL_ID = 1280020,
+    MIN_SHARDS_EXCLUSIVE = 100,
 }
 constants.CURSE_SURGE_TRACKER = {
     WIDTH = 360,
     HEIGHT = 30,
     FONT_SIZE = 12,
     BACKGROUND_OPACITY = 85,
+}
+-- Curse Surge spawn points. `name` is what the UI displays; `event` is the scheduled event name
+-- Blizzard reports for the area POI and `target` is the boss that spawns there. All three are
+-- matched, so whichever label the POI carries still resolves a location.
+constants.CURSE_SURGE_LOCATIONS = {
+    { name = "Looming Mutagenitor", event = "Curse Surge: The Looming Mutagenitor",       target = "Looming Mutagenitor",             uiMapID = 2512, x = 26.7, y = 64.8 },
+    { name = "Mlurkkr Massacre",    event = "Curse Surge: Mlurkkr Massacre",              target = "Ss'akrithos",                     uiMapID = 2512, x = 71.2, y = 31.3 },
+    { name = "Malformed Leviathan", event = "Curse Surge: The Malformed Leviathan",       target = "Malformed Leviathan",             uiMapID = 2512, x = 46.9, y = 62.2 },
+    { name = "Broodmother's Nest",  event = "Curse Surge: The Broodmother's Nest",        target = "Vassti, the Exalted Broodmother", uiMapID = 2512, x = 45.2, y = 28.6 },
+    { name = "Whispering Marsh",    event = "Curse Surge: Siege at the Whispering Marsh", target = "Venom Lancer Ori'kassi",          uiMapID = 2512, x = 67.6, y = 77.8 },
 }
 
 constants.labels = {
@@ -138,9 +165,9 @@ constants.labels = {
     MYTH_CRESTS = "Myth Crests |TInterface\\Icons\\inv_120_crest_myth:12:12:0:0|t",
     UNDERCOIN = "Undercoin |TInterface\\Icons\\inv_misc_elvencoins:12:12:0:0|t",
     ANGLER_PEARLS = "Angler Pearls |T348545:12:12:0:0|t",
-    TIDAL_SPARKS = "Tidal Sparks |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
+    TIDAL_SPARKS = "Tidal Spark Dust |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
     HIDDEN_TROVE = "Hidden Trove (Delves)",
-    RESTORED_COFFER_KEY = "Bountiful Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
+    RESTORED_COFFER_KEY = "Restored Coffer Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
     COFFER_KEY_SHARDS = "Coffer Key Shards |TInterface\\Icons\\inv_gizmo_hardenedadamantitetube:12:12:0:0|t",
     VOIDLIGHT_MARL = "Voidlight Marl |TInterface\\Icons\\inv_112_raidtrinkets_voidprism:12:12:0:0|t",
     WEEKLY_META_QUEST = "Weekly Meta Quest",
@@ -158,7 +185,7 @@ constants.labels = {
     SHARD_OF_DUNDUN = "Shard of Dundun |TInterface\\Icons\\inv_ore_feliron:12:12:0:0|t",
     REMNANT_OF_ANGUISH = "Remnant of Anguish |TInterface\\Icons\\inv_10_elementalcombinedfoozles_blood:12:12:0:0|t",
     UNALLOYED_ABUNDANCE = "Unalloyed Abundance |TInterface\\Icons\\inv_10_gathering_bioluminescentspores_large:12:12:0:0|t",
-    NEBULOUS_VOIDCORE = "Nebulous Cores",
+    NEBULOUS_VOIDCORE = "Nebulous Voidcore",
     UNTAINTED_MANA_CRYSTAL = "Untainted Mana-Crystal |T5931199:12:12:0:0|t",
     FIELD_ACCOLADE = "Field Accolade |TInterface\\Icons\\inv_belt_armor_bloodelf_d_01:12:12:0:0|t",
     LUMINOUS_DUST = "Luminous Dust |TInterface\\Icons\\inv_misc_dust_05:12:12:0:0|t",
@@ -203,15 +230,16 @@ constants.sections = {
     },
     {
         key = "currencies", label = "Currencies",
-        keys = { "currencies", "tidalSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
+        keys = { "currencies", "tidalSparks", "adventurer_crests", "veteran_crests", "champion_crests", "hero_crests", "myth_crests", "nebulousVoidcore", "restored_coffer_keys", "coffer_key_shards", "undercoin", "anglerPearls", "voidlightMarl", "shardOfDundun", "remnantOfAnguish", "unalloyedAbundance", "untaintedManaCrystal", "fieldAccolade", "luminousDust", "brimmingArcana" },
         children = {
-            { key = "tidalSparks",         label = "Tidal Sparks",        icon = constants.labels.TIDAL_SPARKS:match("|T[^|]-|t") },
+            { key = "tidalSparks",         label = "Tidal Spark Dust",    icon = constants.labels.TIDAL_SPARKS:match("|T[^|]-|t") },
             { key = "adventurer_crests",   label = "Adventurer Crests",   icon = constants.labels.ADVENTURER_CRESTS:match("|T[^|]-|t") },
             { key = "veteran_crests",      label = "Veteran Crests",      icon = constants.labels.VETERAN_CRESTS:match("|T[^|]-|t") },
             { key = "champion_crests",     label = "Champion Crests",     icon = constants.labels.CHAMPION_CRESTS:match("|T[^|]-|t") },
             { key = "hero_crests",         label = "Hero Crests",         icon = constants.labels.HERO_CRESTS:match("|T[^|]-|t") },
             { key = "myth_crests",         label = "Myth Crests",         icon = constants.labels.MYTH_CRESTS:match("|T[^|]-|t") },
-            { key = "restored_coffer_keys", label = "Bountiful Keys",     icon = constants.labels.RESTORED_COFFER_KEY:match("|T[^|]-|t") },
+            { key = "nebulousVoidcore",    label = "Nebulous Voidcore",  icon = constants.labels.NEBULOUS_VOIDCORE:match("|T[^|]-|t") },
+            { key = "restored_coffer_keys", label = "Restored Coffer Keys", icon = constants.labels.RESTORED_COFFER_KEY:match("|T[^|]-|t") },
             { key = "coffer_key_shards",   dataKey = "cofferKeyShards", label = "Coffer Key Shards", icon = constants.labels.COFFER_KEY_SHARDS:match("|T[^|]-|t") },
             { key = "undercoin",           label = "Undercoin",           icon = constants.labels.UNDERCOIN:match("|T[^|]-|t") },
             { key = "anglerPearls",        label = "Angler Pearls",       icon = constants.labels.ANGLER_PEARLS:match("|T[^|]-|t") },
@@ -226,21 +254,6 @@ constants.sections = {
         },
     },
 }
-
-constants.section_lookup = {}
-constants.child_lookup = {}
-constants.section_keys = {}
-for _, section in ipairs(constants.sections) do
-    constants.section_keys[section.key] = true
-    for _, k in ipairs(section.keys) do
-        constants.section_lookup[k] = section.key
-    end
-    if section.children then
-        for _, child in ipairs(section.children) do
-            constants.child_lookup[child.key] = section.key
-        end
-    end
-end
 
 constants.DUNGEONS = {
     [2] = "Serpent",
@@ -450,7 +463,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.30"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.64"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -462,9 +475,46 @@ local function true_numel(t)
     return c
 end
 
+local function FormatWholeNumber(value)
+    local number = tonumber(value)
+    if not number then return tostring(value or 0) end
+
+    number = math.floor(number)
+    local sign = number < 0 and "-" or ""
+    local grouped = tostring(math.abs(number)):reverse():gsub("(%d%d%d)", "%1,"):reverse()
+    return sign .. grouped:gsub("^,", "")
+end
+
 local function GetCurrencyAmount(id)
     local info = C_CurrencyInfo.GetCurrencyInfo(id)
     return info and info.quantity or 0
+end
+
+local function PlayerHasCofferKeyGlue()
+    local itemID = constants.COFFER_KEY_GLUE.ITEM_ID
+    if type(PlayerHasToy) == "function" and PlayerHasToy(itemID) then
+        return true
+    end
+
+    local spellID = constants.COFFER_KEY_GLUE.SPELL_ID
+    if C_SpellBook and C_SpellBook.IsSpellKnown then
+        local spellBank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
+        local isKnown = spellBank and C_SpellBook.IsSpellKnown(spellID, spellBank)
+            or C_SpellBook.IsSpellKnown(spellID)
+        if isKnown then
+            return true
+        end
+    elseif type(IsPlayerSpell) == "function" and IsPlayerSpell(spellID) then
+        return true
+    end
+
+    local itemCount
+    if C_Item and C_Item.GetItemCount then
+        itemCount = C_Item.GetItemCount(itemID)
+    elseif type(GetItemCount) == "function" then
+        itemCount = GetItemCount(itemID)
+    end
+    return (tonumber(itemCount) or 0) > 0
 end
 
 local function GetMonotonicTime()
@@ -477,6 +527,23 @@ end
 local function GetDungeonShortName(mapID)
     local seasonMaps = constants.SEASON and constants.SEASON.MAPS
     return (seasonMaps and seasonMaps[mapID]) or constants.DUNGEONS[mapID] or tostring(mapID)
+end
+
+local function GetWeeklyHighestKeystone(runHistory)
+    local highestRun
+    for _, run in ipairs(runHistory or {}) do
+        local level = tonumber(run.level)
+        -- GetRunHistory(false, true) is current-week data. Keep the explicit guard so
+        -- previously stored mixed history can never surface an older run here.
+        if run.thisWeek ~= false and level and level > 0
+            and (not highestRun or level > highestRun.level) then
+            highestRun = {
+                level = level,
+                mapID = tonumber(run.mapChallengeModeID),
+            }
+        end
+    end
+    return highestRun
 end
 
 -- ------------------------------------------------------------
@@ -698,7 +765,9 @@ end
 function AltManager:LoadConfigFromDB()
     local db = MyAltManagerDB
     db.config = db.config or {}
-    db.visibility = db.visibility or {}
+    -- Visibility is no longer configurable. Discard legacy choices so every supported
+    -- dashboard column, currency, weekly row, and drawer section is always available.
+    db.visibility = nil
 
     if db.config.MIN_ITEM_LEVEL == nil then
         db.config.MIN_ITEM_LEVEL = 0
@@ -726,33 +795,22 @@ function AltManager:LoadConfigFromDB()
     if db.config.curse_surge_tracker_background_opacity == nil then
         db.config.curse_surge_tracker_background_opacity = trackerDefaults.BACKGROUND_OPACITY
     end
-    -- Older builds force-saved this as false. Re-enable once, then respect later changes.
-    if db.config.drawer_config_version == nil then
-        db.config.enable_drawer = true
-        db.config.drawer_config_version = 1
-    elseif db.config.enable_drawer == nil then
-        db.config.enable_drawer = true
+    -- Opt-in: never announce unless the player has turned it on themselves.
+    if db.config.curse_surge_announce == nil then
+        db.config.curse_surge_announce = false
     end
+    -- Saved so an already-announced surge is never announced a second time.
+    if db.config.curse_surge_announced_start_epoch == nil then
+        db.config.curse_surge_announced_start_epoch = 0
+    end
+    db.config.enable_drawer = nil
+    db.config.drawer_config_version = nil
     -- Drawer expansion is temporary UI state and should not persist between openings.
     db.config.openRows = {}
-    if db.config.sort == nil then
-        db.config.sort = "ilevel"
-    end
-    if db.visibility.drawer_currencies == nil then
-        db.visibility.drawer_currencies = false
-    end
-    if db.visibility.pvp == nil then
-        db.visibility.pvp = false
-    end
-    if db.visibility.purging_the_vaults == nil and db.visibility.special_assignment ~= nil then
-        db.visibility.purging_the_vaults = db.visibility.special_assignment
-    end
-    db.visibility.special_assignment = nil
-
+    db.config.sort = nil
     constants.config.MIN_ITEM_LEVEL = tonumber(db.config.MIN_ITEM_LEVEL) or 0
     constants.config.MIN_LEVEL = tonumber(db.config.MIN_LEVEL) or 80
     constants.config.UI_SCALE = frameScale
-    constants.config.ENABLE_DRAWER = db.config.enable_drawer and true or false
 end
 
 function AltManager:RegisterSettings()
@@ -850,45 +908,19 @@ function AltManager:RegisterSettings()
         )
     end
 
-    -- Section toggles with child sub-toggles
-    for _, section in ipairs(constants.sections) do
-        local sectionKey = section.key
-        local sectionLabel = section.label
-        local parentVarName = "MyAltManager_Show_" .. sectionKey
-        local parentSetting = Settings.RegisterAddOnSetting(
-            category, parentVarName, sectionKey,
-            MyAltManagerDB.visibility, Settings.VarType.Boolean,
-            "Show " .. sectionLabel, true
+    -- Curse Surge announcement, off unless the player opts in
+    do
+        local announceSetting = Settings.RegisterAddOnSetting(
+            category, "MyAltManager_CurseSurgeAnnounce", "curse_surge_announce",
+            MyAltManagerDB.config, Settings.VarType.Boolean,
+            "Announce Next Curse Surge to Guild", false
         )
-        local parentInitializer = Settings.CreateCheckbox(category, parentSetting, "Toggle visibility of the " .. sectionLabel .. " section.")
-        Settings.SetOnValueChangedCallback(parentVarName, function(_, _, value)
-            MyAltManagerDB.visibility[sectionKey] = value
-            RebuildIfNeeded()
+        Settings.CreateCheckbox(category, announceSetting,
+            "Send one guild chat message five minutes before each Curse Surge, with its name, coordinates, and a clickable map pin. Held back until you are out of combat, sent once per surge account-wide, and printed to your own chat instead when you are not in a guild.")
+        Settings.SetOnValueChangedCallback("MyAltManager_CurseSurgeAnnounce", function(_, _, value)
+            MyAltManagerDB.config.curse_surge_announce = value and true or false
+            AltManager:ApplyCurseSurgeAnnounceSetting()
         end)
-
-        -- Child toggles
-        if section.children then
-            for _, child in ipairs(section.children) do
-                local childKey = child.key
-                local childLabel = child.label
-                local childVarName = "MyAltManager_Show_" .. childKey
-                local settingsIcon = child.icon and child.icon:gsub(":12:12:", ":20:20:") or nil
-                local displayLabel = settingsIcon and (settingsIcon .. " " .. childLabel) or childLabel
-                local childSetting = Settings.RegisterAddOnSetting(
-                    category, childVarName, childKey,
-                    MyAltManagerDB.visibility, Settings.VarType.Boolean,
-                    displayLabel, true
-                )
-                local childInitializer = Settings.CreateCheckbox(category, childSetting, "Toggle visibility of " .. childLabel .. ".")
-                childInitializer:SetParentInitializer(parentInitializer, function()
-                    return MyAltManagerDB.visibility[sectionKey] ~= false
-                end)
-                Settings.SetOnValueChangedCallback(childVarName, function(_, _, value)
-                    MyAltManagerDB.visibility[childKey] = value
-                    RebuildIfNeeded()
-                end)
-            end
-        end
     end
 
     Settings.RegisterAddOnCategory(category)
@@ -928,7 +960,7 @@ do
     local main_frame = CreateFrame("Frame", "AltManagerFrame", UIParent)
     AltManager.main_frame = main_frame
 
-    main_frame:SetFrameStrata("HIGH")
+    main_frame:SetFrameStrata("FULLSCREEN_DIALOG")
     main_frame:SetScale(constants.config.UI_SCALE)
     main_frame:ClearAllPoints()
     main_frame:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
@@ -940,6 +972,7 @@ do
     main_frame:RegisterEvent("QUEST_TURNED_IN")
     main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
     main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+    main_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     main_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     main_frame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
     main_frame:RegisterEvent("CHALLENGE_MODE_RESET")
@@ -947,6 +980,14 @@ do
     main_frame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
     main_frame:RegisterEvent("MYTHIC_PLUS_CURRENT_AFFIX_UPDATE")
     main_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+    main_frame:RegisterEvent("EVENT_SCHEDULER_UPDATE")
+    main_frame:RegisterEvent("TOYS_UPDATED")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_DELAYED", "player")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+    main_frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 
     main_frame:SetScript("OnEvent", function(self, ...)
         local event, loadedOrType = ...
@@ -964,6 +1005,44 @@ do
 
         if event == "PLAYER_LOGIN" then
             AltManager:OnLogin()
+            return
+        end
+
+        -- Deferred for the same reason as the scheduler lookup below: this event is
+        -- synchronous and its payload can be secret, so read the schedule off that path.
+        if event == "EVENT_SCHEDULER_UPDATE" then
+            C_Timer.After(0, function()
+                AltManager:RefreshCurseSurgeEventCache()
+                AltManager:UpdateFooterCurseSurge()
+                AltManager:UpdateCurseSurgeTracker()
+            end)
+            return
+        end
+
+        if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_DELAYED" then
+            local _, unit, _, spellID = ...
+            AltManager:OnCofferKeyGlueSpellcastStart(unit, spellID)
+            return
+        end
+
+        if event == "UNIT_SPELLCAST_STOP"
+            or event == "UNIT_SPELLCAST_FAILED"
+            or event == "UNIT_SPELLCAST_INTERRUPTED" then
+            local _, unit, _, spellID = ...
+            AltManager:OnCofferKeyGlueSpellcastEnded(unit, spellID)
+            return
+        end
+
+        if event == "UNIT_SPELLCAST_SUCCEEDED" then
+            local _, unit, _, spellID = ...
+            AltManager:OnSpellcastSucceeded(unit, spellID)
+            return
+        end
+
+        if event == "TOYS_UPDATED" then
+            if AltManager.main_frame:IsShown() then
+                AltManager:RebuildUI()
+            end
             return
         end
 
@@ -986,7 +1065,21 @@ do
             return
         end
 
+        if event == "PLAYER_REGEN_DISABLED" then
+            if AltManager.main_frame:IsShown() then
+                AltManager:RebuildUI()
+            end
+            return
+        end
+
         if event == "PLAYER_REGEN_ENABLED" then
+            -- Release an announcement that was held back while the player was fighting.
+            AltManager:CheckCurseSurgeAnnouncement()
+            if AltManager.main_frame:IsShown() then
+                AltManager:RebuildUI()
+            else
+                AltManager:UpdateCofferKeyGlueButton()
+            end
             AltManager:ScheduleCollect(event)
             return
         end
@@ -1010,44 +1103,32 @@ function AltManager:InitDB()
     t.config = {
         MIN_ITEM_LEVEL = 0,
         MIN_LEVEL = 80,
-        enable_drawer = true,
-        drawer_config_version = 1,
         openRows = {},
-        sort = "ilevel",
         frame_scale = constants.config.UI_SCALE,
         curse_surge_tracker_shown_by_character = {},
         curse_surge_tracker_width = constants.CURSE_SURGE_TRACKER.WIDTH,
         curse_surge_tracker_height = constants.CURSE_SURGE_TRACKER.HEIGHT,
         curse_surge_tracker_font_size = constants.CURSE_SURGE_TRACKER.FONT_SIZE,
         curse_surge_tracker_background_opacity = constants.CURSE_SURGE_TRACKER.BACKGROUND_OPACITY,
+        curse_surge_announce = false,
+        curse_surge_announced_start_epoch = 0,
     }
     t.meta = {}
-    t.visibility = {
-        drawer_currencies = false,
-        pvp = false,
-    }
+    t.hiddenTrove = {}
     return t
 end
 
-function AltManager:IsRowVisible(key)
-    local vis = MyAltManagerDB and MyAltManagerDB.visibility
-    if not vis then return true end
-
-    local section_key = constants.child_lookup[key]
-        or constants.section_lookup[key]
-        or (constants.section_keys[key] and key)
-    if section_key then
-        if vis[section_key] == false then return false end
-        if constants.child_lookup[key] and vis[key] == false then return false end
-        return true
-    end
-
-    return vis[key] ~= false
+-- Kept as a single policy point for the layout/rendering call sites: supported content
+-- is always visible and legacy SavedVariables can no longer suppress it.
+function AltManager:IsRowVisible()
+    return true
 end
 
 function AltManager:OnLogin()
     self:ValidateReset()
     self:RequestMythicPlusMetadata()
+    self:PrimeCurseSurgeEventData()
+    self:ApplyCurseSurgeAnnounceSetting()
     if self:CollectAndStore() then
         self._lastCollectAt = GetMonotonicTime()
     end
@@ -1117,6 +1198,78 @@ local function CreateResetWeeklies()
     }
 end
 
+-- Hidden Trove completions live outside `db.data` because StoreData replaces a character's whole
+-- table on every collect, and the trove can be opened while collection is blocked (in combat, or
+-- mid-delve). Keyed by GUID so each character carries its own weekly lockout.
+function AltManager:EnsureHiddenTroveStore()
+    local db = MyAltManagerDB
+    if not db then return nil end
+
+    db.hiddenTrove = db.hiddenTrove or {}
+    return db.hiddenTrove
+end
+
+local function GetHiddenTroveExpiry()
+    -- Fall back to a full week if the client has not reported the reset yet; ValidateReset still
+    -- clears the record when the character's own weekly window rolls over.
+    return AltManager:GetNextWeeklyResetTime() or (time() + 7 * 24 * 60 * 60)
+end
+
+function AltManager:IsHiddenTroveCompleted(guid)
+    local store = self:EnsureHiddenTroveStore()
+    if not store or not guid then return false end
+
+    local record = store[guid]
+    if not record then return false end
+
+    local expires = tonumber(record.expires) or 0
+    if expires > 0 and time() >= expires then
+        store[guid] = nil
+        return false
+    end
+
+    return true
+end
+
+function AltManager:MarkHiddenTroveCompleted(guid)
+    local store = self:EnsureHiddenTroveStore()
+    guid = guid or UnitGUID("player")
+    if not store or not guid then return false end
+
+    local alreadyDone = self:IsHiddenTroveCompleted(guid)
+    store[guid] = {
+        completedAt = time(),
+        expires = GetHiddenTroveExpiry(),
+    }
+
+    if alreadyDone then
+        return false
+    end
+
+    self:ScheduleCollect("HIDDEN_TROVE_OPENED")
+    return true
+end
+
+function AltManager:OnSpellcastSucceeded(unit, spellID)
+    if unit ~= "player" then return end
+
+    spellID = tonumber(spellID)
+    if not spellID then return end
+
+    if spellID == constants.COFFER_KEY_GLUE.SPELL_ID then
+        self:StopCofferKeyGlueCastDisplay()
+        self:ScheduleCollect("COFFER_KEY_GLUE_USED")
+        return
+    end
+
+    for _, trackedID in ipairs(constants.HIDDEN_TROVE.SPELL_IDS) do
+        if spellID == trackedID then
+            self:MarkHiddenTroveCompleted()
+            return
+        end
+    end
+end
+
 function AltManager:ValidateReset()
     local db = MyAltManagerDB
     if not db or not db.data then return end
@@ -1137,6 +1290,17 @@ function AltManager:ValidateReset()
             char_table.weeklies = CreateResetWeeklies()
             char_table.expires = self:GetNextWeeklyResetTime()
             char_table.weeklyCofferKeysCollected = 0
+        end
+    end
+
+    local hiddenTroveStore = self:EnsureHiddenTroveStore()
+    if hiddenTroveStore then
+        local now = time()
+        for guid, record in pairs(hiddenTroveStore) do
+            local expires = tonumber(record and record.expires) or 0
+            if expires <= 0 or now >= expires then
+                hiddenTroveStore[guid] = nil
+            end
         end
     end
 end
@@ -1391,7 +1555,9 @@ function AltManager:CollectData()
             end
         end
 
-        return QuestSetStatus({ 92034, 92636, 92560, 92123 })
+        -- 97128 (Lair: Nymrissa Wavecaller) is per-character rather than account-wide, so each alt must kill it themselves.
+        -- Retired account-wide world boss quests, kept for reference: 92034 (Thorm'belan), 92636, 92560, 92123 (Cragpine).
+        return QuestSetStatus({ 97128 })
     end
 
     local function checkWeeklyCofferKeysCollected()
@@ -1416,7 +1582,7 @@ function AltManager:CollectData()
             if maxQuantity <= 0 then
                 maxQuantity = totalEarned
             end
-            return totalEarned, maxQuantity
+            return totalEarned, maxQuantity, totalEarned, maxQuantity
         end
 
         local spent = math.max(0, totalEarned - quantity)
@@ -1425,7 +1591,17 @@ function AltManager:CollectData()
         end
 
         local rollingMax = math.max(quantity, maxQuantity - spent)
-        return quantity, rollingMax
+        return quantity, rollingMax, totalEarned, maxQuantity
+    end
+
+    local function GetWeeklyCurrencyValues(currencyID)
+        local info = C_CurrencyInfo.GetCurrencyInfo(currencyID)
+        if not info then return 0, 0, 0 end
+
+        local available = tonumber(info.quantity) or 0
+        local earnedThisWeek = tonumber(info.quantityEarnedThisWeek) or available
+        local weeklyMaximum = tonumber(info.maxWeeklyQuantity) or 0
+        return available, earnedThisWeek, weeklyMaximum
     end
 
     local ownedKeystoneChallengeMapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
@@ -1440,7 +1616,8 @@ function AltManager:CollectData()
     local legendsOfTheHaranir = QuestSetStatus({ 89268 })
     local saththerilSoiree = checkSaththerilSoireeStatus()
     local midnightWorldTour = GetMidnightWorldTourStatus()
-    local hiddenTrove = QuestSetStatus({ 86371 })
+    -- Tracked from the trove's opening cast (see OnSpellcastSucceeded), not a quest ID.
+    local hiddenTrove = self:IsHiddenTroveCompleted(guid) and "complete" or "notstarted"
     local nightmarishTask = GetCountQuestStatus(94446, 3)
     local purgingTheVaults = GetPercentageQuestStatus(95520)
 
@@ -1465,11 +1642,12 @@ function AltManager:CollectData()
     local anglerPearls = GetCurrencyAmount(constants.currencies.anglerPearls) or 0
     local voidlightMarl = GetCurrencyAmount(constants.currencies.voidlightMarl) or 0
     local restored_coffer_keys = GetCurrencyAmount(constants.currencies.restored_coffer_keys) or 0
-    local cofferKeyShards = GetCurrencyAmount(constants.currencies.cofferKeyShards) or 0
+    local cofferKeyShardsAvailable, cofferKeyShardsEarned, cofferKeyShardsWeeklyMax =
+        GetWeeklyCurrencyValues(constants.currencies.cofferKeyShards)
     local shardOfDundun = GetCurrencyAmount(constants.currencies.shardOfDundun) or 0
     local remnantOfAnguish = GetCurrencyAmount(constants.currencies.remnantOfAnguish) or 0
     local unalloyedAbundance = GetCurrencyAmount(constants.currencies.unalloyedAbundance) or 0
-    local nebulousVoidcore = GetRollingCurrencyValues(constants.currencies.nebulousVoidcore)
+    local nebulousVoidcore = GetCurrencyAmount(constants.currencies.nebulousVoidcore) or 0
     local untaintedManaCrystal = GetCurrencyAmount(constants.currencies.untaintedManaCrystal) or 0
     local fieldAccolade = GetCurrencyAmount(constants.currencies.fieldAccolade) or 0
     local luminousDust = GetCurrencyAmount(constants.currencies.luminousDust) or 0
@@ -1559,7 +1737,11 @@ function AltManager:CollectData()
         anglerPearls = anglerPearls,
         voidlightMarl = voidlightMarl,
         restored_coffer_keys = restored_coffer_keys,
-        cofferKeyShards = cofferKeyShards,
+        cofferKeyShards = {
+            available = cofferKeyShardsAvailable,
+            earnedThisWeek = cofferKeyShardsEarned,
+            weeklyMaximum = cofferKeyShardsWeeklyMax,
+        },
         shardOfDundun = shardOfDundun,
         remnantOfAnguish = remnantOfAnguish,
         unalloyedAbundance = unalloyedAbundance,
@@ -1659,19 +1841,20 @@ end
 -- UI content
 -- ------------------------------------------------------------
 
-local SEASON_CURRENCY_DEFS = {
-    { childKey = "tidalSparks",       storeKey = "sparks",     currencyKey = "tidalSparks",       fallbackName = "Tidal Sparks" },
-    { childKey = "adventurer_crests", storeKey = "adventurer", currencyKey = "adventurer_crests", fallbackName = "Adventurer Crests" },
-    { childKey = "veteran_crests",    storeKey = "veteran",    currencyKey = "veteran_crests",    fallbackName = "Veteran Crests" },
-    { childKey = "champion_crests",   storeKey = "champion",   currencyKey = "champion_crests",   fallbackName = "Champion Crests" },
-    { childKey = "hero_crests",       storeKey = "hero",       currencyKey = "hero_crests",       fallbackName = "Hero Crests" },
-    { childKey = "myth_crests",       storeKey = "myth",       currencyKey = "myth_crests",       fallbackName = "Myth Crests" },
+-- Fixed positions keep the requested three dashboard columns stable. Progress values
+-- are { current, weeklyMax };
+-- flat values display only the character's available total.
+local DASHBOARD_CURRENCY_DEFS = {
+    { childKey = "tidalSparks",          source = "season", storeKey = "sparks",               currencyKey = "tidalSparks",          fallbackName = "Tidal Spark Dust",     valueType = "progress", column = 1, row = 1 },
+    { childKey = "nebulousVoidcore",     source = "data",   storeKey = "nebulousVoidcore",     currencyKey = "nebulousVoidcore",     fallbackName = "Nebulous Voidcore",    valueType = "flat",     column = 1, row = 2 },
+    { childKey = "restored_coffer_keys", source = "data",   storeKey = "restored_coffer_keys", currencyKey = "restored_coffer_keys", fallbackName = "Restored Coffer Keys", valueType = "flat",     column = 1, row = 3 },
+    { childKey = "champion_crests",      source = "season", storeKey = "champion",             currencyKey = "champion_crests",     fallbackName = "Champion Crests",      valueType = "progress", column = 2, row = 1 },
+    { childKey = "hero_crests",          source = "season", storeKey = "hero",                 currencyKey = "hero_crests",         fallbackName = "Hero Crests",          valueType = "progress", column = 2, row = 2 },
+    { childKey = "myth_crests",          source = "season", storeKey = "myth",                 currencyKey = "myth_crests",         fallbackName = "Myth Crests",          valueType = "progress", column = 2, row = 3 },
+    { childKey = "voidlightMarl",        source = "data",   storeKey = "voidlightMarl",        currencyKey = "voidlightMarl",        fallbackName = "Voidlight Marl",       valueType = "flat",     column = 3, row = 1 },
+    { childKey = "undercoin",            source = "data",   storeKey = "undercoin",            currencyKey = "undercoin",            fallbackName = "Undercoin",            valueType = "flat",     column = 3, row = 2 },
+    { childKey = "coffer_key_shards",    source = "data",   storeKey = "cofferKeyShards",      currencyKey = "cofferKeyShards",      fallbackName = "Coffer Key Shards",    valueType = "progress", column = 3, row = 3 },
 }
-
-local SEASON_CHILD_KEYS = {}
-for _, definition in ipairs(SEASON_CURRENCY_DEFS) do
-    SEASON_CHILD_KEYS[definition.childKey] = true
-end
 
 local STATUS_STYLES = {
     complete = { glyph = "|TInterface\\RaidFrame\\ReadyCheck-Ready:12:12:0:0|t", color = constants.colors.success },
@@ -1734,6 +1917,9 @@ function AltManager:SetFrameScale(scale)
     MyAltManagerDB.config.frame_scale = scale
     self.main_frame:SetScale(scale)
     self:UpdateFrameScaleControl()
+    C_Timer.After(0, function()
+        AltManager:UpdateCofferKeyGlueButton()
+    end)
 end
 
 function AltManager:AdjustFrameScale(direction)
@@ -1807,6 +1993,209 @@ local function CreateFlatButton(parent, label)
     SetFontColor(button.label, constants.colors.brightText)
     CreateInsetBorder(button)
     return button
+end
+
+function AltManager:InitializeCofferKeyGlueButton()
+    if self.cofferKeyGlueButton or InCombatLockdown() then return end
+
+    local glue = constants.COFFER_KEY_GLUE
+    local button = CreateFrame(
+        "Button",
+        "MyAltManagerCofferKeyGlueButton",
+        UIParent,
+        "SecureActionButtonTemplate"
+    )
+    self.cofferKeyGlueButton = button
+    button:SetFrameStrata("FULLSCREEN_DIALOG")
+    button:SetFrameLevel((self.main_frame and self.main_frame:GetFrameLevel() or 0) + 100)
+    button:SetHitRectInsets(0, 0, 0, 0)
+    button:RegisterForClicks("AnyUp", "AnyDown")
+    button:SetAttribute("useOnKeyDown", false)
+    button:SetAttribute("type1", "item")
+    button:SetAttribute("item", "item:" .. glue.ITEM_ID)
+
+    button.highlight = button:CreateTexture(nil, "HIGHLIGHT")
+    button.highlight:SetAllPoints()
+    button.highlight:SetColorTexture(
+        constants.colors.gold[1],
+        constants.colors.gold[2],
+        constants.colors.gold[3],
+        0.18
+    )
+    button:SetHighlightTexture(button.highlight)
+
+    button:SetScript("OnEnter", function(frame)
+        GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Coffer Key Glue")
+        GameTooltip:AddLine(("Click to convert all %s available Coffer Key Shards into Restored Coffer Keys."):format(
+            FormatWholeNumber(AltManager._cofferKeyGlueShardCount)
+        ), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", GameTooltip_Hide)
+    button:SetScript("OnHide", GameTooltip_Hide)
+    button:Hide()
+end
+
+function AltManager:PositionCofferKeyGlueButton(target)
+    local button = self.cofferKeyGlueButton
+    if not button or not target then return false end
+
+    local leftFrame = target.iconButton or target
+    local rightFrame = target.bar or target
+    local left = leftFrame:GetLeft()
+    local right = rightFrame:GetRight()
+    local leftBottom = leftFrame:GetBottom()
+    local rightBottom = rightFrame:GetBottom()
+    local leftTop = leftFrame:GetTop()
+    local rightTop = rightFrame:GetTop()
+    if not left or not right or not leftBottom or not rightBottom or not leftTop or not rightTop then
+        return false
+    end
+
+    local bottom = math.min(leftBottom, rightBottom)
+    local width = right - left
+    local height = math.max(leftTop, rightTop) - bottom
+    if width <= 0 or height <= 0 then return false end
+
+    local uiScale = UIParent:GetEffectiveScale()
+    local targetScale = target:GetEffectiveScale()
+    if not uiScale or uiScale <= 0 or not targetScale or targetScale <= 0 then return false end
+
+    local scaleRatio = targetScale / uiScale
+    button:ClearAllPoints()
+    button:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", left * scaleRatio, bottom * scaleRatio)
+    button:SetSize(width * scaleRatio, height * scaleRatio)
+    return true
+end
+
+function AltManager:HideCofferKeyGlueButton()
+    local button = self.cofferKeyGlueButton
+    if not button then return end
+
+    if InCombatLockdown() then
+        self._cofferKeyGlueUpdatePending = true
+        return
+    end
+
+    if button._visibilityDriven then
+        UnregisterStateDriver(button, "visibility")
+        button._visibilityDriven = false
+    end
+    button:Hide()
+    button:ClearAllPoints()
+end
+
+function AltManager:UpdateCofferKeyGlueButton()
+    if InCombatLockdown() then
+        self._cofferKeyGlueUpdatePending = true
+        return
+    end
+
+    self._cofferKeyGlueUpdatePending = false
+    self:InitializeCofferKeyGlueButton()
+    local button = self.cofferKeyGlueButton
+    if not button then return end
+
+    local target = self._cofferKeyGlueTarget
+    local shouldShow = target ~= nil and self.main_frame and self.main_frame:IsShown()
+    if not shouldShow or not self:PositionCofferKeyGlueButton(target) then
+        self:HideCofferKeyGlueButton()
+        return
+    end
+
+    if not button._visibilityDriven then
+        RegisterStateDriver(button, "visibility", "[combat] hide; show")
+        button._visibilityDriven = true
+    end
+    button:Show()
+end
+
+function AltManager:DetachCofferKeyGlueCastBar()
+    local bar = self._cofferKeyGlueCastBar
+    if not bar then return end
+
+    if bar.castProgress then
+        bar.castProgress:SetScript("OnUpdate", nil)
+        bar.castProgress:Hide()
+    end
+    self._cofferKeyGlueCastBar = nil
+end
+
+function AltManager:StopCofferKeyGlueCastDisplay()
+    local bar = self._cofferKeyGlueCastBar
+    local target = self._cofferKeyGlueTarget
+    self._cofferKeyGlueCast = nil
+    self:DetachCofferKeyGlueCastBar()
+
+    if bar and target and target.bar == bar then
+        bar.text:SetText("Convert Keys")
+    end
+end
+
+function AltManager:RenderCofferKeyGlueCastDisplay()
+    local cast = self._cofferKeyGlueCast
+    local target = self._cofferKeyGlueTarget
+    if not cast or not target or not target.bar or not target.bar.castProgress then return end
+
+    local now = GetTime()
+    if now >= cast.endTime then
+        self:StopCofferKeyGlueCastDisplay()
+        return
+    end
+
+    self:DetachCofferKeyGlueCastBar()
+    local bar = target.bar
+    local progress = bar.castProgress
+    local duration = math.max(0.001, cast.endTime - cast.startTime)
+    self._cofferKeyGlueCastBar = bar
+
+    bar.text:SetText("Converting")
+    progress:SetMinMaxValues(0, duration)
+    progress:SetValue(math.max(0, math.min(duration, now - cast.startTime)))
+    progress:SetScript("OnUpdate", function(castBar)
+        local activeCast = AltManager._cofferKeyGlueCast
+        if not activeCast or AltManager._cofferKeyGlueCastBar ~= castBar:GetParent() then
+            castBar:SetScript("OnUpdate", nil)
+            castBar:Hide()
+            return
+        end
+
+        local currentTime = GetTime()
+        local activeDuration = math.max(0.001, activeCast.endTime - activeCast.startTime)
+        castBar:SetMinMaxValues(0, activeDuration)
+        castBar:SetValue(math.max(0, math.min(activeDuration, currentTime - activeCast.startTime)))
+        if currentTime >= activeCast.endTime then
+            AltManager:StopCofferKeyGlueCastDisplay()
+        end
+    end)
+    progress:Show()
+end
+
+function AltManager:OnCofferKeyGlueSpellcastStart(unit, eventSpellID)
+    if unit ~= "player" then return end
+
+    local _, _, _, startTimeMS, endTimeMS, _, _, _, castingSpellID = UnitCastingInfo("player")
+    local spellID = tonumber(castingSpellID) or tonumber(eventSpellID)
+    if spellID ~= constants.COFFER_KEY_GLUE.SPELL_ID then return end
+
+    startTimeMS = tonumber(startTimeMS)
+    endTimeMS = tonumber(endTimeMS)
+    if not startTimeMS or not endTimeMS or endTimeMS <= startTimeMS then return end
+
+    self._cofferKeyGlueCast = {
+        startTime = startTimeMS / 1000,
+        endTime = endTimeMS / 1000,
+    }
+    self:RenderCofferKeyGlueCastDisplay()
+end
+
+function AltManager:OnCofferKeyGlueSpellcastEnded(unit, eventSpellID)
+    if unit ~= "player" or not self._cofferKeyGlueCast then return end
+
+    local spellID = tonumber(eventSpellID)
+    if spellID and spellID ~= constants.COFFER_KEY_GLUE.SPELL_ID then return end
+    self:StopCofferKeyGlueCastDisplay()
 end
 
 function AltManager:GetColumnLayout()
@@ -1929,9 +2318,17 @@ function AltManager:InitializeFrame()
     self:UpdateFrameScaleControl()
 
     frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-    frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
+    frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -4)
     frame.closeButton:SetScale(0.90)
     frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
+    frame:SetScript("OnShow", function()
+        AltManager:UpdateCofferKeyGlueButton()
+    end)
+    frame:SetScript("OnHide", function()
+        AltManager:StopCofferKeyGlueCastDisplay()
+        AltManager._cofferKeyGlueTarget = nil
+        AltManager:HideCofferKeyGlueButton()
+    end)
 
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
@@ -1949,6 +2346,7 @@ function AltManager:InitializeFrame()
             x = x,
             y = y,
         }
+        AltManager:UpdateCofferKeyGlueButton()
     end)
 
     local savedPoint = MyAltManagerDB.config.framePoint
@@ -2007,10 +2405,46 @@ function AltManager:InitializeFrame()
     frame.footerCurseSurge:SetScript("OnClick", function()
         AltManager:ToggleCurseSurgeTracker()
     end)
+    -- Anchored on one edge only so the font string self-sizes; UpdateFooterCurseSurge then
+    -- shrinks the button onto its text, keeping the location button beside it clickable.
     frame.footerCurseSurge.text = CreateText(frame.footerCurseSurge, GameFontNormalSmall, 9)
-    frame.footerCurseSurge.text:SetAllPoints()
+    frame.footerCurseSurge.text:SetPoint("LEFT", frame.footerCurseSurge, "LEFT", 0, 0)
     frame.footerCurseSurge.text:SetJustifyH("LEFT")
     SetFontColor(frame.footerCurseSurge.text, constants.colors.brightText)
+
+    -- Separate button so clicking the coordinates tracks the surge without toggling the tracker.
+    frame.footerCurseSurgeLocation = CreateFrame("Button", nil, frame.footer)
+    frame.footerCurseSurgeLocation:SetPoint("BOTTOMLEFT", frame.footerCurseSurge, "BOTTOMRIGHT", 0, 0)
+    frame.footerCurseSurgeLocation:SetSize(1, layout.FOOTER_HEIGHT)
+    frame.footerCurseSurgeLocation:RegisterForClicks("LeftButtonUp")
+    frame.footerCurseSurgeLocation:SetScript("OnClick", function(button)
+        AltManager:TrackCurseSurgeLocation()
+        -- Re-run OnEnter so the tooltip flips between track and untrack under the cursor.
+        local onEnter = button:GetScript("OnEnter")
+        if onEnter then onEnter(button) end
+    end)
+    -- The coordinates carry their own colour code, so highlighting re-renders rather than
+    -- recolouring the font string, which an embedded escape sequence would override.
+    frame.footerCurseSurgeLocation:SetScript("OnEnter", function(button)
+        button.isHighlighted = true
+        AltManager:RenderFooterCurseSurgeLocation()
+        GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+        GameTooltip:SetText(AltManager:GetActiveCurseSurgeEventName() or "Curse Surge")
+        GameTooltip:AddLine(AltManager:IsTrackingCurseSurgeLocation()
+            and "Click to remove focus tracking."
+            or "Click to track this location.", 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    frame.footerCurseSurgeLocation:SetScript("OnLeave", function(button)
+        button.isHighlighted = false
+        AltManager:RenderFooterCurseSurgeLocation()
+        GameTooltip:Hide()
+    end)
+    frame.footerCurseSurgeLocation.text = CreateText(frame.footerCurseSurgeLocation, GameFontNormalSmall, 9)
+    frame.footerCurseSurgeLocation.text:SetPoint("LEFT", frame.footerCurseSurgeLocation, "LEFT", 0, 0)
+    frame.footerCurseSurgeLocation.text:SetJustifyH("LEFT")
+    SetFontColor(frame.footerCurseSurgeLocation.text, constants.colors.brightText)
+    frame.footerCurseSurgeLocation:Hide()
 
     frame.footerVersion = CreateText(frame.footer, GameFontNormalSmall, 9)
     frame.footerVersion:SetPoint("BOTTOM", frame.footer, "BOTTOM", 0, 0)
@@ -2031,7 +2465,7 @@ function AltManager:InitializeFrame()
     frame.footer.separator:SetHeight(1)
     SetTextureColor(frame.footer.separator, constants.colors.drawerDivider)
 
-    frame:SetScript("OnHide", function() AltManager:StopFooterTicker() end)
+    frame:HookScript("OnHide", function() AltManager:StopFooterTicker() end)
 
     self.rowPool = CreateFramePool("Button", frame.scrollChild, nil, ResetRowPool)
     self.drawerPool = CreateFramePool("Frame", frame.scrollChild, nil, ResetDrawerPool)
@@ -2085,7 +2519,7 @@ local function ShowVaultTooltip(segment)
     if link then
         GameTooltip:SetHyperlink(link)
     else
-        GameTooltip:SetText(("Great Vault reward — item level %s"):format(segment.ilvl or "?"))
+        GameTooltip:SetText(("Great Vault reward — item level %s"):format(FormatWholeNumber(segment.ilvl or "?")))
     end
     GameTooltip:Show()
 end
@@ -2132,6 +2566,8 @@ function AltManager:InitializeRow(row)
     row.mplusFrame.score:SetJustifyH("CENTER")
     row.mplusFrame.key = CreateText(row.mplusFrame, GameFontNormalSmall, 9.5)
     row.mplusFrame.key:SetJustifyH("CENTER")
+    row.mplusFrame.weekly = CreateText(row.mplusFrame, GameFontNormalSmall, 9.5)
+    row.mplusFrame.weekly:SetJustifyH("CENTER")
 
     row.vaultFrame = CreateFrame("Frame", nil, row)
     row.vaultFrame.tracks = {}
@@ -2164,7 +2600,7 @@ function AltManager:InitializeRow(row)
 
     row.currencyFrame = CreateFrame("Frame", nil, row)
     row.currencyFrame.cells = {}
-    for index = 1, #SEASON_CURRENCY_DEFS do
+    for index = 1, #DASHBOARD_CURRENCY_DEFS do
         local cell = CreateFrame("Frame", nil, row.currencyFrame)
         cell.iconButton = CreateFrame("Button", nil, cell)
         cell.iconButton.ownerRow = row
@@ -2184,6 +2620,17 @@ function AltManager:InitializeRow(row)
         cell.bar.text:SetPoint("CENTER")
         cell.bar.text:SetJustifyH("CENTER")
         SetFontColor(cell.bar.text, constants.colors.currencyText)
+        cell.bar.castProgress = CreateFrame("StatusBar", nil, cell.bar)
+        cell.bar.castProgress:SetPoint("TOPLEFT", cell.bar, "BOTTOMLEFT", 1, -1)
+        cell.bar.castProgress:SetPoint("TOPRIGHT", cell.bar, "BOTTOMRIGHT", -1, -1)
+        cell.bar.castProgress:SetHeight(3)
+        cell.bar.castProgress:SetFrameLevel(cell.bar:GetFrameLevel() + 1)
+        cell.bar.castProgress:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        SetTextureColor(cell.bar.castProgress:GetStatusBarTexture(), constants.colors.currencyFill)
+        cell.bar.castProgress.background = cell.bar.castProgress:CreateTexture(nil, "BACKGROUND")
+        cell.bar.castProgress.background:SetAllPoints()
+        SetTextureColor(cell.bar.castProgress.background, constants.colors.barEmpty)
+        cell.bar.castProgress:Hide()
         CreateInsetBorder(cell.bar)
         row.currencyFrame.cells[index] = cell
     end
@@ -2200,27 +2647,17 @@ function AltManager:InitializeRow(row)
 end
 
 function AltManager:ConfigureRowInteractions(row)
-    if constants.config.ENABLE_DRAWER then
-        if not row.highlight then
-            row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
-            row.highlight:SetAllPoints()
-            row.highlight:SetColorTexture(1, 1, 1, 0.03)
-            row.highlight:Hide()
-        end
-        row:SetScript("OnClick", function(button) AltManager:ToggleRowDrawer(button.guid) end)
-        row:SetScript("OnEnter", function(button) button.highlight:Show() end)
-        row:SetScript("OnLeave", function(button) button.highlight:Hide() end)
-        for _, child in ipairs(row.interactiveChildren) do
-            child:SetScript("OnClick", ToggleFromChild)
-        end
-    else
-        if row.highlight then row.highlight:Hide() end
-        row:SetScript("OnClick", nil)
-        row:SetScript("OnEnter", nil)
-        row:SetScript("OnLeave", nil)
-        for _, child in ipairs(row.interactiveChildren) do
-            child:SetScript("OnClick", nil)
-        end
+    if not row.highlight then
+        row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
+        row.highlight:SetAllPoints()
+        row.highlight:SetColorTexture(1, 1, 1, 0.03)
+        row.highlight:Hide()
+    end
+    row:SetScript("OnClick", function(button) AltManager:ToggleRowDrawer(button.guid) end)
+    row:SetScript("OnEnter", function(button) button.highlight:Show() end)
+    row:SetScript("OnLeave", function(button) button.highlight:Hide() end)
+    for _, child in ipairs(row.interactiveChildren) do
+        child:SetScript("OnClick", ToggleFromChild)
     end
 end
 
@@ -2248,9 +2685,9 @@ function AltManager:ConfigureCharacterCell(row, data, column)
     row.realmText:ClearAllPoints()
     row.realmText:SetPoint("TOPLEFT", row, "TOPLEFT", textX, -21)
     row.realmText:SetSize(textWidth, 13)
-    row.realmText:SetText(("|cff90899a%s · |r|cffd8b85a%d ilvl|r"):format(
+    row.realmText:SetText(("|cff90899a%s · |r|cffd8b85a%s ilvl|r"):format(
         tostring(data.realmName or "Unknown realm"),
-        tonumber(data.ilevel) or 0
+        FormatWholeNumber(data.ilevel)
     ))
 
     local isCurrentSeason = tonumber(data.seasonID) == constants.SEASON_ID
@@ -2286,14 +2723,17 @@ function AltManager:ConfigureMythicCell(row, data, column)
     frame:SetPoint("TOPLEFT", row, "TOPLEFT", column.x, 0)
     frame:SetSize(column.width, constants.layout.ROW_HEIGHT)
     frame.score:ClearAllPoints()
-    frame.score:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -9)
-    frame.score:SetSize(column.width, 20)
+    frame.score:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -3)
+    frame.score:SetSize(column.width, 18)
     frame.key:ClearAllPoints()
-    frame.key:SetPoint("TOPLEFT", frame.score, "BOTTOMLEFT", 0, -1)
-    frame.key:SetSize(column.width, 16)
+    frame.key:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -21)
+    frame.key:SetSize(column.width, 15)
+    frame.weekly:ClearAllPoints()
+    frame.weekly:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -37)
+    frame.weekly:SetSize(column.width, 15)
 
     local mplus = tonumber(data.seasonID) == constants.SEASON_ID and (data.mplus or {}) or {}
-    frame.score:SetText(tostring(math.floor(tonumber(mplus.score) or 0)))
+    frame.score:SetText(FormatWholeNumber(mplus.score))
     frame.score:SetTextColor(tonumber(mplus.r) or 1, tonumber(mplus.g) or 1, tonumber(mplus.b) or 1, 1)
 
     local mapID = tonumber(mplus.keyMapID)
@@ -2302,8 +2742,18 @@ function AltManager:ConfigureMythicCell(row, data, column)
         frame.key:SetText(("+%d %s"):format(level, GetDungeonShortName(mapID)))
         frame.key:SetTextColor(GetKeystoneColor(level))
     else
-        frame.key:SetText("No key")
+        frame.key:SetText("No Keystone")
         SetFontColor(frame.key, constants.colors.muted)
+    end
+
+    local weeklyHighest = GetWeeklyHighestKeystone(data.runHistory)
+    if weeklyHighest then
+        local weeklyMap = weeklyHighest.mapID and (" " .. GetDungeonShortName(weeklyHighest.mapID)) or ""
+        frame.weekly:SetText(("+%d%s"):format(weeklyHighest.level, weeklyMap))
+        frame.weekly:SetTextColor(GetKeystoneColor(weeklyHighest.level))
+    else
+        frame.weekly:SetText("No Weekly Highest")
+        SetFontColor(frame.weekly, constants.colors.muted)
     end
     frame:Show()
 end
@@ -2362,7 +2812,7 @@ function AltManager:ConfigureVaultCell(row, data, column)
             if earned then
                 SetTextureColor(segment.background, constants.colors.vaultComplete)
                 segment.fill:Hide()
-                segment.text:SetText(tostring(slot.ilvl or slot.raidString or "?"))
+                segment.text:SetText(FormatWholeNumber(slot.ilvl or slot.raidString or "?"))
                 SetFontColor(segment.text, constants.colors.vaultText)
             else
                 SetTextureColor(segment.background, progress > 0 and constants.colors.vaultProgress or constants.colors.vaultNotStarted)
@@ -2384,13 +2834,6 @@ function AltManager:ConfigureCurrencyCell(row, data, column)
     end
 
     local layout = constants.layout
-    local visible = {}
-    for definitionIndex, definition in ipairs(SEASON_CURRENCY_DEFS) do
-        if self:IsRowVisible(definition.childKey) then
-            visible[#visible + 1] = { index = definitionIndex, definition = definition }
-        end
-    end
-
     for _, cell in ipairs(frame.cells) do
         cell:Hide()
     end
@@ -2398,54 +2841,111 @@ function AltManager:ConfigureCurrencyCell(row, data, column)
     frame:ClearAllPoints()
     frame:SetPoint("TOPLEFT", row, "TOPLEFT", column.x, 0)
     frame:SetSize(column.width, layout.ROW_HEIGHT)
-    local cellWidth = math.max(1, (column.width - 5) / 2)
-    local rowCount = math.max(1, math.ceil(#visible / 2))
+    local columnCount = 3
+    local rowCount = 3
+    local cellGap = 5
+    local cellWidth = math.max(1, (column.width - ((columnCount - 1) * cellGap)) / columnCount)
     local totalHeight = (rowCount * layout.BAR_H) + ((rowCount - 1) * layout.BAR_GAP)
     local topOffset = (layout.ROW_HEIGHT - totalHeight) / 2
 
-    for visibleIndex, item in ipairs(visible) do
-        local cell = frame.cells[item.index]
-        local definition = item.definition
-        local columnIndex = (visibleIndex - 1) % 2
-        local rowIndex = math.floor((visibleIndex - 1) / 2)
-        local currencyID = constants.currencies[definition.currencyKey]
-        local info = currencyID and C_CurrencyInfo.GetCurrencyInfo(currencyID) or nil
-        local values = tonumber(data.seasonID) == constants.SEASON_ID
-            and data.season and data.season[definition.storeKey] or nil
-        local current = tonumber(values and values[1]) or 0
-        local maximum = tonumber(values and values[2]) or 0
+    for definitionIndex, definition in ipairs(DASHBOARD_CURRENCY_DEFS) do
+        if self:IsRowVisible(definition.childKey) then
+            local cell = frame.cells[definitionIndex]
+            local columnIndex = definition.column - 1
+            local rowIndex = definition.row - 1
+            local currencyID = constants.currencies[definition.currencyKey]
+            local info = currencyID and C_CurrencyInfo.GetCurrencyInfo(currencyID) or nil
+            local values
+            if definition.source == "season" then
+                values = tonumber(data.seasonID) == constants.SEASON_ID
+                    and data.season and data.season[definition.storeKey] or nil
+            else
+                values = data[definition.storeKey]
+            end
 
-        cell:ClearAllPoints()
-        cell:SetPoint(
-            "TOPLEFT",
-            frame,
-            "TOPLEFT",
-            columnIndex * (cellWidth + 5),
-            -(topOffset + (rowIndex * (layout.BAR_H + layout.BAR_GAP)))
-        )
-        cell:SetSize(cellWidth, layout.ICON_SIZE)
-        cell.iconButton:ClearAllPoints()
-        cell.iconButton:SetPoint("LEFT", cell, "LEFT", 0, 0)
-        cell.iconButton:SetSize(layout.ICON_SIZE, layout.ICON_SIZE)
-        cell.iconButton.texture:SetTexture(info and info.iconFileID or nil)
-        cell.iconButton.currencyName = (info and info.name) or definition.fallbackName
+            local isCofferKeyShards = definition.childKey == "coffer_key_shards"
+            local current
+            local maximum
+            local available
+            if isCofferKeyShards and type(values) == "table" and values.available ~= nil then
+                available = tonumber(values.available) or 0
+                current = tonumber(values.earnedThisWeek) or available
+                maximum = tonumber(values.weeklyMaximum) or 0
+            elseif type(values) == "table" then
+                current = tonumber(values[1]) or 0
+                maximum = tonumber(values[2]) or 0
+                available = current
+            else
+                current = tonumber(values) or 0
+                maximum = 0
+                available = current
+            end
 
-        cell.bar:ClearAllPoints()
-        cell.bar:SetPoint("LEFT", cell.iconButton, "RIGHT", 4, 0)
-        cell.bar:SetSize(math.max(1, cellWidth - layout.ICON_SIZE - 4), layout.BAR_H)
-        if maximum > 0 then
-            cell.bar:SetMinMaxValues(0, maximum)
-            cell.bar:SetValue(math.min(current, maximum))
-        else
-            cell.bar:SetMinMaxValues(0, 1)
-            cell.bar:SetValue(0)
+            local isCurrentCharacter = data.guid == UnitGUID("player")
+            if isCofferKeyShards and isCurrentCharacter and info then
+                available = tonumber(info.quantity) or available
+                current = tonumber(info.quantityEarnedThisWeek) or available
+                maximum = tonumber(info.maxWeeklyQuantity) or maximum
+            end
+
+            local canConvertKeys = isCofferKeyShards
+                and isCurrentCharacter
+                and available > constants.COFFER_KEY_GLUE.MIN_SHARDS_EXCLUSIVE
+                and not InCombatLockdown()
+                and PlayerHasCofferKeyGlue()
+
+            cell:ClearAllPoints()
+            cell:SetPoint(
+                "TOPLEFT",
+                frame,
+                "TOPLEFT",
+                columnIndex * (cellWidth + cellGap),
+                -(topOffset + (rowIndex * (layout.BAR_H + layout.BAR_GAP)))
+            )
+            cell:SetSize(cellWidth, layout.ICON_SIZE)
+            cell.iconButton:ClearAllPoints()
+            cell.iconButton:SetPoint("LEFT", cell, "LEFT", 0, 0)
+            cell.iconButton:SetSize(layout.ICON_SIZE, layout.ICON_SIZE)
+            cell.iconButton.texture:SetTexture(info and info.iconFileID or nil)
+            cell.iconButton.currencyName = (info and info.name) or definition.fallbackName
+
+            cell.bar:ClearAllPoints()
+            cell.bar:SetPoint("LEFT", cell.iconButton, "RIGHT", 4, 0)
+            cell.bar:SetSize(math.max(1, cellWidth - layout.ICON_SIZE - 4), layout.BAR_H)
+            if canConvertKeys then
+                SetTextureColor(cell.bar.background, constants.colors.vaultComplete)
+                cell.bar:SetMinMaxValues(0, 1)
+                cell.bar:SetValue(0)
+            elseif maximum > 0 then
+                SetTextureColor(cell.bar.background, constants.colors.barEmpty)
+                cell.bar:SetMinMaxValues(0, maximum)
+                cell.bar:SetValue(math.min(current, maximum))
+            else
+                SetTextureColor(cell.bar.background, constants.colors.barEmpty)
+                cell.bar:SetMinMaxValues(0, 1)
+                cell.bar:SetValue(1)
+            end
+            local statusTexture = cell.bar:GetStatusBarTexture()
+            if statusTexture then
+                SetTextureColor(statusTexture, constants.colors.currencyFill)
+            end
+            if canConvertKeys then
+                cell.bar.text:SetText("Convert Keys")
+            elseif definition.valueType == "flat" or maximum <= 0 then
+                cell.bar.text:SetText(FormatWholeNumber(current))
+            else
+                cell.bar.text:SetText(("%s/%s"):format(
+                    FormatWholeNumber(current),
+                    FormatWholeNumber(maximum)
+                ))
+            end
+            cell:Show()
+
+            if canConvertKeys then
+                self._cofferKeyGlueTarget = cell
+                self._cofferKeyGlueShardCount = available
+            end
         end
-        local statusTexture = cell.bar:GetStatusBarTexture()
-        if statusTexture then
-            SetTextureColor(statusTexture, constants.colors.currencyFill)
-        end
-        cell.bar.text:SetText(("%d/%d"):format(current, maximum))
-        cell:Show()
     end
     frame:Show()
 end
@@ -2561,7 +3061,10 @@ function AltManager:ConfigureDrawer(drawer, data)
                     local progress = tonumber(weekly.progress)
                     local required = tonumber(weekly.required)
                     if progress and required and required > 0 then
-                        progressText = (" (%d/%d)"):format(progress, required)
+                        progressText = (" (%s/%s)"):format(
+                            FormatWholeNumber(progress),
+                            FormatWholeNumber(required)
+                        )
                     end
                 end
                 entries[#entries + 1] = {
@@ -2599,51 +3102,6 @@ function AltManager:ConfigureDrawer(drawer, data)
     AddWeeklyGroup("world_events", "WORLD EVENTS", 6)
     AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS", 6)
 
-    if self:IsRowVisible("drawer_currencies") then
-        local section = FindSection("currencies")
-        local entries = {}
-        for _, child in ipairs((section and section.children) or {}) do
-            if not SEASON_CHILD_KEYS[child.key] and self:IsRowVisible(child.key) then
-                local field = child.dataKey or child.key
-                entries[#entries + 1] = {
-                    text = ("|cffd8b85a▪|r %s %d"):format(child.label, tonumber(data[field]) or 0),
-                    color = constants.colors.body,
-                }
-            end
-        end
-        if #entries > 0 then
-            AddHeading("CURRENCIES")
-            AddGrid(entries, 4)
-        end
-    end
-
-    if self:IsRowVisible("pvp") then
-        local section = FindSection("pvp")
-        local pvp = data.pvp or {}
-        local entries = {}
-        local pvpValues = {
-            pvp_honor = tostring(tonumber(pvp.honor) or 0),
-            pvp_conquest = tostring(tonumber(pvp.conquest) or 0),
-            pvp_bloody_tokens = tostring(tonumber(pvp.bloodyTokens) or 0),
-        }
-        local conquestEarned = tonumber(pvp.conquestEarned) or 0
-        pvpValues.pvp_conquest_earned = conquestEarned >= 2500 and "Complete" or (("%d/2500"):format(conquestEarned))
-
-        for _, child in ipairs((section and section.children) or {}) do
-            if self:IsRowVisible(child.key) then
-                entries[#entries + 1] = {
-                    text = ("|cffd8b85a▪|r %s %s"):format(child.label, pvpValues[child.key] or "0"),
-                    color = child.key == "pvp_conquest_earned" and conquestEarned >= 2500
-                        and constants.colors.success or constants.colors.body,
-                }
-            end
-        end
-        if #entries > 0 then
-            AddHeading("PVP")
-            AddGrid(entries, 4)
-        end
-    end
-
     if textIndex == 0 then
         return 0
     end
@@ -2655,7 +3113,7 @@ function AltManager:ConfigureDrawer(drawer, data)
 end
 
 function AltManager:ToggleRowDrawer(guid)
-    if not constants.config.ENABLE_DRAWER or not guid then return end
+    if not guid then return end
     local config = MyAltManagerDB.config
     config.openRows = config.openRows or {}
     if config.openRows[guid] then
@@ -2684,22 +3142,15 @@ function AltManager:GetSortedCharacters()
         end
     end
 
-    local sortKey = MyAltManagerDB.config.sort or "ilevel"
     table.sort(characters, function(a, b)
-        if sortKey == "name" then
-            local aName = tostring(a.data.name or "")
-            local bName = tostring(b.data.name or "")
-            if aName ~= bName then return aName < bName end
-        elseif sortKey == "score" then
-            local aScore = tonumber(a.data.mplus and a.data.mplus.score) or 0
-            local bScore = tonumber(b.data.mplus and b.data.mplus.score) or 0
-            if aScore ~= bScore then return aScore > bScore end
-        else
-            local aLevel = tonumber(a.data.ilevel) or 0
-            local bLevel = tonumber(b.data.ilevel) or 0
-            if aLevel ~= bLevel then return aLevel > bLevel end
-        end
-        return tostring(a.data.name or a.guid) < tostring(b.data.name or b.guid)
+        local aName = tostring(a.data.name or ""):lower()
+        local bName = tostring(b.data.name or ""):lower()
+        if aName ~= bName then return aName < bName end
+
+        local aRealm = tostring(a.data.realmName or ""):lower()
+        local bRealm = tostring(b.data.realmName or ""):lower()
+        if aRealm ~= bRealm then return aRealm < bRealm end
+        return tostring(a.guid) < tostring(b.guid)
     end)
     return characters
 end
@@ -2707,6 +3158,13 @@ end
 function AltManager:RebuildUI()
     if not self.main_frame or not MyAltManagerDB then return end
     self:InitializeFrame()
+
+    -- Detach the independent secure overlay before pooled rows move, then attach it
+    -- to the logged-in character's eligible shard cell after layout is complete.
+    self:DetachCofferKeyGlueCastBar()
+    self._cofferKeyGlueTarget = nil
+    self._cofferKeyGlueShardCount = 0
+    self:UpdateCofferKeyGlueButton()
 
     local layout = constants.layout
     local frame = self.main_frame
@@ -2729,7 +3187,7 @@ function AltManager:RebuildUI()
         contentHeight = contentHeight + layout.ROW_HEIGHT
 
         local openRows = MyAltManagerDB.config.openRows or {}
-        if constants.config.ENABLE_DRAWER and openRows[character.guid] then
+        if openRows[character.guid] then
             local drawer = self.drawerPool:Acquire()
             self:InitializeDrawer(drawer)
             local drawerHeight = self:ConfigureDrawer(drawer, character.data)
@@ -2763,10 +3221,15 @@ function AltManager:RebuildUI()
     frame.scrollFrame:SetVerticalScroll(0)
     local scrollBar = frame.scrollFrame.ScrollBar or _G.AltManagerScrollFrameScrollBar
     if scrollBar then scrollBar:Hide() end
+    self:RenderCofferKeyGlueCastDisplay()
+    self:UpdateCofferKeyGlueButton()
 end
 
 function AltManager:HideInterface()
     self:StopFooterTicker()
+    self:StopCofferKeyGlueCastDisplay()
+    self._cofferKeyGlueTarget = nil
+    self:HideCofferKeyGlueButton()
     self.main_frame:Hide()
 end
 
@@ -2777,6 +3240,7 @@ function AltManager:ShowInterface()
     MyAltManagerDB.config.openRows = {}
     self:RebuildUI()
     self.main_frame:Show()
+    self:UpdateCofferKeyGlueButton()
     self:StartFooterTicker()
 end
 
@@ -2943,6 +3407,77 @@ local function GetCurseSurgeEventName(areaPoiID)
     return poiInfo and poiInfo.name or nil
 end
 
+-- Blizzard prefixes the POI name with "Curse Surge:". Strip that category label along
+-- with punctuation so the scheduler text resolves to the short name and coordinates above.
+local function NormalizeCurseSurgeEventName(name)
+    local normalized = tostring(name or ""):lower():gsub("[^%w]", "")
+    return (normalized:gsub("^cursesurge", ""))
+end
+
+local curseSurgeLocationsByName = {}
+for _, location in ipairs(constants.CURSE_SURGE_LOCATIONS) do
+    curseSurgeLocationsByName[NormalizeCurseSurgeEventName(location.name)] = location
+    curseSurgeLocationsByName[NormalizeCurseSurgeEventName(location.event)] = location
+    curseSurgeLocationsByName[NormalizeCurseSurgeEventName(location.target)] = location
+end
+
+local function GetCurseSurgeLocationByName(eventName)
+    local normalized = NormalizeCurseSurgeEventName(eventName)
+    if normalized == "" then return nil end
+    return curseSurgeLocationsByName[normalized]
+end
+
+-- A map pin link an addon composes itself is stripped from SendChatMessage, but the link the
+-- client generates for the waypoint it is actually holding survives. So place the waypoint,
+-- read its link, then put the player's own waypoint and tracking back exactly as they were.
+local function BuildCurseSurgeWaypointLink(location)
+    if not C_Map or not C_Map.SetUserWaypoint or not C_Map.GetUserWaypointHyperlink
+        or not UiMapPoint or not UiMapPoint.CreateFromCoordinates then
+        return nil
+    end
+    if C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(location.uiMapID) then
+        return nil
+    end
+
+    local previousWaypoint = C_Map.GetUserWaypoint and C_Map.GetUserWaypoint() or nil
+    local wasSuperTracking = C_SuperTrack and C_SuperTrack.IsSuperTrackingUserWaypoint
+        and C_SuperTrack.IsSuperTrackingUserWaypoint() or false
+
+    C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(
+        location.uiMapID, location.x / 100, location.y / 100
+    ))
+    local link = C_Map.GetUserWaypointHyperlink()
+
+    if previousWaypoint then
+        C_Map.SetUserWaypoint(previousWaypoint)
+    elseif C_Map.ClearUserWaypoint then
+        C_Map.ClearUserWaypoint()
+    end
+    if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+        C_SuperTrack.SetSuperTrackedUserWaypoint(wasSuperTracking)
+    end
+
+    return link
+end
+
+local function BuildCurseSurgeAnnouncement(minutes, eventName, location)
+    local countdown = ("Curse Surge in %d minute%s"):format(minutes, minutes == 1 and "" or "s")
+    if not eventName then
+        return countdown .. "."
+    end
+    if not location then
+        return ("%s - %s."):format(countdown, eventName)
+    end
+
+    -- Coordinates stay in the text so the message still reads if the pin cannot be built.
+    local message = ("%s - %s at %.1f, %.1f"):format(countdown, eventName, location.x, location.y)
+    local waypoint = BuildCurseSurgeWaypointLink(location)
+    if not waypoint then
+        return message .. "."
+    end
+    return ("%s %s"):format(message, waypoint)
+end
+
 function AltManager:RequestCurseSurgeEventData()
     if not C_EventScheduler or not C_EventScheduler.RequestEvents then return end
 
@@ -2960,14 +3495,67 @@ function AltManager:RefreshCurseSurgeEventName()
     self._curseSurgeEventName = GetCurseSurgeEventName(self._curseSurgeAreaPoiID)
 end
 
-function AltManager:RefreshCurseSurgeEventCache()
-    local tracker = self.curseSurgeTracker
-    if not tracker or not tracker:IsShown() then return end
+function AltManager:StopCurseSurgeEventPriming()
+    if self._curseSurgeEventPrimeTicker then
+        self._curseSurgeEventPrimeTicker:Cancel()
+        self._curseSurgeEventPrimeTicker = nil
+    end
+end
 
+-- The scheduler only pushes data after a request, so ask at login rather than waiting for
+-- the player to open the map or the events tab. The server answers asynchronously and the
+-- POI name can lag behind it, so retry on a bounded schedule until the surge is named.
+function AltManager:PrimeCurseSurgeEventData()
+    self:StopCurseSurgeEventPriming()
+    self:RefreshCurseSurgeEventCache()
+    if self:HasResolvedCurseSurgeEvent() then return end
+
+    local attemptsRemaining = constants.CURSE_SURGE.PRIME_ATTEMPTS
+    self._curseSurgeEventPrimeTicker = C_Timer.NewTicker(constants.CURSE_SURGE.PRIME_INTERVAL_SECONDS, function()
+        attemptsRemaining = attemptsRemaining - 1
+        AltManager:RefreshCurseSurgeEventCache()
+        if AltManager:HasResolvedCurseSurgeEvent() or attemptsRemaining <= 0 then
+            AltManager:StopCurseSurgeEventPriming()
+            AltManager:UpdateFooterCurseSurge()
+        end
+    end)
+end
+
+function AltManager:GetCurseSurgeEventStartEpoch(phase, phaseEndEpoch, surgeStartEpoch)
+    -- While waiting, the surge we care about is the one that starts when the wait ends.
+    return phase == "waiting" and phaseEndEpoch or surgeStartEpoch
+end
+
+-- True once the scheduler has named the surge the UI is currently counting down to.
+function AltManager:HasResolvedCurseSurgeEvent()
+    local phase, _, phaseEndEpoch, _, _, surgeStartEpoch = GetCurseSurgeStatus()
+    if not phase then return false end
+
+    local targetStartEpoch = self:GetCurseSurgeEventStartEpoch(phase, phaseEndEpoch, surgeStartEpoch)
+    return self._curseSurgeEventStartEpoch == targetStartEpoch and self._curseSurgeEventName ~= nil
+end
+
+-- The display name for the surge being counted down to, in any phase. Prefers the short name
+-- from the table, falling back to Blizzard's POI name for a surge we have no entry for.
+function AltManager:GetActiveCurseSurgeEventName()
+    if not self:HasResolvedCurseSurgeEvent() then return nil end
+
+    local location = GetCurseSurgeLocationByName(self._curseSurgeEventName)
+    return location and location.name or self._curseSurgeEventName
+end
+
+-- Resolves to the location of the surge the UI is currently naming, or nil while the
+-- scheduled event is still unknown or its name is missing from constants.CURSE_SURGE_LOCATIONS.
+function AltManager:GetActiveCurseSurgeLocation()
+    if not self:HasResolvedCurseSurgeEvent() then return nil end
+    return GetCurseSurgeLocationByName(self._curseSurgeEventName)
+end
+
+function AltManager:RefreshCurseSurgeEventCache()
     local phase, _, phaseEndEpoch, _, _, surgeStartEpoch = GetCurseSurgeStatus()
     if not phase then return end
 
-    local targetStartEpoch = phase == "waiting" and phaseEndEpoch or surgeStartEpoch
+    local targetStartEpoch = self:GetCurseSurgeEventStartEpoch(phase, phaseEndEpoch, surgeStartEpoch)
     if self._curseSurgeEventStartEpoch == targetStartEpoch
         and self._curseSurgeAreaPoiID and self._curseSurgeEventName then
         return
@@ -3012,6 +3600,134 @@ function AltManager:FocusStartingCurseSurge(surgeStartEpoch)
     self._curseSurgeFocusedStartEpoch = surgeStartEpoch
 end
 
+-- True only when the player's waypoint is both sitting on this surge and being super-tracked.
+-- The stored position can be quantised, so match within a fraction of the map far smaller
+-- than the gap between any two surge spawn points.
+local CURSE_SURGE_WAYPOINT_EPSILON = 0.005
+
+function AltManager:IsTrackingCurseSurgeLocation()
+    local location = self:GetActiveCurseSurgeLocation()
+    if not location then return false end
+
+    if not C_SuperTrack or not C_SuperTrack.IsSuperTrackingUserWaypoint
+        or not C_SuperTrack.IsSuperTrackingUserWaypoint() then
+        return false
+    end
+
+    if not C_Map or not C_Map.GetUserWaypointPositionForMap then return false end
+    local position = C_Map.GetUserWaypointPositionForMap(location.uiMapID)
+    if not position then return false end
+
+    local x, y = position:GetXY()
+    if not x or not y then return false end
+
+    return math.abs(x - (location.x / 100)) <= CURSE_SURGE_WAYPOINT_EPSILON
+        and math.abs(y - (location.y / 100)) <= CURSE_SURGE_WAYPOINT_EPSILON
+end
+
+-- Toggles a map pin on the surge's spawn point, using the same call pairs Blizzard makes for
+-- its own hardcoded waypoints and its map pin. Deliberately does not touch the surge tracker.
+function AltManager:TrackCurseSurgeLocation()
+    local location = self:GetActiveCurseSurgeLocation()
+    if not location or not C_Map then return end
+
+    if self:IsTrackingCurseSurgeLocation() then
+        if C_Map.ClearUserWaypoint then
+            C_Map.ClearUserWaypoint()
+        end
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            C_SuperTrack.SetSuperTrackedUserWaypoint(false)
+        end
+        return
+    end
+
+    if not C_Map.SetUserWaypoint or not UiMapPoint or not UiMapPoint.CreateFromCoordinates then
+        return
+    end
+
+    if C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(location.uiMapID) then
+        print("MyAltManager: cannot place a map pin for the Curse Surge from here.")
+        return
+    end
+
+    C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(location.uiMapID, location.x / 100, location.y / 100))
+    if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+        C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+    end
+end
+
+function AltManager:IsCurseSurgeAnnounceEnabled()
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    return config ~= nil and config.curse_surge_announce == true
+end
+
+-- Goes to guild chat. With no guild to send to it prints locally instead, so the
+-- announcement is never silently lost on a guildless character.
+function AltManager:SendCurseSurgeAnnouncement(message)
+    local sendChatMessage = C_ChatInfo and C_ChatInfo.SendChatMessage or SendChatMessage
+    if sendChatMessage and IsInGuild and IsInGuild() then
+        sendChatMessage(message, "GUILD")
+        return
+    end
+
+    print("MyAltManager: " .. message)
+end
+
+-- Fires at most once per surge, keyed on the epoch that surge starts. The key is saved so a
+-- reload, a relog, or swapping characters mid-countdown cannot repeat an announcement.
+function AltManager:CheckCurseSurgeAnnouncement()
+    if not self:IsCurseSurgeAnnounceEnabled() then return end
+
+    local config = MyAltManagerDB and MyAltManagerDB.config
+    if not config then return end
+
+    local phase, secondsUntil, phaseEndEpoch = GetCurseSurgeStatus()
+    -- Only the countdown is announced; once a surge starts the lead time has passed.
+    if phase ~= "waiting" then return end
+
+    local schedule = constants.CURSE_SURGE
+    if secondsUntil > schedule.ANNOUNCE_LEAD_SECONDS then return end
+    if config.curse_surge_announced_start_epoch == phaseEndEpoch then return end
+
+    -- Chat output and map pin links are what the player acts on next, and acting on them in
+    -- combat runs into restricted actions, so hold the message until they are out of it.
+    if InCombatLockdown() or UnitAffectingCombat("player") then return end
+
+    if not self:HasResolvedCurseSurgeEvent() then
+        self:RefreshCurseSurgeEventCache()
+    end
+
+    -- Give the scheduler the first minute of the window to name the surge before settling
+    -- for a bare countdown, so a slow lookup does not cost the announcement its location.
+    local location = self:GetActiveCurseSurgeLocation()
+    if not location and secondsUntil > schedule.ANNOUNCE_FALLBACK_SECONDS then return end
+
+    config.curse_surge_announced_start_epoch = phaseEndEpoch
+    self:SendCurseSurgeAnnouncement(BuildCurseSurgeAnnouncement(
+        math.max(1, math.ceil(secondsUntil / 60)),
+        self:GetActiveCurseSurgeEventName(),
+        location
+    ))
+end
+
+function AltManager:StopCurseSurgeAnnounceTicker()
+    if self._curseSurgeAnnounceTicker then
+        self._curseSurgeAnnounceTicker:Cancel()
+        self._curseSurgeAnnounceTicker = nil
+    end
+end
+
+-- The announcement has to keep time with no frame open, so it runs on its own ticker.
+function AltManager:ApplyCurseSurgeAnnounceSetting()
+    self:StopCurseSurgeAnnounceTicker()
+    if not self:IsCurseSurgeAnnounceEnabled() then return end
+
+    self._curseSurgeAnnounceTicker = C_Timer.NewTicker(constants.CURSE_SURGE.ANNOUNCE_POLL_SECONDS, function()
+        AltManager:CheckCurseSurgeAnnouncement()
+    end)
+    self:CheckCurseSurgeAnnouncement()
+end
+
 function AltManager:ApplyCurseSurgeTrackerSettings()
     local tracker = self.curseSurgeTracker
     local config = MyAltManagerDB and MyAltManagerDB.config
@@ -3039,7 +3755,7 @@ function AltManager:UpdateCurseSurgeTracker()
     local tracker = self.curseSurgeTracker
     if not tracker or not tracker:IsShown() then return end
 
-    local phase, secondsRemaining, phaseEndEpoch, phaseElapsed, phaseDuration, surgeStartEpoch = GetCurseSurgeStatus()
+    local phase, secondsRemaining, _, phaseElapsed, phaseDuration, surgeStartEpoch = GetCurseSurgeStatus()
     if phase == nil then
         tracker.statusText:SetText("Curse Surge Unavailable")
         tracker.timerText:SetText("--:--")
@@ -3048,13 +3764,15 @@ function AltManager:UpdateCurseSurgeTracker()
         return
     end
 
-    local nextEventName = self._curseSurgeEventStartEpoch == phaseEndEpoch
-        and self._curseSurgeEventName or nil
-    local statusText = nextEventName and ("Next: " .. nextEventName) or "Next Curse Surge"
+    -- Named per phase where the scheduler has told us which surge it is, generic until then.
+    local eventName = self:GetActiveCurseSurgeEventName()
+    local statusText
     if phase == "starting" then
-        statusText = "Curse Surge Starting"
+        statusText = eventName and ("Starting: " .. eventName) or "Curse Surge Starting"
     elseif phase == "active" then
-        statusText = "Curse Surge Active"
+        statusText = eventName and ("Active: " .. eventName) or "Curse Surge Active"
+    else
+        statusText = eventName and ("Next: " .. eventName) or "Next Curse Surge"
     end
 
     tracker.statusText:SetText(statusText)
@@ -3181,7 +3899,13 @@ function AltManager:InitializeCurseSurgeTracker()
     for _, borderPart in ipairs(tracker.borderParts) do
         borderPart:SetDrawLayer("OVERLAY", 7)
     end
+    -- isDragging is armed on mouse down and only set by a real drag, so releasing after
+    -- repositioning the bar never counts as a click. Either firing order is safe.
+    tracker:SetScript("OnMouseDown", function(frame)
+        frame.isDragging = false
+    end)
     tracker:SetScript("OnDragStart", function(frame)
+        frame.isDragging = true
         frame:StartMoving()
     end)
     tracker:SetScript("OnDragStop", function(frame)
@@ -3193,6 +3917,14 @@ function AltManager:InitializeCurseSurgeTracker()
             x = x,
             y = y,
         }
+    end)
+    tracker:SetScript("OnMouseUp", function(frame, button)
+        if frame.isDragging then
+            frame.isDragging = false
+            return
+        end
+        if button ~= "LeftButton" then return end
+        AltManager:TrackCurseSurgeLocation()
     end)
 
     local savedPoint = MyAltManagerDB.config.curse_surge_tracker_point
@@ -3217,13 +3949,27 @@ function AltManager:InitializeCurseSurgeTracker()
     end
 end
 
+-- Coordinates take the title gold; the label around them stays the footer's own colour.
+function AltManager:RenderFooterCurseSurgeLocation()
+    local footerLocation = self.main_frame and self.main_frame.footerCurseSurgeLocation
+    local location = footerLocation and footerLocation.surgeLocation
+    if not location then return end
+
+    local color = footerLocation.isHighlighted and constants.colors.brightText or constants.colors.titleText
+    footerLocation.text:SetText((" - Location: %s"):format(
+        ColorizeText(("%.1f, %.1f"):format(location.x, location.y), color)
+    ))
+end
+
 function AltManager:UpdateFooterCurseSurge()
     local footerCurseSurge = self.main_frame and self.main_frame.footerCurseSurge
+    local footerLocation = self.main_frame and self.main_frame.footerCurseSurgeLocation
     if not footerCurseSurge then return end
 
     local phase, secondsUntil, nextEpoch = GetCurseSurgeStatus()
     if phase == nil then
         footerCurseSurge:Hide()
+        if footerLocation then footerLocation:Hide() end
         return
     end
 
@@ -3242,7 +3988,21 @@ function AltManager:UpdateFooterCurseSurge()
             FormatLocalClock(nextEpoch)
         ))
     end
+    footerCurseSurge:SetWidth(math.max(1, math.ceil(footerCurseSurge.text:GetStringWidth()) + 1))
     footerCurseSurge:Show()
+
+    if not footerLocation then return end
+
+    local location = self:GetActiveCurseSurgeLocation()
+    footerLocation.surgeLocation = location
+    if not location then
+        footerLocation:Hide()
+        return
+    end
+
+    self:RenderFooterCurseSurgeLocation()
+    footerLocation:SetWidth(math.max(1, math.ceil(footerLocation.text:GetStringWidth()) + 1))
+    footerLocation:Show()
 end
 
 function AltManager:UpdateFooterReset()
@@ -3269,12 +4029,25 @@ function AltManager:StopFooterTicker()
         self._footerTicker:Cancel()
         self._footerTicker = nil
     end
+    if self._footerEventResolverTicker then
+        self._footerEventResolverTicker:Cancel()
+        self._footerEventResolverTicker = nil
+    end
 end
 
 function AltManager:StartFooterTicker()
     self:StopFooterTicker()
+    C_Timer.After(0, function()
+        AltManager:RefreshCurseSurgeEventCache()
+    end)
     self._footerTicker = C_Timer.NewTicker(30, function()
         AltManager:UpdateFooter()
+    end)
+    -- The scheduled event and its POI name arrive asynchronously, so poll for the surge
+    -- location faster than the 30 second footer refresh and redraw once it resolves.
+    self._footerEventResolverTicker = C_Timer.NewTicker(5, function()
+        AltManager:RefreshCurseSurgeEventCache()
+        AltManager:UpdateFooterCurseSurge()
     end)
 end
 
