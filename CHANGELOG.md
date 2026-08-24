@@ -2,6 +2,21 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.67 — 2026-08-24
+
+- Replaced the visible export-data dialog with an invisible focused copy field: click Export, press Ctrl+C, and receive a chat confirmation without displaying the Base64 payload.
+- Documented the required Ctrl+C step because WoW does not expose arbitrary operating-system clipboard writes to third-party addons.
+
+## 12.1.0.66 — 2026-08-24
+
+- Stored each character's weekly meta-quest turn-in timestamp and now count the quest complete only when that timestamp belongs to the current weekly-reset window, avoiding Blizzard's stale completion flag after reset.
+- Added an Export button beside the dashboard close button and `/alts export`, producing a copyable standard Base64 snapshot that decodes directly to JSON containing all stored alt data.
+
+## 12.1.0.65 — 2026-08-21
+
+- Made weekly-reset cleanup explicitly account-wide: one login resets expired weekly quests, events, vault data, keystone history, and weekly currency progress for every stored character without visiting each alt.
+- Added a scheduled reset check and weekly-rewards event handling so characters also reset when the client remains online across the weekly rollover.
+
 ## 12.1.0.64 — 2026-08-21
 
 - Changed dashboard character ordering from descending item level to alphabetical character name, retiring the legacy saved sort value so the new order applies immediately.

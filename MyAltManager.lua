@@ -111,6 +111,10 @@ constants.CURSE_SURGE = {
     ANNOUNCE_FALLBACK_SECONDS = 4 * 60,
     ANNOUNCE_POLL_SECONDS = 10,
 }
+constants.WEEK_SECONDS = 7 * 24 * 60 * 60
+constants.WEEKLY_META_QUEST = {
+    QUEST_ID = 98172, -- Trailing Xal'atath
+}
 -- Hidden Trove (Delves) is tracked from the cast that opens the trove rather than from a quest ID,
 -- because the quest ID is re-issued every season while the "Unlocking" cast is not. The trove is
 -- weekly and per-character, so the completion is stored per GUID and expires at the weekly reset.
@@ -463,7 +467,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.64"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.67"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -932,6 +936,7 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
     if rqst == "help" then
         print("MyAltManager help:")
         print("   \"/alts\" to open the UI.")
+        print("   \"/alts export\" to export all alt data as Base64-encoded JSON.")
         print("   \"/alts settings\" to open the settings panel.")
         print("   \"/alts min <ilevel>\" to set minimum item level to store data (default 0).")
         print("   \"/alts purge\" to remove all stored data.")
@@ -943,6 +948,8 @@ function SlashCmdList.ALTMANAGER(cmd, editbox)
         AltManager:RemoveCharactersByName(arg)
     elseif rqst == "min" then
         AltManager:SetMinItemLevel(arg)
+    elseif rqst == "export" then
+        AltManager:ShowExport()
     elseif rqst == "settings" then
         if AltManager.settingsCategory then
             Settings.OpenToCategory(AltManager.settingsCategory:GetID())
@@ -1046,11 +1053,25 @@ do
             return
         end
 
+        if event == "WEEKLY_REWARDS_UPDATE" then
+            AltManager:ValidateReset()
+            AltManager:ScheduleWeeklyResetCheck()
+            AltManager:ScheduleCollect(event)
+            return
+        end
+
+        if event == "QUEST_TURNED_IN" then
+            if tonumber(loadedOrType) == constants.WEEKLY_META_QUEST.QUEST_ID then
+                AltManager:MarkWeeklyMetaQuestCompleted()
+            else
+                AltManager:ScheduleCollect(event)
+            end
+            return
+        end
+
         if event == "BAG_UPDATE_DELAYED"
             or event == "QUEST_LOG_UPDATE"
-            or event == "QUEST_TURNED_IN"
             or event == "CURRENCY_DISPLAY_UPDATE"
-            or event == "WEEKLY_REWARDS_UPDATE"
             or event == "CHALLENGE_MODE_MAPS_UPDATE"
             or event == "MYTHIC_PLUS_CURRENT_AFFIX_UPDATE"
             or event == "PLAYER_EQUIPMENT_CHANGED" then
@@ -1115,6 +1136,7 @@ function AltManager:InitDB()
     }
     t.meta = {}
     t.hiddenTrove = {}
+    t.weeklyMetaQuestCompletions = {}
     return t
 end
 
@@ -1126,6 +1148,7 @@ end
 
 function AltManager:OnLogin()
     self:ValidateReset()
+    self:ScheduleWeeklyResetCheck()
     self:RequestMythicPlusMetadata()
     self:PrimeCurseSurgeEventData()
     self:ApplyCurseSurgeAnnounceSetting()
@@ -1250,6 +1273,47 @@ function AltManager:MarkHiddenTroveCompleted(guid)
     return true
 end
 
+function AltManager:EnsureWeeklyMetaQuestCompletionStore()
+    local db = MyAltManagerDB
+    if not db then return nil end
+
+    db.weeklyMetaQuestCompletions = db.weeklyMetaQuestCompletions or {}
+    return db.weeklyMetaQuestCompletions
+end
+
+function AltManager:GetWeeklyMetaQuestCompletedAt(guid)
+    guid = guid or UnitGUID("player")
+    if not guid then return nil end
+
+    local store = self:EnsureWeeklyMetaQuestCompletionStore()
+    local storedAt = tonumber(store and store[guid])
+    local charData = MyAltManagerDB and MyAltManagerDB.data and MyAltManagerDB.data[guid]
+    local charAt = tonumber(charData and charData.weeklyMetaQuestCompletedAt)
+
+    if storedAt and charAt then
+        return math.max(storedAt, charAt)
+    end
+    return storedAt or charAt
+end
+
+
+function AltManager:MarkWeeklyMetaQuestCompleted(guid)
+    guid = guid or UnitGUID("player")
+    local store = self:EnsureWeeklyMetaQuestCompletionStore()
+    if not guid or not store then return false end
+
+    local completedAt = time()
+    store[guid] = completedAt
+
+    local charData = MyAltManagerDB.data and MyAltManagerDB.data[guid]
+    if charData then
+        charData.weeklyMetaQuestCompletedAt = completedAt
+    end
+
+    self:ScheduleCollect("WEEKLY_META_QUEST_TURNED_IN")
+    return true
+end
+
 function AltManager:OnSpellcastSucceeded(unit, spellID)
     if unit ~= "player" then return end
 
@@ -1272,11 +1336,17 @@ end
 
 function AltManager:ValidateReset()
     local db = MyAltManagerDB
-    if not db or not db.data then return end
+    if not db or not db.data then return 0 end
 
+    local now = time()
+    local nextReset = self:GetNextWeeklyResetTime()
+    if not nextReset or nextReset <= now then
+        nextReset = now + constants.WEEK_SECONDS
+    end
+    local resetCount = 0
     for _, char_table in pairs(db.data) do
-        local expiry = char_table.expires or 0
-        if expiry > 0 and time() > expiry then
+        local expiry = tonumber(char_table.expires) or 0
+        if expiry <= 0 or now >= expiry then
             char_table.runHistory = nil
             if char_table.mplus then
                 char_table.mplus.keyMapID = nil
@@ -1288,14 +1358,17 @@ function AltManager:ValidateReset()
                 world = CreateEmptyVaultTrack({ 2, 4, 8 }),
             }
             char_table.weeklies = CreateResetWeeklies()
-            char_table.expires = self:GetNextWeeklyResetTime()
+            char_table.expires = nextReset
             char_table.weeklyCofferKeysCollected = 0
+            if type(char_table.cofferKeyShards) == "table" then
+                char_table.cofferKeyShards.earnedThisWeek = 0
+            end
+            resetCount = resetCount + 1
         end
     end
 
     local hiddenTroveStore = self:EnsureHiddenTroveStore()
     if hiddenTroveStore then
-        local now = time()
         for guid, record in pairs(hiddenTroveStore) do
             local expires = tonumber(record and record.expires) or 0
             if expires <= 0 or now >= expires then
@@ -1303,12 +1376,32 @@ function AltManager:ValidateReset()
             end
         end
     end
+    return resetCount
+end
+
+function AltManager:ScheduleWeeklyResetCheck()
+    if self._weeklyResetTimer then
+        self._weeklyResetTimer:Cancel()
+        self._weeklyResetTimer = nil
+    end
+
+    local seconds = tonumber(C_DateAndTime.GetSecondsUntilWeeklyReset())
+    local delay = seconds and seconds > 0 and math.min(seconds + 1, 60 * 60) or 60
+    self._weeklyResetTimer = C_Timer.NewTimer(delay, function()
+        AltManager._weeklyResetTimer = nil
+        local resetCount = AltManager:ValidateReset()
+        if resetCount > 0 and AltManager.main_frame and AltManager.main_frame:IsShown() then
+            AltManager:RebuildUI()
+        end
+        AltManager:ScheduleWeeklyResetCheck()
+    end)
 end
 
 function AltManager:Purge()
     MyAltManagerDB = MyAltManagerDB or self:InitDB()
     MyAltManagerDB.data = {}
     MyAltManagerDB.alts = 0
+    MyAltManagerDB.weeklyMetaQuestCompletions = {}
     MyAltManagerDB.config = MyAltManagerDB.config or {}
     MyAltManagerDB.config.openRows = {}
     self:LoadConfigFromDB()
@@ -1327,6 +1420,9 @@ function AltManager:RemoveCharactersByName(name)
 
     for i = 1, #indices do
         db.data[indices[i]] = nil
+        if db.weeklyMetaQuestCompletions then
+            db.weeklyMetaQuestCompletions[indices[i]] = nil
+        end
         if db.config and db.config.openRows then
             db.config.openRows[indices[i]] = nil
         end
@@ -1344,6 +1440,9 @@ function AltManager:RemoveCharacterByGuid(index)
     local delete = function()
         if db.data[index] == nil then return end
         db.data[index] = nil
+        if db.weeklyMetaQuestCompletions then
+            db.weeklyMetaQuestCompletions[index] = nil
+        end
         db.alts = true_numel(db.data)
         if db.config and db.config.openRows then
             db.config.openRows[index] = nil
@@ -1398,6 +1497,151 @@ function AltManager:StoreData(data)
     end
 end
 
+local JSON_ARRAY_KEYS = {
+    adventurer = true,
+    champion = true,
+    dungeon = true,
+    hero = true,
+    myth = true,
+    raid = true,
+    runHistory = true,
+    sparks = true,
+    tierSlots = true,
+    veteran = true,
+    weeklies = true,
+    world = true,
+}
+
+local JSON_ESCAPE_CHARACTERS = {
+    ['"'] = '\\"',
+    ['\\'] = '\\\\',
+    ['\b'] = '\\b',
+    ['\f'] = '\\f',
+    ['\n'] = '\\n',
+    ['\r'] = '\\r',
+    ['\t'] = '\\t',
+}
+
+local function EncodeJsonString(value)
+    return '"' .. value:gsub('["\\%z\1-\31]', function(character)
+        return JSON_ESCAPE_CHARACTERS[character]
+            or string.format("\\u%04x", string.byte(character))
+    end) .. '"'
+end
+
+local function IsJsonArray(value, parentKey)
+    local count = 0
+    local maximum = 0
+    for key in pairs(value) do
+        if type(key) ~= "number" or key < 1 or key % 1 ~= 0 then
+            return false
+        end
+        count = count + 1
+        maximum = math.max(maximum, key)
+    end
+
+    if count == 0 then
+        return JSON_ARRAY_KEYS[parentKey] == true
+    end
+    return maximum == count
+end
+
+local function EncodeJsonValue(value, parentKey, ancestors)
+    local valueType = type(value)
+    if valueType == "nil" then
+        return "null"
+    elseif valueType == "boolean" then
+        return value and "true" or "false"
+    elseif valueType == "number" then
+        if value ~= value or value == math.huge or value == -math.huge then
+            return "null"
+        end
+        return tostring(value)
+    elseif valueType == "string" then
+        return EncodeJsonString(value)
+    elseif valueType ~= "table" then
+        error("cannot export Lua value of type " .. valueType)
+    end
+
+    if ancestors[value] then
+        error("cannot export a cyclic table")
+    end
+    ancestors[value] = true
+
+    local encoded = {}
+    if IsJsonArray(value, parentKey) then
+        for index = 1, #value do
+            encoded[index] = EncodeJsonValue(value[index], nil, ancestors)
+        end
+        ancestors[value] = nil
+        return "[" .. table.concat(encoded, ",") .. "]"
+    end
+
+    local keys = {}
+    for key in pairs(value) do
+        local keyType = type(key)
+        if keyType ~= "string" and keyType ~= "number" then
+            error("cannot export table key of type " .. keyType)
+        end
+        keys[#keys + 1] = key
+    end
+    table.sort(keys, function(left, right)
+        return tostring(left) < tostring(right)
+    end)
+
+    for _, key in ipairs(keys) do
+        encoded[#encoded + 1] = EncodeJsonString(tostring(key))
+            .. ":" .. EncodeJsonValue(value[key], tostring(key), ancestors)
+    end
+    ancestors[value] = nil
+    return "{" .. table.concat(encoded, ",") .. "}"
+end
+
+local BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+local function EncodeBase64(value)
+    local encoded = {}
+    for index = 1, #value, 3 do
+        local first = string.byte(value, index)
+        local second = string.byte(value, index + 1)
+        local third = string.byte(value, index + 2)
+        local combined = first * 65536 + (second or 0) * 256 + (third or 0)
+
+        encoded[#encoded + 1] = BASE64_ALPHABET:sub(math.floor(combined / 262144) % 64 + 1, math.floor(combined / 262144) % 64 + 1)
+        encoded[#encoded + 1] = BASE64_ALPHABET:sub(math.floor(combined / 4096) % 64 + 1, math.floor(combined / 4096) % 64 + 1)
+        encoded[#encoded + 1] = second
+            and BASE64_ALPHABET:sub(math.floor(combined / 64) % 64 + 1, math.floor(combined / 64) % 64 + 1)
+            or "="
+        encoded[#encoded + 1] = third
+            and BASE64_ALPHABET:sub(combined % 64 + 1, combined % 64 + 1)
+            or "="
+    end
+    return table.concat(encoded)
+end
+
+function AltManager:BuildExportPayload()
+    local data = MyAltManagerDB and MyAltManagerDB.data or {}
+    local weeklyResetAt = self:GetNextWeeklyResetTime()
+    return {
+        formatVersion = 1,
+        addonVersion = constants.VERSION,
+        exportedAt = time(),
+        weeklyResetAt = weeklyResetAt,
+        lastWeeklyResetAt = weeklyResetAt and (weeklyResetAt - constants.WEEK_SECONDS)
+            or self:GetLastWeeklyResetTime(),
+        characterCount = true_numel(data),
+        characters = data,
+    }
+end
+
+function AltManager:BuildExportJson()
+    return EncodeJsonValue(self:BuildExportPayload(), nil, {})
+end
+
+function AltManager:BuildExportString()
+    return EncodeBase64(self:BuildExportJson())
+end
+
 local function CollectVaultTrack(activityType, fallbackThresholds, useRaidStringFallback)
     local activities = C_WeeklyRewards.GetActivities(activityType) or {}
     local slots = {}
@@ -1440,6 +1684,7 @@ function AltManager:CollectData()
     local _, class = UnitClass("player")
 
     local guid = UnitGUID("player")
+    local weeklyMetaQuestCompletedAt = self:GetWeeklyMetaQuestCompletedAt(guid)
 
     local runHistory = C_MythicPlus.GetRunHistory(false, true) or {}
 
@@ -1538,7 +1783,16 @@ function AltManager:CollectData()
     end
 
     local function checkWeeklyMetaQuestStatus()
-        return QuestSetStatus({ 98172 }) -- Trailing Xal'atath
+        local lastResetAt = self:GetLastWeeklyResetTime()
+        if weeklyMetaQuestCompletedAt
+            and (not lastResetAt or weeklyMetaQuestCompletedAt >= lastResetAt) then
+            return "complete"
+        end
+
+        if C_QuestLog.IsOnQuest(constants.WEEKLY_META_QUEST.QUEST_ID) then
+            return "inprogress"
+        end
+        return "notstarted"
     end
 
     local function checkSaththerilSoireeStatus()
@@ -1751,6 +2005,7 @@ function AltManager:CollectData()
         luminousDust = luminousDust,
         brimmingArcana = brimmingArcana,
         weeklyCofferKeysCollected = weeklyCofferKeysCollected,
+        weeklyMetaQuestCompletedAt = weeklyMetaQuestCompletedAt,
         runHistory = runHistory,
         version = constants.VERSION,
         expires = self:GetNextWeeklyResetTime(),
@@ -1993,6 +2248,68 @@ local function CreateFlatButton(parent, label)
     SetFontColor(button.label, constants.colors.brightText)
     CreateInsetBorder(button)
     return button
+end
+
+function AltManager:InitializeExportCopyBox()
+    if self.exportCopyBox then return end
+
+    -- Third-party addons cannot write arbitrary text directly to the operating-system
+    -- clipboard. Keep the required EditBox focused and selected but visually hidden so the
+    -- player only needs to press Ctrl+C and never has to view or manually select the payload.
+    local editBox = CreateFrame("EditBox", "MyAltManagerExportCopyBox", UIParent)
+    self.exportCopyBox = editBox
+    editBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    editBox:SetSize(1, 1)
+    editBox:SetAlpha(0)
+    editBox:SetAutoFocus(false)
+    editBox:SetMaxBytes(0)
+    editBox:SetMaxLetters(0)
+    editBox:SetScript("OnEscapePressed", function(copyBox)
+        copyBox:ClearFocus()
+        copyBox:Hide()
+        copyBox:SetText("")
+        print("MyAltManager: export copy cancelled.")
+    end)
+    editBox:SetScript("OnKeyDown", function(copyBox, key)
+        if key ~= "C" or not IsControlKeyDown() then return end
+
+        -- Let the EditBox process Ctrl+C before clearing the selected export on the next frame.
+        C_Timer.After(0, function()
+            copyBox:ClearFocus()
+            copyBox:Hide()
+            copyBox:SetText("")
+            print("MyAltManager: data copied to clipboard.")
+        end)
+    end)
+    editBox:Hide()
+end
+
+function AltManager:ShowExport()
+    self:ValidateReset()
+    if self:CanCollectNow() then
+        self:CollectAndStore()
+    end
+
+    local ok, exportString = pcall(function()
+        return self:BuildExportString()
+    end)
+    if not ok then
+        print("MyAltManager: export failed: " .. tostring(exportString))
+        return
+    end
+
+    self:InitializeExportCopyBox()
+    local copyBox = self.exportCopyBox
+    copyBox:SetText(exportString)
+    copyBox:SetCursorPosition(0)
+    copyBox:Show()
+    copyBox:SetFocus()
+    C_Timer.After(0, function()
+        if copyBox:IsShown() then
+            copyBox:HighlightText()
+        end
+    end)
+    print("MyAltManager: export ready. Press Ctrl+C to copy it, or Escape to cancel.")
 end
 
 function AltManager:InitializeCofferKeyGlueButton()
@@ -2321,6 +2638,11 @@ function AltManager:InitializeFrame()
     frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -4)
     frame.closeButton:SetScale(0.90)
     frame.closeButton:SetScript("OnClick", function() AltManager:HideInterface() end)
+
+    frame.exportButton = CreateFlatButton(frame, "Export")
+    frame.exportButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -4, 0)
+    frame.exportButton:SetSize(54, 18)
+    frame.exportButton:SetScript("OnClick", function() AltManager:ShowExport() end)
     frame:SetScript("OnShow", function()
         AltManager:UpdateCofferKeyGlueButton()
     end)
@@ -4055,4 +4377,20 @@ function AltManager:GetNextWeeklyResetTime()
     local seconds = C_DateAndTime.GetSecondsUntilWeeklyReset()
     if not seconds or seconds <= 0 then return nil end
     return time() + seconds
+end
+
+function AltManager:GetLastWeeklyResetTime()
+    local nextResetAt = self:GetNextWeeklyResetTime()
+    local lastResetAt = nextResetAt and (nextResetAt - constants.WEEK_SECONDS)
+    local db = MyAltManagerDB
+    if db then
+        db.meta = db.meta or {}
+        local storedAt = tonumber(db.meta.lastWeeklyResetAt)
+        if lastResetAt and (not storedAt or lastResetAt > storedAt) then
+            db.meta.lastWeeklyResetAt = lastResetAt
+        elseif not lastResetAt then
+            lastResetAt = storedAt
+        end
+    end
+    return lastResetAt
 end

@@ -2,6 +2,84 @@
 
 When adding an entry, include the date, what went wrong, how it was corrected, and the prevention rule to follow in future work.
 
+## 2026-08-24 — Used the wrong Git option for CRLF whitespace validation
+
+- **What went wrong:** I ran `git diff --check --ignore-space-at-eol` expecting it to ignore CRLF line terminators, but `diff --check` still treated every added carriage return as trailing whitespace and stopped the commit sequence with hundreds of false positives.
+- **Correction:** Reran the check with Git's `core.whitespace=cr-at-eol` rule, which explicitly treats carriage returns at line endings as valid while continuing to detect real whitespace errors.
+- **Prevention:** For this CRLF repository, invoke whitespace validation as `git -c core.whitespace=cr-at-eol diff --check`; do not assume diff comparison options change `--check` whitespace classification.
+
+## 2026-08-24 — Twice piped directly from a PowerShell foreach statement
+
+- **What went wrong:** A read-only validation command attempted to pipe directly from a `foreach` statement, which PowerShell rejected with an "empty pipe element" parser error before any checks ran. I then repeated the same syntax error in the live-deployment preflight despite having just recorded it.
+- **Correction:** Collected each loop's output into a named variable before sending it to `Format-Table`, then reran both checks successfully; neither failed command affected repository or live-addon files.
+- **Prevention:** Never place a pipeline operator immediately after a closing `foreach` brace in PowerShell; always assign the complete loop output to a named variable first, then pipe that variable in a separate statement.
+
+## 2026-08-24 — Used an unsafe patch string, stale CSS context, and a visual-text test expectation
+
+- **What went wrong:** A large CharacterRow patch was embedded in a JavaScript string that failed to parse, a subsequent CSS patch used pre-Prettier multiline context and was rejected, and the new drawer test expected CSS-transformed uppercase text instead of the lowercase DOM text returned by Vue Test Utils.
+- **Correction:** Reissued the component patch with `String.raw`, inspected the formatted CSS before applying smaller exact-context hunks, and asserted the actual DOM string while leaving uppercase presentation to CSS; all seven unit tests then passed.
+- **Prevention:** Use raw template literals for patch bodies containing complex Vue markup, re-read formatter-controlled context before large CSS edits, and keep unit assertions based on semantic DOM content rather than visual text transformations.
+
+## 2026-08-24 — Used stale patch context and an incorrect first-row selector
+
+- **What went wrong:** The first website simplification patch assumed pre-formatting App markup and was rejected, and the first divider-geometry check used `.character-row:first-of-type`, which selected no row sections because of the surrounding article structure.
+- **Correction:** Read the exact current component source before applying smaller file-scoped patches, then queried the first four `.character-row > section` elements and confirmed every internal column boundary matched the corresponding header boundary after horizontal scrolling.
+- **Prevention:** Inspect formatted template context immediately before UI patches, and validate DOM selector assumptions against the actual rendered nesting before treating an empty measurement as test evidence.
+
+## 2026-08-24 — Passed a leading-dash search pattern as an rg option
+
+- **What went wrong:** A final CSS line-reference search began its alternation with the token `--page:`, so `rg` parsed the pattern as an unsupported command-line flag and rejected the read-only command.
+- **Correction:** Re-ran the same search with the explicit `--` end-of-options marker before the pattern and obtained the intended line references; no files were affected.
+- **Prevention:** Whenever an `rg` pattern can begin with `-`, always place `--` before the pattern even when the pattern is quoted.
+
+## 2026-08-24 — Repeated an invalid multi-file patch boundary
+
+- **What went wrong:** While redesigning the website, I twice placed a new `Update File` marker immediately after a hunk without giving the patch parser a valid file boundary; both combined patches were rejected before modifying files.
+- **Correction:** Re-read the formatted component context, applied the large App update separately, and then used a clean multi-file patch with independently valid hunks for the smaller component changes.
+- **Prevention:** Default to one file per patch during iterative UI work; when combining files, validate that every hunk is syntactically complete before the next file marker instead of appending operations mechanically.
+
+## 2026-08-24 — Assumed local tooling and scaffold names without preflight checks
+
+- **What went wrong:** I invoked Docker before confirming it was installed, then passed the mixed-case destination basename to `create-vue`; npm rejected that package name and opened an interactive prompt instead of scaffolding the requested site.
+- **Correction:** Confirmed Docker is unavailable and documented that container validation could not run locally; scaffolded through a valid lowercase temporary directory, validated both paths, and moved it to the exact requested `C:\git\MyAltManagerWebsite` destination.
+- **Prevention:** Preflight required executables with `Get-Command` and validate npm package naming constraints before invoking a scaffold generator; separate the package name from the final display-cased folder name when necessary.
+
+## 2026-08-24 — Accepted incompatible and deprecated generated dependencies
+
+- **What went wrong:** The generated `oxlint` and `eslint-plugin-oxlint` ranges did not resolve to compatible versions, and I initially installed the deprecated `lucide-vue-next` package instead of the maintained Vue package.
+- **Correction:** Aligned both oxlint packages to `~1.79.0`, removed the deprecated icon dependency, installed `@lucide/vue`, and reran installation, audit, type checking, linting, tests, and the production build successfully.
+- **Prevention:** Inspect peer-dependency resolution after scaffolding and verify a package's current maintained name before adding it; treat deprecation and resolver warnings as required corrections, not ignorable output.
+
+## 2026-08-24 — Sent unsafe-looking cleanup/process commands that the runner rejected
+
+- **What went wrong:** I combined production-server startup and forced termination in one PowerShell command, then later combined guarded screenshot cleanup with `Remove-Item -Force`; the command safety layer rejected both before execution.
+- **Correction:** Tested the server in a managed terminal session and stopped it gracefully with Ctrl+C; ignored the disposable preview images instead of forcing their deletion and ran Git initialization separately.
+- **Prevention:** Keep process lifecycle and cleanup operations in small, independently verifiable calls, prefer graceful session control, and avoid forced deletion when an ignored disposable artifact is harmless.
+
+## 2026-08-24 — Repeated a wrong-receiver structural assertion
+
+- **What went wrong:** A final structural test looked for `editBox:HighlightText()` even though `ShowExport` correctly aliases the field as `copyBox` before selecting it, repeating the same receiver-reconstruction mistake already documented below.
+- **Correction:** Inspected the exact implementation, changed the assertion to `copyBox:HighlightText()`, and reran the complete validation sequence.
+- **Prevention:** Build fixed-string assertions by copying the exact production line after the implementation is final; never infer or rename the receiver in the test, especially when the mistake log already identifies that failure mode.
+
+## 2026-08-24 — Invoked the Lua test runner incorrectly and concatenated a malformed harness
+
+- **What went wrong:** The first `npx` invocation did not identify the package executable, and the first generated Lua harness omitted newlines between source blocks, producing an `endlocal` syntax error followed by avoidable PowerShell errors.
+- **Correction:** Queried the package's executable metadata, invoked it explicitly through `npm exec`, joined every source block with a newline, and checked the process exit code before decoding its output.
+- **Prevention:** Confirm an unfamiliar package's executable name before invoking it, delimit generated code blocks explicitly, and stop immediately when an external test process returns a nonzero exit code.
+
+## 2026-08-24 — Unrelated clean documentation files disappeared during patching
+
+- **What went wrong:** After a multi-file patch and line-ending normalization, `MyAltManagerWebsite.md` and `events.md` were unexpectedly absent even though neither was targeted and both were clean at the start of the task.
+- **Correction:** Detected both deletions in the immediate status check and restored the exact files from `HEAD`, which was safe because the initial status proved they had no user changes.
+- **Prevention:** Run `git status --short` immediately after every multi-file patch, compare it with the recorded initial status, and restore only files proven clean and unintentionally removed before doing further work.
+
+## 2026-08-24 — Built two invalid multi-file patches
+
+- **What went wrong:** The first patch declared two separate update operations for `MyAltManager.lua`, and the retry assumed the wrong README wording; the patch tool rejected both before changing any files.
+- **Correction:** Inspected the exact README context, combined every Lua hunk under one file update, and reapplied the corrected patch.
+- **Prevention:** Use one update block per file and inspect exact surrounding text before constructing a multi-file patch instead of relying on recalled wording.
+
 ## 2026-08-18 — Rewrote MyAltManager.toc with the wrong line endings
 
 - **What went wrong:** Bumping `## Version:` with a Python whole-file rewrite converted the TOC's CRLF line endings to LF, turning a one-line version bump into a nine-line diff.
