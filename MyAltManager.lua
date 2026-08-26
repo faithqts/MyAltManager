@@ -113,8 +113,39 @@ constants.CURSE_SURGE = {
 }
 constants.WEEK_SECONDS = 7 * 24 * 60 * 60
 constants.WEEKLY_META_QUEST = {
-    QUEST_ID = 98172, -- Trailing Xal'atath
+    QUEST_IDS = {
+        98172, -- Trailing Xal'atath
+        98232, -- Midnight: Vaults of Atal'Utek
+        93744, -- Unity Against the Void
+        93889, -- Midnight: Saltheril's Soiree
+        93912, -- Midnight: Raid
+        93910, -- Midnight: Prey
+        93767, -- Midnight: Arcantina
+        93892, -- Midnight: Stormarion Assault
+        93766, -- Midnight: World Quests
+        93909, -- Midnight: Delves
+        95842, -- Midnight: Void Assaults
+        93913, -- Midnight: World Boss
+        93769, -- Midnight: Housing
+        95843, -- Midnight: Ritual Sites
+        93911, -- Midnight: Dungeons
+        96727, -- Midnight: Offworld Showdowns
+        94457, -- Midnight: Battlegrounds
+    },
 }
+
+local function IsWeeklyMetaQuest(questID)
+    questID = tonumber(questID)
+    if not questID then return false end
+
+    for _, trackedQuestID in ipairs(constants.WEEKLY_META_QUEST.QUEST_IDS) do
+        if questID == trackedQuestID then
+            return true
+        end
+    end
+    return false
+end
+
 -- Hidden Trove (Delves) is tracked from the cast that opens the trove rather than from a quest ID,
 -- because the quest ID is re-issued every season while the "Unlocking" cast is not. The trove is
 -- weekly and per-character, so the completion is stored per GUID and expires at the weekly reset.
@@ -1061,7 +1092,7 @@ do
         end
 
         if event == "QUEST_TURNED_IN" then
-            if tonumber(loadedOrType) == constants.WEEKLY_META_QUEST.QUEST_ID then
+            if IsWeeklyMetaQuest(loadedOrType) then
                 AltManager:MarkWeeklyMetaQuestCompleted()
             else
                 AltManager:ScheduleCollect(event)
@@ -1789,8 +1820,10 @@ function AltManager:CollectData()
             return "complete"
         end
 
-        if C_QuestLog.IsOnQuest(constants.WEEKLY_META_QUEST.QUEST_ID) then
-            return "inprogress"
+        for _, questID in ipairs(constants.WEEKLY_META_QUEST.QUEST_IDS) do
+            if C_QuestLog.IsOnQuest(questID) then
+                return "inprogress"
+            end
         end
         return "notstarted"
     end

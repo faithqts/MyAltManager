@@ -2,6 +2,12 @@
 
 When adding an entry, include the date, what went wrong, how it was corrected, and the prevention rule to follow in future work.
 
+## 2026-08-26 — Repeated the documented PowerShell foreach pipeline error
+
+- **What went wrong:** A read-only line-ending check piped directly from a `foreach` statement, causing PowerShell's "empty pipe element" parser error even though the mistake log already prohibited that exact construction.
+- **Correction:** Assigned the loop output to `$endingRows` and piped that variable to `Format-Table`; the failed command made no repository or live-addon changes.
+- **Prevention:** Before running any PowerShell loop that needs formatting, create a named result variable as part of drafting the command and place the formatting pipeline on its own subsequent statement.
+
 ## 2026-08-24 — Used the wrong Git option for CRLF whitespace validation
 
 - **What went wrong:** I ran `git diff --check --ignore-space-at-eol` expecting it to ignore CRLF line terminators, but `diff --check` still treated every added carriage return as trailing whitespace and stopped the commit sequence with hundreds of false positives.

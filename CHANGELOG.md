@@ -2,6 +2,10 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.68 — 2026-08-26
+
+- Expanded the weekly meta-quest tracker from only `Trailing Xal'atath` to all 17 level-90 Midnight meta quests listed by Wowhead, including their turn-in detection and active-quest status.
+
 ## 12.1.0.67 — 2026-08-24
 
 - Replaced the visible export-data dialog with an invisible focused copy field: click Export, press Ctrl+C, and receive a chat confirmation without displaying the Base64 payload.

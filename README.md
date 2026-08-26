@@ -27,7 +27,7 @@ The addon stores data per character and displays core progress in dashboard colu
 	- Forged Weapons progress
 	- Bloody Tokens
 - Weekly activity status
-	- Weekly Meta Quest (Trailing Xal'atath)
+	- Weekly Meta Quest (all 17 level-90 Midnight meta quests)
 	- Turn Back the Surge
 	- Purging the Vaults
 	- Sath'theril Soiree
