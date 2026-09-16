@@ -2,7 +2,7 @@
 
 MyAltManager is a Retail WoW addon that tracks key endgame progress across your characters and shows it in one compact dashboard.
 
-Current addon version: 12.1.0.67 (TOC interface 120100).
+Current addon version: 12.1.0.72 (TOC interface 120100).
 
 See [MyAltManager Patch Notes](CHANGELOG.md) for the complete version history.
 
@@ -36,6 +36,7 @@ The addon stores data per character and displays core progress in dashboard colu
 	- Stormarian Assault
 	- Midnight: World Tour
 	- Hidden Trove (Delves)
+	- Abundant Delve
 	- A Nightmarish Task
 	- World Boss
 - Currencies
@@ -88,9 +89,11 @@ Dashboard sections, dashboard currencies, and weekly drawer rows do not have vis
 - Data collection is gated to avoid collecting in combat/challenge mode contexts
 - Data refresh is triggered on login and key gameplay events (quests, bags, currency updates, weekly-related updates)
 - PvP and non-dashboard currency values continue to be collected and stored but are not shown in the expanded character drawer
+- Midnight crafting concentration is collected for each logged-in character's two primary professions and is stored/exported without being rendered anywhere in the addon UI
 - Entries can expire/reset around weekly reset for weekly-progress fields
 - Weekly reset validation clears weekly quests, events, vault progress, keystone history, and weekly currency progress for every stored character at once; it runs on any character login, the weekly-rewards event, and a scheduled account-wide check while the client remains online
 - The weekly meta quest uses its per-character turn-in timestamp instead of Blizzard's persistent completion flag, so a completion older than the latest weekly reset is shown as incomplete
+- Abundant Delve is tracked per character and weekly without a quest: speaking to Dundun shows it in progress, and opening an Abundant Chest marks it complete
 - Includes one-time per-expansion migration logic that resets stale saved data while preserving config
 
 ## Usage Notes
@@ -98,10 +101,11 @@ Dashboard sections, dashboard currencies, and weekly drawer rows do not have vis
 - Open with /alts
 - Use the Export button beside the close button, or `/alts export`, then press Ctrl+C; the payload remains hidden and chat confirms when the copy shortcut is received
 - WoW does not expose a general clipboard-write API to third-party addons, so the Ctrl+C keypress is required
-- The export is standard Base64 with no prefix or compression. Decoding it yields a JSON object with `formatVersion`, `addonVersion`, `exportedAt`, `weeklyResetAt`, `lastWeeklyResetAt`, `characterCount`, and the GUID-keyed `characters` object
+- The export is standard Base64 with no prefix or compression. Decoding it yields a JSON object with `formatVersion`, `addonVersion`, `exportedAt`, `weeklyResetAt`, `lastWeeklyResetAt`, `characterCount`, the GUID-keyed `characters` object, and a `concentration` summary
+- Concentration exports use `concentration.characters["Name-Realm"][profession].concentrationValue`; `concentration.average.concentrationValue` averages every stored profession pool, and `concentration.average.fullTime` is the Unix-seconds timestamp calculated from the remaining average at one point per six minutes
 - Window is draggable
 - Characters are shown in alphabetical name order
-- The footer shows the next Curse Surge on its 45-minute schedule, including its two-minute starting and three-minute active phases
+- The footer shows the next Curse Surge on its 30-minute schedule, on the hour and half hour, including its two-minute starting and three-minute active phases
 - Click the Curse Surge footer to toggle a draggable standalone progress bar
 - The Curse Surge schedule is requested at login, so the surge is identified without opening the map or the events tab
 - With Announce Next Curse Surge to Guild enabled, one guild chat message is sent five minutes before each surge with its name, coordinates, and a clickable map pin, held back until you are out of combat and never repeated for the same surge on any character

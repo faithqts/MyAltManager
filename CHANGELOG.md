@@ -2,6 +2,24 @@
 
 This file records the user-facing changes for each version represented in the repository. Older entries are reconstructed from the corresponding tagged or versioned commits.
 
+## 12.1.0.72 — 2026-09-16
+
+- Matched the World Events drawer group to Weekly Quests with a seven-column layout for consistent spacing.
+
+## 12.1.0.71 — 2026-09-16
+
+- Added per-character weekly Abundant Delve tracking: speaking to Dundun primes the delve as in progress, and opening an Abundant Chest marks it complete.
+- Expanded the Weekly Quests drawer to seven columns.
+
+## 12.1.0.70 — 2026-09-16
+
+- Updated Curse Surge timers to the new 30-minute schedule, occurring on the hour and half hour.
+
+## 12.1.0.69 — 2026-08-26
+
+- Added non-visual Midnight concentration tracking for every logged-in character's crafting professions, with stored values projected forward using the currency recharge cycle.
+- Added a collision-safe `Name-Realm` concentration export containing per-profession values, the average across all stored profession pools, and the Unix timestamp when that average reaches 1,000 at one point per six minutes.
+
 ## 12.1.0.68 — 2026-08-26
 
 - Expanded the weekly meta-quest tracker from only `Trailing Xal'atath` to all 17 level-90 Midnight meta quests listed by Wowhead, including their turn-in detection and active-quest status.

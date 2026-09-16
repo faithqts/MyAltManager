@@ -96,7 +96,7 @@ constants.config.UI_SCALE_STEP = 0.05
 
 constants.ACTIVE_SEASON_ID = 2
 constants.CURSE_SURGE = {
-    INTERVAL_SECONDS = 45 * 60,
+    INTERVAL_SECONDS = 30 * 60,
     STARTING_SECONDS = 2 * 60,
     ACTIVE_SECONDS = 5 * 60,
     EVENT_START_TOLERANCE_SECONDS = 60,
@@ -133,6 +133,21 @@ constants.WEEKLY_META_QUEST = {
         94457, -- Midnight: Battlegrounds
     },
 }
+constants.CONCENTRATION = {
+    MAXIMUM = 1000,
+    RECHARGE_SECONDS_PER_POINT = 6 * 60,
+    -- Midnight crafting-concentration currencies, keyed by the stable parent profession skill line.
+    PROFESSIONS = {
+        [171] = { name = "Alchemy",        currencyID = 3161 },
+        [164] = { name = "Blacksmithing", currencyID = 3162 },
+        [333] = { name = "Enchanting",    currencyID = 3163 },
+        [202] = { name = "Engineering",   currencyID = 3164 },
+        [773] = { name = "Inscription",   currencyID = 3165 },
+        [755] = { name = "Jewelcrafting", currencyID = 3166 },
+        [165] = { name = "Leatherworking", currencyID = 3167 },
+        [197] = { name = "Tailoring",      currencyID = 3168 },
+    },
+}
 
 local function IsWeeklyMetaQuest(questID)
     questID = tonumber(questID)
@@ -151,6 +166,11 @@ end
 -- weekly and per-character, so the completion is stored per GUID and expires at the weekly reset.
 constants.HIDDEN_TROVE = {
     SPELL_IDS = { 1248091 }, -- 1248091 = Unlocking (Open Object, 1.5s cast)
+}
+constants.ABUNDANT_DELVE = {
+    NPC_NAME = "Dundun",
+    MONSTER_SAY = "Treasures in plentitude for all my acolytes!",
+    SPELL_ID = 6247, -- UNIT_SPELLCAST_SUCCEEDED when an Abundant Chest is opened
 }
 constants.COFFER_KEY_GLUE = {
     ITEM_ID = 267291,
@@ -202,6 +222,7 @@ constants.labels = {
     ANGLER_PEARLS = "Angler Pearls |T348545:12:12:0:0|t",
     TIDAL_SPARKS = "Tidal Spark Dust |TInterface\\Icons\\inv_enchanting_dust_color5:12:12:0:0|t",
     HIDDEN_TROVE = "Hidden Trove (Delves)",
+    ABUNDANT_DELVE = "Abundant Delve",
     RESTORED_COFFER_KEY = "Restored Coffer Keys |TInterface\\Icons\\inv_10_blacksmithing_consumable_key_color1:12:12:0:0|t",
     COFFER_KEY_SHARDS = "Coffer Key Shards |TInterface\\Icons\\inv_gizmo_hardenedadamantitetube:12:12:0:0|t",
     VOIDLIGHT_MARL = "Voidlight Marl |TInterface\\Icons\\inv_112_raidtrinkets_voidprism:12:12:0:0|t",
@@ -253,12 +274,13 @@ constants.sections = {
     },
     {
         key = "weekly_quests", label = "Weekly Quests",
-        keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "purging_the_vaults", "hidden_trove", "nightmarish_task", "world_boss" },
+        keys = { "weekly_quests", "weekly_meta_quest", "curse_surges", "purging_the_vaults", "hidden_trove", "abundant_delve", "nightmarish_task", "world_boss" },
         children = {
             { key = "weekly_meta_quest",       dataKey = "weeklyMetaQuest",      label = "Weekly Meta Quest" },
             { key = "curse_surges",            dataKey = "curseSurges",          label = "Turn Back the Surge" },
             { key = "purging_the_vaults",      dataKey = "purgingTheVaults",     label = "Purging the Vaults" },
             { key = "hidden_trove",            dataKey = "hiddenTrove",          label = "Hidden Trove (Delves)" },
+            { key = "abundant_delve",           dataKey = "abundantDelve",         label = constants.labels.ABUNDANT_DELVE },
             { key = "nightmarish_task",        dataKey = "nightmarishTask",       label = "A Nightmarish Task" },
             { key = "world_boss",              dataKey = "worldBoss",            label = "World Boss" },
         },
@@ -498,7 +520,7 @@ end
 
 ApplyActiveSeasonData()
 
-constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.67"
+constants.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addon, "Version")) or "12.1.0.72"
 
 -- ------------------------------------------------------------
 -- Utility helpers
@@ -633,6 +655,12 @@ function AltManager:MigrateDataSchema()
         local schema = tonumber(charData and charData.schema) or 0
         if schema < constants.DATA_SCHEMA then
             db.data[guid] = nil
+            if db.concentration and db.concentration.characters then
+                db.concentration.characters[guid] = nil
+            end
+            if db.abundantDelve then
+                db.abundantDelve[guid] = nil
+            end
             if db.config and db.config.openRows then
                 db.config.openRows[guid] = nil
             end
@@ -680,6 +708,141 @@ end
 -- Data collection gating / debounce (combat-safe)
 -- ------------------------------------------------------------
 
+local function GetConcentrationEpoch()
+    local serverTime = type(GetServerTime) == "function" and tonumber(GetServerTime()) or nil
+    return serverTime or time()
+end
+
+local function GetProjectedConcentrationValue(professionData, now)
+    local maximum = tonumber(professionData and professionData.maximum) or constants.CONCENTRATION.MAXIMUM
+    local value = tonumber(professionData and professionData.concentrationValue) or 0
+    local updatedAt = tonumber(professionData and professionData.updatedAt) or now
+    local rechargeSeconds = tonumber(professionData and professionData.rechargeSeconds)
+        or constants.CONCENTRATION.RECHARGE_SECONDS_PER_POINT
+    local elapsed = math.max(0, now - updatedAt)
+
+    if maximum <= 0 then maximum = constants.CONCENTRATION.MAXIMUM end
+    if rechargeSeconds <= 0 then rechargeSeconds = constants.CONCENTRATION.RECHARGE_SECONDS_PER_POINT end
+    return math.min(maximum, math.max(0, math.floor(value + elapsed / rechargeSeconds)))
+end
+
+function AltManager:EnsureConcentrationStore()
+    local db = MyAltManagerDB
+    if not db then return nil end
+
+    db.concentration = db.concentration or {}
+    db.concentration.characters = db.concentration.characters or {}
+    db.concentration.average = db.concentration.average or {
+        concentrationValue = 0,
+        fullTime = 0,
+    }
+    return db.concentration
+end
+
+function AltManager:RefreshConcentrationAverage(now)
+    local store = self:EnsureConcentrationStore()
+    if not store then return { concentrationValue = 0, fullTime = 0 } end
+
+    now = tonumber(now) or GetConcentrationEpoch()
+    local total = 0
+    local count = 0
+    for _, characterData in pairs(store.characters) do
+        for _, professionData in pairs(characterData.professions or {}) do
+            total = total + GetProjectedConcentrationValue(professionData, now)
+            count = count + 1
+        end
+    end
+
+    local exactAverage = count > 0 and (total / count) or 0
+    local roundedAverage = math.floor(exactAverage * 100 + 0.5) / 100
+    local fullTime = 0
+    if count > 0 then
+        local remaining = math.max(0, constants.CONCENTRATION.MAXIMUM - exactAverage)
+        fullTime = math.ceil(now + remaining * constants.CONCENTRATION.RECHARGE_SECONDS_PER_POINT)
+    end
+
+    store.average = {
+        concentrationValue = roundedAverage,
+        fullTime = fullTime,
+    }
+    return store.average
+end
+
+function AltManager:CollectCurrentCharacterConcentration()
+    local store = self:EnsureConcentrationStore()
+    local guid = UnitGUID("player")
+    if not store or not guid then return false end
+    if type(GetProfessions) ~= "function" or type(GetProfessionInfo) ~= "function" then return false end
+    if not C_CurrencyInfo or type(C_CurrencyInfo.GetCurrencyInfo) ~= "function" then return false end
+
+    local now = GetConcentrationEpoch()
+    local professionIndexes = { GetProfessions() }
+    local professions = {}
+    for slot = 1, 2 do
+        local professionIndex = professionIndexes[slot]
+        if professionIndex then
+            local skillLineID = select(7, GetProfessionInfo(professionIndex))
+            local definition = constants.CONCENTRATION.PROFESSIONS[tonumber(skillLineID)]
+            if definition then
+                local info = C_CurrencyInfo.GetCurrencyInfo(definition.currencyID)
+                local maximum = tonumber(info and info.maxQuantity) or 0
+                if maximum > 0 then
+                    local rechargeSeconds = (tonumber(info.rechargingCycleDurationMS) or 0) / 1000
+                    if rechargeSeconds <= 0 then
+                        rechargeSeconds = constants.CONCENTRATION.RECHARGE_SECONDS_PER_POINT
+                    end
+                    professions[definition.name] = {
+                        concentrationValue = math.min(maximum, math.max(0, tonumber(info.quantity) or 0)),
+                        maximum = maximum,
+                        rechargeSeconds = rechargeSeconds,
+                        updatedAt = now,
+                    }
+                end
+            end
+        end
+    end
+
+    store.characters[guid] = {
+        name = UnitName("player"),
+        realmName = GetRealmName(),
+        professions = professions,
+    }
+    self:RefreshConcentrationAverage(now)
+    return true
+end
+
+function AltManager:BuildConcentrationExport(now)
+    local store = self:EnsureConcentrationStore()
+    now = tonumber(now) or GetConcentrationEpoch()
+    local characters = {}
+
+    for guid, characterData in pairs(store and store.characters or {}) do
+        local name = tostring(characterData.name or guid)
+        local realmName = tostring(characterData.realmName or "")
+        local characterKey = realmName ~= "" and (name .. "-" .. realmName) or name
+        if characters[characterKey] then
+            characterKey = characterKey .. "-" .. tostring(guid)
+        end
+
+        local professions = {}
+        for professionName, professionData in pairs(characterData.professions or {}) do
+            professions[professionName] = {
+                concentrationValue = GetProjectedConcentrationValue(professionData, now),
+            }
+        end
+        characters[characterKey] = professions
+    end
+
+    local average = self:RefreshConcentrationAverage(now)
+    return {
+        characters = characters,
+        average = {
+            concentrationValue = average.concentrationValue,
+            fullTime = average.fullTime,
+        },
+    }
+end
+
 function AltManager:CanCollectNow()
     if InCombatLockdown() or UnitAffectingCombat("player") then
         return false
@@ -705,6 +868,7 @@ end
 
 function AltManager:CollectAndStore()
     local ok, err = pcall(function()
+        self:CollectCurrentCharacterConcentration()
         local data = self:CollectData()
         self:StoreData(data)
     end)
@@ -1006,6 +1170,7 @@ do
 
     main_frame:RegisterEvent("ADDON_LOADED")
     main_frame:RegisterEvent("PLAYER_LOGIN")
+    main_frame:RegisterEvent("CHAT_MSG_MONSTER_SAY")
     main_frame:RegisterEvent("QUEST_LOG_UPDATE")
     main_frame:RegisterEvent("QUEST_TURNED_IN")
     main_frame:RegisterEvent("BAG_UPDATE_DELAYED")
@@ -1018,6 +1183,7 @@ do
     main_frame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
     main_frame:RegisterEvent("MYTHIC_PLUS_CURRENT_AFFIX_UPDATE")
     main_frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+    main_frame:RegisterEvent("SKILL_LINES_CHANGED")
     main_frame:RegisterEvent("EVENT_SCHEDULER_UPDATE")
     main_frame:RegisterEvent("TOYS_UPDATED")
     main_frame:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
@@ -1028,7 +1194,7 @@ do
     main_frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 
     main_frame:SetScript("OnEvent", function(self, ...)
-        local event, loadedOrType = ...
+        local event, loadedOrType, eventArg2 = ...
 
         if event == "ADDON_LOADED" then
             if addon == loadedOrType then
@@ -1043,6 +1209,11 @@ do
 
         if event == "PLAYER_LOGIN" then
             AltManager:OnLogin()
+            return
+        end
+
+        if event == "CHAT_MSG_MONSTER_SAY" then
+            AltManager:OnMonsterSay(loadedOrType, eventArg2)
             return
         end
 
@@ -1105,7 +1276,8 @@ do
             or event == "CURRENCY_DISPLAY_UPDATE"
             or event == "CHALLENGE_MODE_MAPS_UPDATE"
             or event == "MYTHIC_PLUS_CURRENT_AFFIX_UPDATE"
-            or event == "PLAYER_EQUIPMENT_CHANGED" then
+            or event == "PLAYER_EQUIPMENT_CHANGED"
+            or event == "SKILL_LINES_CHANGED" then
             AltManager:ScheduleCollect(event)
             return
         end
@@ -1167,7 +1339,15 @@ function AltManager:InitDB()
     }
     t.meta = {}
     t.hiddenTrove = {}
+    t.abundantDelve = {}
     t.weeklyMetaQuestCompletions = {}
+    t.concentration = {
+        characters = {},
+        average = {
+            concentrationValue = 0,
+            fullTime = 0,
+        },
+    }
     return t
 end
 
@@ -1247,6 +1427,7 @@ local function CreateResetWeeklies()
         { key = "stormarianAssault", status = "notstarted" },
         { key = "midnightWorldTour", status = "notstarted" },
         { key = "hiddenTrove", status = "notstarted" },
+        { key = "abundantDelve", status = "notstarted" },
         { key = "nightmarishTask", status = "notstarted" },
         { key = "worldBoss", status = "notstarted" },
     }
@@ -1304,6 +1485,78 @@ function AltManager:MarkHiddenTroveCompleted(guid)
     return true
 end
 
+local function GetAbundantDelveExpiry()
+    -- Fall back to a full week if the client has not reported the reset yet; ValidateReset still
+    -- clears the record when the character's own weekly window rolls over.
+    return AltManager:GetNextWeeklyResetTime() or (time() + 7 * 24 * 60 * 60)
+end
+
+function AltManager:EnsureAbundantDelveStore()
+    local db = MyAltManagerDB
+    if not db then return nil end
+
+    db.abundantDelve = db.abundantDelve or {}
+    return db.abundantDelve
+end
+
+function AltManager:GetAbundantDelveStatus(guid)
+    guid = guid or UnitGUID("player")
+    if not guid then return "notstarted" end
+
+    local store = self:EnsureAbundantDelveStore()
+    local record = store and store[guid]
+    if not record then return "notstarted" end
+
+    local expires = tonumber(record.expires) or 0
+    if expires > 0 and time() >= expires then
+        store[guid] = nil
+        return "notstarted"
+    end
+
+    if record.status == "complete" or record.status == "inprogress" then
+        return record.status
+    end
+    return "notstarted"
+end
+
+function AltManager:MarkAbundantDelvePrimed(guid)
+    guid = guid or UnitGUID("player")
+    local store = self:EnsureAbundantDelveStore()
+    if not guid or not store then return false end
+
+    if self:GetAbundantDelveStatus(guid) ~= "notstarted" then
+        return false
+    end
+
+    store[guid] = {
+        status = "inprogress",
+        primedAt = time(),
+        expires = GetAbundantDelveExpiry(),
+    }
+    self:ScheduleCollect("ABUNDANT_DELVE_PRIMED")
+    return true
+end
+
+function AltManager:MarkAbundantDelveCompleted(guid)
+    guid = guid or UnitGUID("player")
+    local store = self:EnsureAbundantDelveStore()
+    if not guid or not store then return false end
+
+    if self:GetAbundantDelveStatus(guid) == "complete" then
+        return false
+    end
+
+    local previous = store[guid]
+    store[guid] = {
+        status = "complete",
+        primedAt = previous and previous.primedAt or nil,
+        completedAt = time(),
+        expires = GetAbundantDelveExpiry(),
+    }
+    self:ScheduleCollect("ABUNDANT_DELVE_COMPLETED")
+    return true
+end
+
 function AltManager:EnsureWeeklyMetaQuestCompletionStore()
     local db = MyAltManagerDB
     if not db then return nil end
@@ -1345,6 +1598,15 @@ function AltManager:MarkWeeklyMetaQuestCompleted(guid)
     return true
 end
 
+function AltManager:OnMonsterSay(message, sender)
+    if message ~= constants.ABUNDANT_DELVE.MONSTER_SAY
+        or sender ~= constants.ABUNDANT_DELVE.NPC_NAME then
+        return
+    end
+
+    self:MarkAbundantDelvePrimed()
+end
+
 function AltManager:OnSpellcastSucceeded(unit, spellID)
     if unit ~= "player" then return end
 
@@ -1354,6 +1616,11 @@ function AltManager:OnSpellcastSucceeded(unit, spellID)
     if spellID == constants.COFFER_KEY_GLUE.SPELL_ID then
         self:StopCofferKeyGlueCastDisplay()
         self:ScheduleCollect("COFFER_KEY_GLUE_USED")
+        return
+    end
+
+    if spellID == constants.ABUNDANT_DELVE.SPELL_ID then
+        self:MarkAbundantDelveCompleted()
         return
     end
 
@@ -1407,6 +1674,16 @@ function AltManager:ValidateReset()
             end
         end
     end
+
+    local abundantDelveStore = self:EnsureAbundantDelveStore()
+    if abundantDelveStore then
+        for guid, record in pairs(abundantDelveStore) do
+            local expires = tonumber(record and record.expires) or 0
+            if expires <= 0 or now >= expires then
+                abundantDelveStore[guid] = nil
+            end
+        end
+    end
     return resetCount
 end
 
@@ -1432,7 +1709,15 @@ function AltManager:Purge()
     MyAltManagerDB = MyAltManagerDB or self:InitDB()
     MyAltManagerDB.data = {}
     MyAltManagerDB.alts = 0
+    MyAltManagerDB.abundantDelve = {}
     MyAltManagerDB.weeklyMetaQuestCompletions = {}
+    MyAltManagerDB.concentration = {
+        characters = {},
+        average = {
+            concentrationValue = 0,
+            fullTime = 0,
+        },
+    }
     MyAltManagerDB.config = MyAltManagerDB.config or {}
     MyAltManagerDB.config.openRows = {}
     self:LoadConfigFromDB()
@@ -1451,12 +1736,26 @@ function AltManager:RemoveCharactersByName(name)
 
     for i = 1, #indices do
         db.data[indices[i]] = nil
+        if db.concentration and db.concentration.characters then
+            db.concentration.characters[indices[i]] = nil
+        end
         if db.weeklyMetaQuestCompletions then
             db.weeklyMetaQuestCompletions[indices[i]] = nil
+        end
+        if db.abundantDelve then
+            db.abundantDelve[indices[i]] = nil
         end
         if db.config and db.config.openRows then
             db.config.openRows[indices[i]] = nil
         end
+    end
+    if db.concentration and db.concentration.characters then
+        for guid, characterData in pairs(db.concentration.characters) do
+            if characterData.name == name then
+                db.concentration.characters[guid] = nil
+            end
+        end
+        self:RefreshConcentrationAverage()
     end
     db.alts = true_numel(db.data)
 
@@ -1471,8 +1770,15 @@ function AltManager:RemoveCharacterByGuid(index)
     local delete = function()
         if db.data[index] == nil then return end
         db.data[index] = nil
+        if db.concentration and db.concentration.characters then
+            db.concentration.characters[index] = nil
+            self:RefreshConcentrationAverage()
+        end
         if db.weeklyMetaQuestCompletions then
             db.weeklyMetaQuestCompletions[index] = nil
+        end
+        if db.abundantDelve then
+            db.abundantDelve[index] = nil
         end
         db.alts = true_numel(db.data)
         if db.config and db.config.openRows then
@@ -1653,15 +1959,17 @@ end
 function AltManager:BuildExportPayload()
     local data = MyAltManagerDB and MyAltManagerDB.data or {}
     local weeklyResetAt = self:GetNextWeeklyResetTime()
+    local exportedAt = time()
     return {
         formatVersion = 1,
         addonVersion = constants.VERSION,
-        exportedAt = time(),
+        exportedAt = exportedAt,
         weeklyResetAt = weeklyResetAt,
         lastWeeklyResetAt = weeklyResetAt and (weeklyResetAt - constants.WEEK_SECONDS)
             or self:GetLastWeeklyResetTime(),
         characterCount = true_numel(data),
         characters = data,
+        concentration = self:BuildConcentrationExport(exportedAt),
     }
 end
 
@@ -1905,6 +2213,8 @@ function AltManager:CollectData()
     local midnightWorldTour = GetMidnightWorldTourStatus()
     -- Tracked from the trove's opening cast (see OnSpellcastSucceeded), not a quest ID.
     local hiddenTrove = self:IsHiddenTroveCompleted(guid) and "complete" or "notstarted"
+    -- Tracked from Dundun's chat message and the abundant chest opening cast, not a quest ID.
+    local abundantDelve = self:GetAbundantDelveStatus(guid)
     local nightmarishTask = GetCountQuestStatus(94446, 3)
     local purgingTheVaults = GetPercentageQuestStatus(95520)
 
@@ -2005,6 +2315,7 @@ function AltManager:CollectData()
                 required = midnightWorldTour.required,
             },
             { key = "hiddenTrove", status = hiddenTrove },
+            { key = "abundantDelve", status = abundantDelve },
             {
                 key = "nightmarishTask",
                 status = nightmarishTask.status,
@@ -3454,8 +3765,8 @@ function AltManager:ConfigureDrawer(drawer, data)
         end
     end
 
-    AddWeeklyGroup("world_events", "WORLD EVENTS", 6)
-    AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS", 6)
+    AddWeeklyGroup("world_events", "WORLD EVENTS", 7)
+    AddWeeklyGroup("weekly_quests", "WEEKLY QUESTS", 7)
 
     if textIndex == 0 then
         return 0

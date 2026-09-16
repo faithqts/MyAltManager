@@ -2,6 +2,48 @@
 
 When adding an entry, include the date, what went wrong, how it was corrected, and the prevention rule to follow in future work.
 
+## 2026-09-16 — Repeated a malformed final validation command
+
+- **What went wrong:** The first combined final-validation command constructed several regex-derived version rows inline and had an unmatched parenthesis, so PowerShell rejected it before any checks ran.
+- **Correction:** Reissued the validation with each regex result assigned to a named variable; Git whitespace, version consistency, live-file hashes, and `.git` preservation then passed.
+- **Prevention:** Break complex PowerShell expressions into named intermediate values before assembling result objects, especially in final preflight commands.
+
+## 2026-09-16 — Used unavailable npm Lua-parser validation
+
+- **What went wrong:** The first `npm exec --package=luaparse` check did not expose the package to Node, and a follow-up temporary-install command was rejected before execution by the command safety layer.
+- **Correction:** Stopped relying on unavailable external Lua tooling and used targeted source assertions, version-contract checks, CRLF validation, and Git whitespace validation instead; neither failed command changed the repository.
+- **Prevention:** Preflight module resolution and available project tooling before invoking package-based validators, and keep temporary setup, validation, and cleanup as independently verifiable commands.
+
+## 2026-09-16 — Reused incorrect dashboard test context
+
+- **What went wrong:** Two website test patches expected a standalone `).toBeCloseTo(...)` line, but the actual assertion was `expect(progressWidth).toBeCloseTo(...)`; both patches were rejected before changing that file.
+- **Correction:** Read the exact numbered test lines and applied a smaller patch matching the current assertion; the focused website tests then passed.
+- **Prevention:** Copy the complete current assertion from the file immediately before patching, and use smaller exact-context hunks when a prior patch has been rejected.
+
+## 2026-09-16 — Missing parenthesis in line-ending preflight
+
+- **What went wrong:** A read-only PowerShell line-ending check had an unmatched method-call parenthesis and failed to parse before running.
+- **Correction:** Reissued the check with the file path assigned to a named variable and balanced method calls; the corrected check confirmed all affected files use CRLF line endings.
+- **Prevention:** Break nested PowerShell method calls into named intermediate variables and run a syntax-aware preflight before relying on command output.
+
+## 2026-08-26 — Passed grep's `-E` option to ripgrep twice
+
+- **What went wrong:** Two read-only searches used `rg -E` as though it enabled extended regular expressions; ripgrep treats `-E` as its encoding option, so both commands rejected the regex as an invalid encoding name.
+- **Correction:** Reran the searches using ripgrep's default regex mode without `-E`; neither failed search changed any files.
+- **Prevention:** Use bare quoted regex patterns with `rg`; reserve `-F` for fixed strings and never carry grep's `-E` flag into ripgrep commands.
+
+## 2026-08-26 — Sent an oversized Lua test harness as a command-line argument
+
+- **What went wrong:** The first concentration behavior test passed the extracted implementation and mocks through `wasmoon -e`, exceeding Windows' command-line length limit before the test could run.
+- **Correction:** Piped the same in-memory harness to wasmoon's standard input, where it ran successfully without creating a temporary file.
+- **Prevention:** Pipe generated multi-line harnesses to a runner's standard input on Windows; use `-e` only for short expressions whose complete expanded length is known to be small.
+
+## 2026-08-26 — Left the Lua fallback version behind the TOC release
+
+- **What went wrong:** The 12.1.0.68 release bumped `MyAltManager.toc` but left the fallback `constants.VERSION` string at 12.1.0.67, so environments where metadata lookup failed would report the prior version.
+- **Correction:** Updated both the TOC version and the Lua fallback to 12.1.0.69 as part of the next release and added a consistency check for both locations.
+- **Prevention:** Treat the TOC metadata, Lua fallback, and newest changelog heading as a three-way version contract and verify all three before deployment.
+
 ## 2026-08-26 — Repeated the documented PowerShell foreach pipeline error
 
 - **What went wrong:** A read-only line-ending check piped directly from a `foreach` statement, causing PowerShell's "empty pipe element" parser error even though the mistake log already prohibited that exact construction.
